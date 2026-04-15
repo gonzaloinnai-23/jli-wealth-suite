@@ -97,7 +97,7 @@ export function Costes() {
       .filter((r) => r.cost > 0)
       .sort((a, b) => b.cost - a.cost);
 
-    const donut: ChartConfiguration = {
+    const donut: ChartConfiguration<"doughnut"> = {
       type: "doughnut",
       data: {
         labels: productCosts.map((r) => r.name),

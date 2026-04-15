@@ -68,7 +68,7 @@ export function Bancos() {
       (a, b) => (d.banco_series[b][lastM] || 0) - (d.banco_series[a][lastM] || 0)
     );
     const donutBanks = banks.filter((b) => (d.banco_series[b][lastM] || 0) > 0);
-    const cfg: ChartConfiguration = {
+    const cfg: ChartConfiguration<"doughnut"> = {
       type: "doughnut",
       data: {
         labels: donutBanks,

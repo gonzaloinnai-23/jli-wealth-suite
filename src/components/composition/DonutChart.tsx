@@ -81,7 +81,7 @@ export function DonutChart() {
       },
     };
 
-    const cfg: ChartConfiguration = {
+    const cfg: ChartConfiguration<"doughnut"> = {
       type: "doughnut",
       data: {
         labels: indices.map((i) => labels[i]),

@@ -34,7 +34,7 @@ export function Titulares() {
       });
 
     const donutTits = tits.filter((t) => (d.titular_series[t][lastM] || 0) > 0);
-    const donut: ChartConfiguration = {
+    const donut: ChartConfiguration<"doughnut"> = {
       type: "doughnut",
       data: {
         labels: donutTits,
