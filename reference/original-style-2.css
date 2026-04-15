@@ -1,0 +1,7 @@
+
+#sliderFrom::-webkit-slider-thumb,#sliderTo::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;cursor:pointer;pointer-events:all;position:relative;z-index:5}
+#sliderFrom::-webkit-slider-thumb{background:#3b82f6;border:2px solid #1e293b;box-shadow:0 0 6px rgba(59,130,246,0.5)}
+#sliderTo::-webkit-slider-thumb{background:#f59e0b;border:2px solid #1e293b;box-shadow:0 0 6px rgba(245,158,11,0.5)}
+#sliderFrom::-moz-range-thumb,#sliderTo::-moz-range-thumb{width:18px;height:18px;border-radius:50%;cursor:pointer;pointer-events:all;border:2px solid #1e293b}
+#sliderFrom::-moz-range-thumb{background:#3b82f6}
+#sliderTo::-moz-range-thumb{background:#f59e0b}

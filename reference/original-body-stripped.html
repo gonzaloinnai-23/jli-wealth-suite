@@ -1,0 +1,508 @@
+
+
+<!-- Demo Warning Banner -->
+<div style="background:#1e293b;border-bottom:1px solid #334155;color:#94a3b8;text-align:center;padding:6px 16px;font-size:12px;position:sticky;top:0;z-index:9999;">
+  ⚠️ Datos de demostración generados automáticamente por IA — Los nombres, cifras y productos son ficticios y pueden contener errores
+</div>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <h1><span>Family Office</span> · Dashboard de Posiciones <span style="font-size:0.45em;opacity:0.5;margin-left:8px;background:#ef4444;padding:2px 8px;border-radius:4px;">DEMO</span></h1>
+  <div class="port-toggle">
+    <button class="port-btn active" data-port="bca" onclick="switchPort('bca')">Mendoza Family Office</button>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" data-tab="resumen" onclick="switchTab('resumen')">Resumen</button>
+  <button class="tab-btn" data-tab="evolucion" onclick="switchTab('evolucion')">Evolución</button>
+  <button class="tab-btn" data-tab="consolidado" style="display:none" onclick="switchTab('consolidado')">Consolidado</button>
+  <button class="tab-btn" data-tab="costes" onclick="switchTab('costes')">Costes</button>
+  <button class="tab-btn" data-tab="bancos" onclick="switchTab('bancos')">Bancos</button>
+  <button class="tab-btn" data-tab="titulares" onclick="switchTab('titulares')">Titulares</button>
+  <button class="tab-btn" data-tab="organigrama" onclick="switchTab('organigrama')">Organigrama</button>
+  <button class="tab-btn" data-tab="liquidez" onclick="switchTab('liquidez')">Liquidez <span style="font-size:9px;color:#60a5fa;font-weight:700">(demo)</span></button>
+  <button class="tab-btn" data-tab="proyeccion" onclick="switchTab('proyeccion')">Proyección <span style="font-size:9px;color:#f59e0b;font-weight:700">(beta)</span></button>
+  <button class="tab-btn" data-tab="alternativos" onclick="switchTab('alternativos')">Alternativos</button>
+  <button class="tab-btn" data-tab="rebalanceo" onclick="switchTab('rebalanceo')">Rebalanceo</button>
+  <button class="tab-btn" data-tab="diversificacion" onclick="switchTab('diversificacion')">Diversificación</button>
+</div>
+
+<!-- Time Range Slider -->
+<div id="timeSlider" style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px 24px;margin:0 auto 16px;max-width:1200px;display:flex;align-items:center;gap:16px">
+  <span style="color:#94a3b8;font-size:12px;font-weight:600;white-space:nowrap">Periodo:</span>
+  <span id="sliderFromLabel" style="color:#3b82f6;font-size:13px;font-weight:700;min-width:50px">Ene-16</span>
+  <div style="flex:1;position:relative;height:36px;display:flex;align-items:center">
+    <div id="sliderTrack" style="position:absolute;left:0;right:0;height:6px;background:#1e293b;border-radius:3px"></div>
+    <div id="sliderRange" style="position:absolute;height:6px;background:linear-gradient(90deg,#3b82f6,#f59e0b);border-radius:3px"></div>
+    <input type="range" id="sliderFrom" min="0" max="119" value="0" step="1" style="position:absolute;width:100%;pointer-events:none;-webkit-appearance:none;appearance:none;background:transparent;height:36px;margin:0;z-index:3" oninput="onSliderInput()">
+    <input type="range" id="sliderTo" min="0" max="119" value="119" step="1" style="position:absolute;width:100%;pointer-events:none;-webkit-appearance:none;appearance:none;background:transparent;height:36px;margin:0;z-index:4" oninput="onSliderInput()">
+  </div>
+  <span id="sliderToLabel" style="color:#f59e0b;font-size:13px;font-weight:700;min-width:50px;text-align:right">Dic-25</span>
+  <span id="sliderCount" style="color:#64748b;font-size:11px;white-space:nowrap">(120 meses)</span>
+  <button onclick="resetSlider()" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer" title="Reset a periodo completo">↻</button>
+</div>
+<style/>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- ════ ORGANIGRAMA ════ -->
+  <div id="organigrama" class="tab-content">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+      <h2 style="font-size:1.1rem;font-weight:700;color:#e2e8f0;margin:0">Organigrama Societario — Mendoza Family Office 2026</h2>
+      <div style="display:flex;gap:0" id="orgToggle">
+        <button id="orgBtnAle" onclick="setOrgView('ale')" style="padding:6px 14px;font-size:12px;border:1px solid #334155;background:#3b82f6;color:#fff;cursor:pointer;border-radius:6px 0 0 6px;font-weight:600;transition:all .15s">Carlos Mendoza</button>
+        <button id="orgBtnBoth" onclick="setOrgView('both')" style="padding:6px 14px;font-size:12px;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;font-weight:600;transition:all .15s">Ambos</button>
+        <button id="orgBtnPab" onclick="setOrgView('pab')" style="padding:6px 14px;font-size:12px;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;border-radius:0 6px 6px 0;font-weight:600;transition:all .15s">Elena Mendoza</button>
+      </div>
+    </div>
+    <div id="orgChart" style="position:relative;width:100%;height:820px;overflow:hidden;border:1px solid #1e293b;border-radius:12px;background:radial-gradient(circle at 50% 50%,#0f172a 0%,#020617 100%)">
+      <svg id="orgSvg" style="position:absolute;top:0;left:0;width:3200px;height:1600px;pointer-events:none;z-index:1;overflow:visible"></svg>
+      <div id="orgNodes" style="position:absolute;top:0;left:0;width:3200px;height:1600px;z-index:2"></div>
+      <div id="orgMinimap" style="position:absolute;bottom:10px;right:10px;width:160px;height:100px;background:rgba(15,23,42,0.85);border:1px solid #334155;border-radius:8px;z-index:10;overflow:hidden;cursor:pointer"></div>
+      <div style="position:absolute;bottom:10px;left:10px;z-index:10;display:flex;gap:6px;align-items:center">
+        <button onclick="orgZoom(-0.1)" style="width:28px;height:28px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">−</button>
+        <span id="orgZoomLbl" style="font-size:10px;color:#64748b;min-width:36px;text-align:center">100%</span>
+        <button onclick="orgZoom(0.1)" style="width:28px;height:28px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">+</button>
+        <button onclick="orgResetLayout()" style="height:28px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;font-size:10px;padding:0 10px">Reset</button>
+      </div>
+    </div>
+    <div class="chart-row" style="grid-template-columns:1fr 1fr;margin-top:16px;display:none">
+      <div class="chart-box" id="orgSummaryLeft"></div>
+      <div class="chart-box" id="orgSummaryRight"></div>
+    </div>
+  </div>
+
+  <!-- ════ RESUMEN ════ -->
+  <div id="resumen" class="tab-content active">
+    <!-- ── KPIs principales ── -->
+    <div class="kpi-row" id="kpis"></div>
+    <div class="kpi-row" id="kpis2"></div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- SECCIÓN 1 · RENTABILIDAD                               -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div style="margin:28px 0 14px 0;padding-bottom:6px;border-bottom:1px solid #334155">
+      <h2 style="margin:0;font-size:16px;color:#e2e8f0;letter-spacing:0.5px">📈 Rentabilidad</h2>
+      <p style="margin:4px 0 0 0;font-size:11px;color:#64748b">¿Cuánto has ganado, de dónde viene y cómo se compara con el mercado?</p>
+    </div>
+
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>TWR por Sub-Periodos</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Rentabilidad ponderada por tiempo (TWR) de tu cartera, el benchmark replicado y la inflación, desglosada por semestres y el acumulado total.</p><div id="subPeriodTable" style="overflow:auto"></div></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Desglose del Crecimiento: Rentabilidad vs Dinero Nuevo</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Separa cuánto del crecimiento patrimonial proviene de la rentabilidad de las inversiones frente a las aportaciones/retiradas netas de capital.</p><canvas id="growthChart"></canvas></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box"><h3>Contribución a la Rentabilidad por Clase</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Cuánto ha aportado cada tipo de activo a la rentabilidad total de tu cartera en todo el periodo.</p><div style="height:160px"><canvas id="attrChart"></canvas></div><div id="attrTable" style="margin-top:10px"></div></div>
+      <div class="chart-box"><h3>Ratio RV/RF: Evolución vs Media</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Evolución del peso de renta variable y renta fija en tu cartera, comparado con su media histórica. Útil para ver si el perfil de riesgo se ha desviado.</p><canvas id="rvRfChart"></canvas></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- SECCIÓN 2 · COMPOSICIÓN                                -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div style="margin:28px 0 14px 0;padding-bottom:6px;border-bottom:1px solid #334155">
+      <h2 style="margin:0;font-size:16px;color:#e2e8f0;letter-spacing:0.5px">🧩 Composición de la Cartera</h2>
+      <p style="margin:4px 0 0 0;font-size:11px;color:#64748b">¿Qué tienes y cómo se reparte el patrimonio?</p>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-box"><h3>Evolución Patrimonial por Tipología</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Patrimonio total mes a mes, desglosado por tipo de producto según la clasificación de Family Office (tipología original del informe).</p><canvas id="stackChart"></canvas></div>
+      <div class="chart-box"><h3>Composición Actual</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Distribución del patrimonio por clase de activo (Renta Variable, Renta Fija, Oro y Alternativos) en el último mes seleccionado.</p><canvas id="donutChart"></canvas></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- SECCIÓN 3 · EXPOSICIÓN AL DÓLAR                        -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div style="margin:28px 0 14px 0;padding-bottom:6px;border-bottom:1px solid #334155">
+      <h2 style="margin:0;font-size:16px;color:#e2e8f0;letter-spacing:0.5px">💵 Exposición al Dólar</h2>
+      <p style="margin:4px 0 0 0;font-size:11px;color:#64748b">¿Cuánto de tu patrimonio depende del tipo de cambio EUR/USD? Incluye exposición directa (activos en USD) e indirecta (contenido en dólares de fondos globales, oro y alternativos).</p>
+    </div>
+
+    <div class="chart-row chart-full">
+      <div class="chart-box">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px">
+          <div>
+            <h3 style="margin:0" id="fxChartTitle">EUR/USD y Exposición Implícita al Dólar</h3>
+            <p style="margin:2px 0 0 0;font-size:11px;color:#64748b">Tipo de cambio EUR/USD y porcentaje de tu cartera expuesto económicamente al dólar.</p>
+          </div>
+          <div style="display:flex;gap:0">
+            <button id="fxBtnTotal" onclick="setFxMode('total')" style="padding:5px 12px;font-size:11px;border:1px solid #334155;background:#3b82f6;color:#fff;cursor:pointer;border-radius:6px 0 0 6px;font-weight:600;transition:all .15s">Total</button>
+            <button id="fxBtnByClass" onclick="setFxMode('byclass')" style="padding:5px 12px;font-size:11px;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;border-radius:0 6px 6px 0;font-weight:600;transition:all .15s">Por Activo</button>
+          </div>
+        </div>
+        <div id="fxClassSelector" style="display:none;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+          <button id="fxCls_RV"     onclick="setFxClass('RV')"     style="padding:4px 11px;font-size:11px;border:1px solid #334155;background:#3b82f6;color:#fff;cursor:pointer;border-radius:5px;font-weight:600;transition:all .15s">Renta Variable</button>
+          <button id="fxCls_RF_USD" onclick="setFxClass('RF_USD')" style="padding:4px 11px;font-size:11px;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;border-radius:5px;font-weight:600;transition:all .15s">RF en Dólar</button>
+          <button id="fxCls_ALT"    onclick="setFxClass('ALT')"    style="padding:4px 11px;font-size:11px;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;border-radius:5px;font-weight:600;transition:all .15s">Alternativos</button>
+          <button id="fxCls_MULTI"  onclick="setFxClass('MULTI')"  style="padding:4px 11px;font-size:11px;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;border-radius:5px;font-weight:600;transition:all .15s">Multiactivo</button>
+        </div>
+        <canvas id="fxChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box">
+        <div style="margin-bottom:8px">
+          <h3 style="margin:0 0 4px 0">Precio Medio de Compra EUR/USD</h3>
+          <p style="margin:0;font-size:11px;color:#64748b">Tipo de cambio medio ponderado al que se ha acumulado exposición al dólar. <span style="color:#22d3ee">▬</span> EUR/USD spot &nbsp; <span style="color:#fb923c">▬▬</span> Precio medio entrada USD &nbsp; · Si el spot está <em>por encima</em> del precio medio → el euro se ha apreciado → el dólar acumulado vale menos en €.</p>
+        </div>
+        <canvas id="fxCostChart" style="height:220px"></canvas>
+      </div>
+      <div class="chart-box">
+        <div style="margin-bottom:8px">
+          <h3 style="margin:0 0 4px 0">Exposición al Dólar por Clase de Activo</h3>
+          <p style="margin:0;font-size:11px;color:#64748b">Desglose de la exposición económica al USD por tipo de activo. Filtra por clase para ver el detalle EUR/USD de cada producto.</p>
+        </div>
+        <div id="fxClassFilter" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap"></div>
+        <canvas id="fxByClassChart" style="height:250px"></canvas>
+        <div id="fxDrilldown" style="margin-top:14px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ EVOLUCIÓN ════ -->
+  <div id="evolucion" class="tab-content">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- SECCIÓN 1 · EVOLUCIÓN PATRIMONIAL                      -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div style="margin:8px 0 14px 0;padding-bottom:6px;border-bottom:1px solid #334155">
+      <h2 style="margin:0;font-size:16px;color:#e2e8f0;letter-spacing:0.5px">📊 Evolución Patrimonial</h2>
+      <p style="margin:4px 0 0 0;font-size:11px;color:#64748b">Cómo ha crecido tu patrimonio por clase de activo y cómo se compara con el benchmark.</p>
+    </div>
+
+    <div class="chart-row chart-full">
+      <div class="chart-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+          <h3 style="margin:0" id="evoStackTitle">Evolución del Patrimonio por Clase de Activo (€)</h3>
+          <p style="margin:2px 0 0 0;font-size:11px;color:#64748b">Patrimonio desglosado por clases: Renta Variable, Renta Fija, Oro, Alternativos y Liquidez. Puedes alternar entre la evolución real (con aportaciones) o solo la rentabilidad generada.</p>
+          <div style="display:flex;gap:0">
+            <button id="evoStackReal" onclick="setEvoStackMode('real')" style="padding:5px 12px;font-size:11px;border:1px solid #334155;background:#3b82f6;color:#fff;cursor:pointer;border-radius:6px 0 0 6px;font-weight:600;transition:all .15s">Con Dinero Nuevo</button>
+            <button id="evoStackTwr" onclick="setEvoStackMode('twr')" style="padding:5px 12px;font-size:11px;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;border-radius:0 6px 6px 0;font-weight:600;transition:all .15s">Solo Rentabilidad</button>
+          </div>
+        </div>
+        <div style="height:500px"><canvas id="evoStackChart"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+          <h3 style="margin:0" id="evoBenchTitle">Cartera vs Benchmark Replicado (€)</h3>
+          <p style="margin:2px 0 0 0;font-size:11px;color:#64748b">Compara tu cartera real contra un benchmark que replica tus mismos pesos con índices de mercado. La diferencia muestra el alpha (o déficit) generado por la selección de fondos. Filtra por clase para ver el detalle.</p>
+          <div style="display:flex;gap:0">
+            <button id="evoBenchReal" onclick="setEvoBenchMode('real')" style="padding:5px 12px;font-size:11px;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;border-radius:6px 0 0 6px;font-weight:600;transition:all .15s">Con Dinero Nuevo</button>
+            <button id="evoBenchTwr" onclick="setEvoBenchMode('twr')" style="padding:5px 12px;font-size:11px;border:1px solid #334155;background:#3b82f6;color:#fff;cursor:pointer;border-radius:0 6px 6px 0;font-weight:600;transition:all .15s">Solo Rentabilidad</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px">
+          <button id="evoBF_all"   onclick="setEvoBenchFilter('all')"   style="padding:3px 10px;font-size:10px;border:1px solid #334155;background:#3b82f6;color:#fff;cursor:pointer;border-radius:4px;transition:all .15s">Todos</button>
+          <button id="evoBF_rv"    onclick="setEvoBenchFilter('rv')"    style="padding:3px 10px;font-size:10px;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;border-radius:4px;transition:all .15s">Renta Variable</button>
+          <button id="evoBF_rf"    onclick="setEvoBenchFilter('rf')"    style="padding:3px 10px;font-size:10px;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;border-radius:4px;transition:all .15s">Renta Fija</button>
+          <button id="evoBF_gold"  onclick="setEvoBenchFilter('gold')"  style="padding:3px 10px;font-size:10px;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;border-radius:4px;transition:all .15s">Oro / Mat.Primas</button>
+          <button id="evoBF_alt"   onclick="setEvoBenchFilter('alt')"   style="padding:3px 10px;font-size:10px;border:1px solid #334155;background:#1e293b;color:#94a3b8;cursor:pointer;border-radius:4px;transition:all .15s">Alternativos</button>
+        </div>
+        <div style="height:400px"><canvas id="evoBenchChart"></canvas></div>
+        <div id="evoBenchTable" style="overflow:auto;margin-top:12px"></div>
+      </div>
+    </div>
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- SECCIÓN 2 · ANÁLISIS DEL ALPHA                         -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div style="margin:28px 0 14px 0;padding-bottom:6px;border-bottom:1px solid #334155">
+      <h2 style="margin:0;font-size:16px;color:#e2e8f0;letter-spacing:0.5px">🎯 Análisis del Alpha</h2>
+      <p style="margin:4px 0 0 0;font-size:11px;color:#64748b">¿Por qué tu cartera supera (o no) al benchmark? Descomposición por selección de fondos, timing y rebalanceo.</p>
+    </div>
+
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Atribución del Alpha — ¿Por qué superas o no al benchmark?</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Diagrama waterfall que descompone la diferencia entre tu cartera y el benchmark. Cada barra muestra cuánto aporta (o resta) cada factor: selección de fondos por clase, coste de liquidez y efectos de timing/rebalanceo.</p><div style="height:350px"><canvas id="evoWaterfallChart"></canvas></div><div id="evoWaterfallTable" style="overflow:auto;margin-top:12px"></div></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box">
+        <div style="margin-bottom:8px">
+          <h3 style="margin:0 0 4px 0">Descomposición del Timing / Otros</h3>
+          <p style="margin:0;font-size:11px;color:#64748b">El residual "Timing / Otros" captura: <strong>rebalanceo</strong> (cambios de peso entre clases), <strong>timing</strong> (cuándo se compró/vendió), e <strong>interacción</strong> (cruces entre cambios de peso y rentabilidad). Cada barra muestra el residual mensual; la línea blanca es el acumulado.</p>
+        </div>
+        <div style="height:300px"><canvas id="timingDecompChart"></canvas></div>
+        <div id="timingDecompTable" style="overflow:auto;margin-top:10px"></div>
+      </div>
+    </div>
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- SECCIÓN 3 · COMPOSICIÓN DETALLADA                      -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div style="margin:28px 0 14px 0;padding-bottom:6px;border-bottom:1px solid #334155">
+      <h2 style="margin:0;font-size:16px;color:#e2e8f0;letter-spacing:0.5px">📋 Composición Detallada</h2>
+      <p style="margin:4px 0 0 0;font-size:11px;color:#64748b">Peso actual de cada clase y el mapa de calor con la rentabilidad mensual de cada producto individual.</p>
+    </div>
+
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Composición Actual por Clase de Activo</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Tabla detallada del peso, valor y benchmark de referencia de cada clase de activo en el último mes seleccionado.</p><div id="evoAllocTable" style="overflow:auto"></div></div>
+    </div>
+
+    <!-- ── Heatmap de rentabilidades por producto ── -->
+    <div style="margin:28px 0 14px 0;padding-bottom:6px;border-bottom:1px solid #334155">
+      <h2 style="margin:0;font-size:16px;color:#e2e8f0;letter-spacing:0.5px">🔥 Rentabilidad por Producto</h2>
+      <p style="margin:4px 0 0 0;font-size:11px;color:#64748b">Mapa de calor con la rentabilidad mensual de cada producto. Verde = mes positivo, rojo = mes negativo.</p>
+    </div>
+    <div class="hm-controls">
+      <label>Filtrar por Tipología:</label>
+      <select id="hmFilter" onchange="renderHeatmap()"><option value="">Todas</option></select>
+    </div>
+    <div class="legend">
+      <span>-6%</span><div class="legend-bar"></div><span>+6%</span>
+    </div>
+    <div class="hm-wrap"><table class="hm-table" id="hmTable"></table></div>
+  </div>
+
+  <!-- ════ BANCOS ════ -->
+  <div id="bancos" class="tab-content">
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Evolución del Patrimonio por Banco (€)</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Patrimonio total depositado en cada entidad bancaria a lo largo del tiempo. Permite ver traspasos y concentración entre bancos.</p><div style="height:450px"><canvas id="bankStackChart"></canvas></div></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box"><h3>Distribución Actual por Banco</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Peso porcentual del patrimonio en cada banco en el último mes seleccionado.</p><canvas id="bankDonut"></canvas></div>
+      <div class="chart-box"><h3>Detalle por Banco (mes actual)</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Tabla con el valor, peso y número de productos en cada banco.</p><div id="bankTable" style="overflow:auto;max-height:400px"></div></div>
+    </div>
+  </div>
+
+  <!-- ════ COSTES ════ -->
+  <div id="costes" class="tab-content">
+    <div id="costClassFilter" style="display:flex;gap:6px;margin:12px 0 14px 0;flex-wrap:wrap"></div>
+    <div class="kpi-row" id="costKpis"></div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Evolución del TER Medio Ponderado (%)</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">TER (Total Expense Ratio) medio ponderado por valor de cada producto. Refleja el coste anual implícito de la cartera — menor es mejor.</p><canvas id="terChart"></canvas></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box"><h3>Coste Anual Estimado (€)</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Coste en euros que pagas al año por las comisiones de gestión de todos tus fondos y ETFs, basado en el TER de cada producto × su valor.</p><canvas id="costChart"></canvas></div>
+      <div class="chart-box"><h3>Distribución de Costes Actual</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Reparto del coste total entre los distintos productos — para identificar qué fondos pesan más en comisiones.</p><canvas id="costDonut"></canvas></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Detalle de TER por Producto (mes actual)</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Tabla completa con el TER, valor y coste estimado de cada producto individual.</p><div id="costTable" style="overflow:auto;max-height:400px"></div></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box" style="padding:18px 20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+          <div><h3 style="margin:0">💸 Impacto del Coste a Largo Plazo (Interés Compuesto)</h3><p style="margin:4px 0 0 0;font-size:11px;color:#64748b">Cuánto dinero pierdes realmente por comisiones gracias al efecto del interés compuesto. Muestra la diferencia entre invertir con tus costes actuales vs sin costes.</p></div>
+          <div id="costCompoundBtns" style="display:flex;gap:0"></div>
+        </div>
+        <div id="costCompoundKpis" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px"></div>
+        <div style="height:320px"><canvas id="costCompoundChart"></canvas></div>
+        <div id="costCompoundSliders" style="margin-top:14px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ CONSOLIDADO ════ -->
+  <div id="consolidado" class="tab-content">
+    <div class="kpi-row" id="consKpis"></div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Patrimonio Total: BCA vs BCP</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Evolución comparada del patrimonio de ambas carteras (BCA y BCP) a lo largo del tiempo.</p><div style="height:400px"><canvas id="consCompChart"></canvas></div></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box"><h3>Rentabilidad Acumulada TWR (%)</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Rentabilidad ponderada por tiempo (TWR) acumulada de cada cartera. Elimina el efecto de aportaciones/retiradas para medir la calidad de la gestión.</p><canvas id="consTwrChart"></canvas></div>
+      <div class="chart-box"><h3>Volatilidad Anualizada (ventana 6m)</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Volatilidad anualizada calculada con una ventana móvil de 6 meses. Mide la dispersión de los retornos mensuales — a mayor volatilidad, mayor riesgo.</p><canvas id="consVolChart"></canvas></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box"><h3>TWR Real vs Benchmark Replicado (%)</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Compara tu rentabilidad real con la del benchmark personalizado (índices de mercado ponderados por tu asset allocation real con interpolación mid-month: meses con operaciones usan pesos promediados inicio/fin de mes para mayor precisión). La separación entre ambas líneas es el alpha.</p><canvas id="consReplicaChart"></canvas></div>
+      <div class="chart-box"><h3>Implementation Gap Acumulado (bps)</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Diferencia acumulada en puntos básicos (bps) entre tu cartera y el benchmark replicado. Un gap positivo indica que superas al benchmark; negativo, lo contrario.</p><canvas id="consGapChart"></canvas></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Desglose del Gap Mensual (bps)</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Mes a mes, cuántos puntos básicos has ganado o perdido frente al benchmark. Permite identificar los meses donde la gestión aportó más valor (o menos).</p><div id="consGapTable" style="overflow:auto"></div></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Drawdown desde Máximo (%)</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Caída porcentual desde el máximo patrimonial alcanzado. Muestra cuánto ha perdido la cartera desde su punto más alto — un indicador clave de riesgo.</p><div style="height:250px"><canvas id="consDdChart"></canvas></div></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box"><h3>Asset Allocation: BCA</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Distribución actual de la cartera BCA por tipo de activo.</p><canvas id="consAaBca"></canvas></div>
+      <div class="chart-box"><h3>Asset Allocation: BCP</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Distribución actual de la cartera BCP por tipo de activo.</p><canvas id="consAaBcp"></canvas></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Calendario de Rentabilidades Mensuales (%)</h3><p style="margin:0 0 6px 0;font-size:11px;color:#64748b">Heatmap con la rentabilidad TWR de cada mes. Verde = mes positivo, rojo = mes negativo. Permite identificar patrones estacionales de un vistazo.</p><div id="consCalendar" style="overflow:auto"></div></div>
+    </div>
+  </div>
+
+  <!-- ════ TITULARES ════ -->
+  <div id="titulares" class="tab-content">
+    <div class="kpi-row" id="titKpis"></div>
+    <div class="chart-row">
+      <div class="chart-box"><h3>Distribución por Titular</h3><canvas id="titDonut"></canvas></div>
+      <div class="chart-box"><h3>Evolución por Titular (€)</h3><div style="height:350px"><canvas id="titEvoChart"></canvas></div></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Detalle por Titular</h3><div id="titTable" style="overflow:auto;max-height:500px"></div></div>
+    </div>
+  </div>
+
+  <!-- ════ LIQUIDEZ ════ -->
+  <div id="liquidez" class="tab-content">
+    <!-- Demo banner -->
+    <div style="background:linear-gradient(90deg,#60a5fa18,#60a5fa06);border:1px solid #60a5fa44;border-radius:10px;padding:14px 20px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px">
+      <span style="font-size:22px;line-height:1">🔬</span>
+      <div>
+        <div style="color:#60a5fa;font-size:14px;font-weight:700;margin-bottom:3px">Módulo de Liquidez — Vista Previa de Diseño</div>
+        <div style="color:#94a3b8;font-size:11px;line-height:1.5">Este módulo ilustra cómo monitorizaremos la posición de liquidez de la cartera cuando dispongamos de los datos reales. Los valores mostrados son <strong style="color:#f59e0b">simulados</strong> para demostrar la funcionalidad. El objetivo es mantener un <strong style="color:#e2e8f0">1% del patrimonio en liquidez</strong> — suficiente para cubrir comisiones, llamadas de capital a corto plazo y necesidades operativas, minimizando el cash drag.</div>
+      </div>
+    </div>
+    <!-- KPIs -->
+    <div class="kpi-row" id="liqKpis"></div>
+    <!-- Charts row -->
+    <div class="chart-row chart-full">
+      <div class="chart-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+          <h3 style="margin:0">Evolución de Liquidez vs Objetivo (1%)</h3>
+        </div>
+        <div style="height:380px"><canvas id="liqEvoChart"></canvas></div>
+      </div>
+    </div>
+    <!-- Detail panels -->
+    <div class="chart-row" style="grid-template-columns:1fr 1fr">
+      <div class="chart-box"><h3>Composición de la Liquidez</h3><div style="height:280px"><canvas id="liqBreakdownChart"></canvas></div></div>
+      <div class="chart-box"><h3>Cobertura de Obligaciones a 90 días</h3><div id="liqCoveragePanel" style="min-height:200px"></div></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Alertas y Acciones Recomendadas</h3><div id="liqActionsPanel"></div></div>
+    </div>
+  </div>
+
+  <!-- ════ PROYECCIÓN ════ -->
+  <div id="proyeccion" class="tab-content">
+    <div style="background:linear-gradient(90deg,#f59e0b22,#f59e0b08);border:1px solid #f59e0b44;border-radius:10px;padding:12px 18px;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px">
+      <span style="color:#f59e0b;font-size:18px;line-height:1">⚠</span>
+      <div>
+        <div style="color:#f59e0b;font-size:13px;font-weight:700;margin-bottom:2px">Ejercicio estimativo (beta)</div>
+        <div style="color:#94a3b8;font-size:11px;line-height:1.4">Las proyecciones se basan en simulaciones Monte Carlo con retornos esperados a largo plazo y la volatilidad histórica de cada clase de activo. Los resultados son orientativos y no constituyen garantía de rentabilidad futura. La opción "Patrimonio Completo" incluye valoraciones estimadas de Real Estate y Private Equity que pueden diferir significativamente de su valor real de mercado.</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <span style="color:#94a3b8;font-size:13px;font-weight:600">Valores en:</span>
+      <div id="projToggle" style="display:inline-flex;border-radius:8px;overflow:hidden;border:1px solid #334155">
+        <button onclick="setProjMode('nominal')" id="projBtnNom" style="padding:6px 16px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .2s;background:#3b82f6;color:#fff">Nominal</button>
+        <button onclick="setProjMode('real')" id="projBtnReal" style="padding:6px 16px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .2s;background:#1e293b;color:#94a3b8">Real (- Inflación)</button>
+      </div>
+      <span id="projModeLabel" style="color:#64748b;font-size:11px">€ corrientes, sin ajustar por inflación</span>
+      <span id="projCalibLabel" style="color:#475569;font-size:10px;margin-left:auto">Usa asset allocation y patrimonio del último mes · Benchmarks calibrados con todo el histórico</span>
+    </div>
+    <div id="projScopeRow" style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+      <span style="color:#94a3b8;font-size:13px;font-weight:600">Patrimonio:</span>
+      <div style="display:inline-flex;border-radius:8px;overflow:hidden;border:1px solid #334155">
+        <button onclick="setProjScope('neo')" id="projBtnNeo" style="padding:6px 16px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .2s;background:#3b82f6;color:#fff">Solo NEO</button>
+        <button onclick="setProjScope('full')" id="projBtnFull" style="padding:6px 16px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .2s;background:#1e293b;color:#94a3b8">Patrimonio Completo</button>
+      </div>
+      <span id="projScopeLabel" style="color:#64748b;font-size:11px">Solo cartera Family Office gestionada</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+      <span style="color:#94a3b8;font-size:13px;font-weight:600">Horizonte:</span>
+      <div style="display:inline-flex;border-radius:8px;overflow:hidden;border:1px solid #334155">
+        <button class="proj-yr-btn" data-yr="5" onclick="setProjYears(5)" style="padding:6px 14px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .2s;background:#1e293b;color:#94a3b8">5 años</button>
+        <button class="proj-yr-btn" data-yr="10" onclick="setProjYears(10)" style="padding:6px 14px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .2s;background:#1e293b;color:#94a3b8">10 años</button>
+        <button class="proj-yr-btn" data-yr="15" onclick="setProjYears(15)" style="padding:6px 14px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .2s;background:#1e293b;color:#94a3b8">15 años</button>
+        <button class="proj-yr-btn" data-yr="20" onclick="setProjYears(20)" style="padding:6px 14px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .2s;background:#3b82f6;color:#fff">20 años</button>
+        <button class="proj-yr-btn" data-yr="25" onclick="setProjYears(25)" style="padding:6px 14px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .2s;background:#1e293b;color:#94a3b8">25 años</button>
+        <button class="proj-yr-btn" data-yr="30" onclick="setProjYears(30)" style="padding:6px 14px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .2s;background:#1e293b;color:#94a3b8">30 años</button>
+      </div>
+      <span id="projYearsLabel" style="color:#64748b;font-size:11px">20 años</span>
+    </div>
+    <div id="projBaseInfo" style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:16px 20px;margin-bottom:16px;font-size:13px;color:#cbd5e1"></div>
+    <div class="kpi-row" id="projKpis"></div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3 id="mcChartTitle">Simulación Monte Carlo — Proyección a 20 Años (€)</h3><div style="height:450px"><canvas id="mcChart"></canvas></div></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3 id="mcHistTitle">Distribución del Patrimonio Final (Año 20)</h3><div style="height:300px"><canvas id="mcHistChart"></canvas></div></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Detalle de Escenarios</h3><div id="mcTable" style="overflow:auto"></div></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Probabilidad de Alcanzar Umbral Patrimonial</h3><div id="mcProbTable" style="overflow:auto"></div></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Comparación Proyectada: BCA vs BCP</h3><div style="height:450px"><canvas id="mcCompChart"></canvas></div></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Detalle Comparativo BCA vs BCP — Mediana (P50)</h3><div id="mcCompTable" style="overflow:auto"></div></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><div id="mcMethodology" style="color:#64748b;font-size:11px"></div></div>
+    </div>
+  </div>
+
+  <!-- ════ ALTERNATIVOS ════ -->
+  <div id="alternativos" class="tab-content">
+    <div class="kpi-row" id="altKpis"></div>
+    <div class="chart-row">
+      <div class="chart-box"><h3>Distribución por Tipo</h3><canvas id="altTypeDonut"></canvas></div>
+      <div class="chart-box"><h3>Distribución por Añada</h3><canvas id="altVintageDonut"></canvas></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Concentración por Añada y Tipo (€)</h3><div style="height:350px"><canvas id="altVintageBar"></canvas></div></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Asignación Actual vs Objetivo (%)</h3><div style="height:300px"><canvas id="altTargetChart"></canvas></div></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Detalle de Inversiones</h3><div id="altDetailTable" style="overflow:auto;max-height:500px"></div></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Plan de Inversión Recomendado (2026–2030)</h3><div id="altRecoTable" style="overflow:auto"></div></div>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3>Previsión de Llamadas de Capital y Distribuciones</h3><div style="height:380px"><canvas id="altCashflowChart"></canvas></div><div id="altCashflowTable" style="overflow:auto;margin-top:16px"></div></div>
+    </div>
+  </div>
+
+  <!-- ═══════ REBALANCEO ═══════ -->
+  <div id="rebalanceo" class="tab-content">
+    <!-- Score global -->
+    <div id="rebalScoreCard" style="margin:18px 0 20px 0"></div>
+
+    <!-- 4 cards: RV, RF, GOLD, ALT -->
+    <div class="chart-row" id="rebalCardsRow1"></div>
+    <div class="chart-row" id="rebalCardsRow2"></div>
+
+    <!-- Alertas -->
+    <div class="chart-row chart-full">
+      <div class="chart-box" style="padding:14px"><div id="rebalAlerts"></div></div>
+    </div>
+
+    <!-- Recomendaciones -->
+    <div class="chart-row chart-full">
+      <div class="chart-box" style="padding:14px"><div id="rebalRecos"></div></div>
+    </div>
+
+    <!-- Histórico de Desviación -->
+    <div class="chart-row chart-full">
+      <div class="chart-box"><h3 style="margin:12px 16px 0 16px">📅 Histórico de Desviación</h3><p style="margin:4px 16px 6px 16px;font-size:11px;color:#64748b">Evolución mensual de la desviación de cada clase respecto a su objetivo.</p><div style="height:300px"><canvas id="rebalHistChart"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- ═══════ DIVERSIFICACIÓN ═══════ -->
+  <div id="diversificacion" class="tab-content">
+    <!-- Score global -->
+    <div id="divScoreCard" style="margin:18px 0 20px 0"></div>
+
+    <!-- 4 cards: Banco, Gestora, País, Vehículo -->
+    <div class="chart-row" id="divCardsRow1"></div>
+    <div class="chart-row" id="divCardsRow2"></div>
+
+    <!-- Alertas -->
+    <div class="chart-row chart-full">
+      <div class="chart-box" style="padding:14px"><div id="divAlerts"></div></div>
+    </div>
+
+    <!-- Separador Capitalización -->
+    <div style="margin:28px 0 14px 0;padding-bottom:6px;border-bottom:1px solid #334155">
+      <h2 style="margin:0;font-size:16px;color:#e2e8f0;letter-spacing:0.5px">💎 Capitalización de Fondos / ETFs</h2>
+      <p style="margin:4px 0 0 0;font-size:11px;color:#64748b">Fondos con bajo patrimonio (&lt;€500M) tienen mayor riesgo de cierre. Los AUM son estimaciones a dic-2025.</p>
+    </div>
+    <div class="chart-row chart-full">
+      <div class="chart-box" style="padding:14px"><div id="divAumTable" style="overflow:auto"></div></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="ttip" id="ttip"></div>
+
+<script/>
