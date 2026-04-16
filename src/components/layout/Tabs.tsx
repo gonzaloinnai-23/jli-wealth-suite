@@ -20,6 +20,7 @@ const TABS: TabDef[] = [
   { id: "alternativos", label: "Alternativos" },
   { id: "rebalanceo", label: "Rebalanceo" },
   { id: "diversificacion", label: "Diversificación" },
+  { id: "admin", label: "Admin", badge: { text: "⚙", color: "#f59e0b" } },
 ];
 
 export function Tabs() {

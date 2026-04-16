@@ -14,6 +14,7 @@ import { Liquidez } from "./components/liquidez/Liquidez";
 import { Proyeccion } from "./components/proyeccion/Proyeccion";
 import { Rebalanceo } from "./components/rebalanceo/Rebalanceo";
 import { Diversificacion } from "./components/diversificacion/Diversificacion";
+import { Admin } from "./components/admin/Admin";
 import { TabPlaceholder } from "./components/layout/TabPlaceholder";
 
 function RoutedContent() {
@@ -41,6 +42,8 @@ function RoutedContent() {
       return <Rebalanceo />;
     case "diversificacion":
       return <Diversificacion />;
+    case "admin":
+      return <Admin />;
     default:
       return <Resumen />;
   }

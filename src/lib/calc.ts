@@ -3,7 +3,8 @@
  * the KPI section of `renderResumen()` in the original script into pure TS
  * functions operating on typed portfolio data.
  */
-import { D, type MonthLabel, type PortSet, type Product } from "../data/portfolio";
+import { type MonthLabel, type PortSet, type Product } from "../data/portfolio";
+import { dataStore } from "../data/store";
 import {
   BENCH_MSCI,
   BENCH_BOND,
@@ -44,12 +45,23 @@ export interface EnrichedPortSet extends PortSet {
   product_dep: Map<string, number>;
 }
 
-/** Cache of enriched portfolios so preprocessing runs once per key. */
-const cache: Partial<Record<"bca" | "bcp", EnrichedPortSet>> = {};
+/**
+ * Cache keyed by PortSet reference. Since the DataStore updates snapshots
+ * immutably, mutating any product produces a fresh PortSet object and the
+ * WeakMap lookup naturally misses, triggering a re-computation. The GC
+ * reclaims the old enriched objects when no component still holds them.
+ */
+const cache = new WeakMap<PortSet, EnrichedPortSet>();
 
 export function getEnriched(port: "bca" | "bcp" = "bca"): EnrichedPortSet {
-  if (!cache[port]) cache[port] = preprocess(D[port]);
-  return cache[port]!;
+  const snapshot = dataStore.getSnapshot();
+  const portSet = snapshot.portfolio[port];
+  let enriched = cache.get(portSet);
+  if (!enriched) {
+    enriched = preprocess(portSet);
+    cache.set(portSet, enriched);
+  }
+  return enriched;
 }
 
 /**

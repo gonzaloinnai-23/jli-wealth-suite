@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { useSnapshot } from "../data/store";
 
 /**
  * Global dashboard state — mirrors the top-level `let` variables in the
@@ -46,13 +47,20 @@ const DashboardContext = createContext<Ctx | null>(null);
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DashboardState>(initial);
+  // Subscribe the whole tree to the DataStore: every component that reads
+  // `useDashboard()` (and therefore reads context) re-renders when the
+  // snapshot changes. `useMemo([state, snapshot])` below carries the snapshot
+  // through the context value so React treats the context update as a change.
+  const snapshot = useSnapshot();
   const value = useMemo<Ctx>(
     () => ({
       state,
       set: (key, value) => setState((s) => ({ ...s, [key]: value })),
       reset: () => setState(initial),
     }),
-    [state]
+    // `snapshot` is intentionally part of the dep list — any data mutation
+    // produces a fresh context value object and forces consumers to re-render.
+    [state, snapshot]
   );
   return <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>;
 }
