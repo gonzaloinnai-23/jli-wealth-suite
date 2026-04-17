@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JLI · Dashboard Marzo 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a; --panel:#1e293b; --panel2:#172033; --border:#334155;
+    --text:#e2e8f0; --muted:#94a3b8; --dim:#64748b;
+    --accent:#38bdf8; --accent2:#a78bfa; --good:#22c55e; --bad:#ef4444; --warn:#f59e0b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; font-size:13px; }
+  .topbar { display:flex; align-items:center; gap:12px; padding:12px 20px; border-bottom:1px solid var(--border); background:var(--panel); }
+  .topbar h1 { margin:0; font-size:15px; letter-spacing:0.5px; }
+  .topbar .sep { color:var(--dim); }
+  .topbar .asof { color:var(--muted); font-size:11px; }
+  .tabs { display:flex; gap:0; padding:0 20px; background:var(--panel); border-bottom:1px solid var(--border); }
+  .tab-btn { background:transparent; color:var(--muted); border:0; padding:12px 18px; font-size:13px; cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; }
+  .tab-btn:hover { color:var(--text); }
+  .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+  .content { padding:20px; max-width:1400px; margin:0 auto; }
+  .kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+  .kpi-card { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; }
+  .kpi-card .label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px; }
+  .kpi-card .value { font-size:22px; font-weight:600; color:var(--text); }
+  .kpi-card .sub { font-size:11px; color:var(--dim); margin-top:4px; }
+  .chart-row { display:grid; gap:14px; margin-bottom:14px; }
+  .chart-row.two { grid-template-columns: 1fr 1fr; }
+  .chart-row.full { grid-template-columns: 1fr; }
+  .chart-row.one-two { grid-template-columns: 380px 1fr; }
+  .chart-box { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; }
+  .chart-box h3 { margin:0 0 8px 0; font-size:13px; color:var(--text); font-weight:600; }
+  .chart-box p.desc { margin:0 0 10px 0; font-size:11px; color:var(--muted); }
+  .chart-wrap { position:relative; height:280px; }
+  .chart-wrap.tall { height:380px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  thead th { text-align:left; padding:8px 10px; color:var(--muted); font-weight:500; text-transform:uppercase; font-size:10px; letter-spacing:0.5px; border-bottom:1px solid var(--border); background:var(--panel2); position:sticky; top:0; }
+  tbody td { padding:7px 10px; border-bottom:1px solid rgba(51,65,85,.4); }
+  tbody tr:hover { background:rgba(56,189,248,0.05); }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .tag { display:inline-block; padding:1px 7px; border-radius:10px; font-size:10px; font-weight:600; letter-spacing:0.3px; }
+  .tag.rv { background:rgba(56,189,248,.18); color:#7dd3fc; }
+  .tag.rf { background:rgba(168,85,247,.18); color:#c4b5fd; }
+  .tag.acc { background:rgba(34,197,94,.18); color:#86efac; }
+  .tag.multi { background:rgba(245,158,11,.18); color:#fcd34d; }
+  .tag.cash { background:rgba(148,163,184,.18); color:#cbd5e1; }
+  .tag.cripto { background:rgba(239,68,68,.18); color:#fca5a5; }
+  .tag.sp { background:rgba(56,189,248,.3); color:#bae6fd; margin-left:4px; }
+  .slider-row { display:flex; align-items:center; gap:14px; margin:16px 0; }
+  .slider-row input[type=range] { flex:1; accent-color:var(--accent); }
+  .slider-row .label { color:var(--muted); font-size:12px; min-width:80px; }
+  .slider-row .value { color:var(--accent); font-weight:600; font-size:18px; min-width:80px; text-align:right; }
+  .gap-bar { height:30px; background:var(--panel2); border-radius:6px; position:relative; overflow:hidden; margin:10px 0; }
+  .gap-bar .current { position:absolute; top:0; bottom:0; left:0; background:linear-gradient(90deg,#0369a1,#38bdf8); }
+  .gap-bar .target-marker { position:absolute; top:-4px; bottom:-4px; width:2px; background:#facc15; box-shadow:0 0 8px rgba(250,204,21,.8); }
+  .section-title { margin:26px 0 10px 0; padding-bottom:6px; border-bottom:1px solid var(--border); font-size:15px; color:var(--text); letter-spacing:0.4px; }
+  .section-title .sub { display:block; font-size:11px; color:var(--dim); margin-top:2px; font-weight:400; }
+  .chart-row.three { grid-template-columns: repeat(3,1fr); }
+  .mini-kpi { background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:10px 12px; }
+  .mini-kpi .label { font-size:10px; color:var(--muted); text-transform:uppercase; }
+  .mini-kpi .value { font-size:16px; color:var(--text); font-weight:600; margin-top:2px; }
+  .mini-kpi .value.good { color:var(--good); }
+  .mini-kpi .value.bad { color:var(--bad); }
+  .pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:500; background:rgba(56,189,248,.1); color:var(--accent); }
+  .ter-cell { font-weight:600; }
+  .ter-cell.low { color:#86efac; }
+  .ter-cell.mid { color:#fcd34d; }
+  .ter-cell.high { color:#fca5a5; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>JLI · Family Office</h1>
+  <span class="sep">·</span>
+  <span>Dashboard Consolidado</span>
+  <span style="margin-left:auto" class="asof" id="asofLabel"></span>
+</div>
+<div class="tabs">
+  <button class="tab-btn active" data-tab="consolidado">Consolidado</button>
+  <button class="tab-btn" data-tab="costes">Costes TER</button>
+  <button class="tab-btn" data-tab="objetivos">Objetivos</button>
+</div>
+
+<div class="content">
+  <!-- ─── CONSOLIDADO ─── -->
+  <section id="tab-consolidado">
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="label">Patrimonio Total</div><div class="value" id="kpiTotal">—</div><div class="sub" id="kpiTotalSub">en USD</div></div>
+      <div class="kpi-card"><div class="label">Posiciones</div><div class="value" id="kpiCount">—</div><div class="sub">activos distintos</div></div>
+      <div class="kpi-card"><div class="label">Bancos</div><div class="value" id="kpiAccts">—</div><div class="sub">custodios</div></div>
+      <div class="kpi-card"><div class="label">Costo TER Anual</div><div class="value" id="kpiCost">—</div><div class="sub" id="kpiCostSub">promedio ponderado</div></div>
+    </div>
+
+    <div class="chart-row two">
+      <div class="chart-box">
+        <h3>Composición por Clase de Activo</h3>
+        <p class="desc">Distribución del patrimonio según tipología del activo.</p>
+        <div class="chart-wrap"><canvas id="chartByClass"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <h3>Distribución por Custodio</h3>
+        <p class="desc">Concentración del patrimonio por banco / broker.</p>
+        <div class="chart-wrap"><canvas id="chartByAccount"></canvas></div>
+      </div>
+    </div>
+
+    <div class="chart-row full">
+      <div class="chart-box">
+        <h3>Cartera Consolidada</h3>
+        <p class="desc">Posiciones ordenadas por valor de mercado. Los porcentajes y pesos se calculan sobre el patrimonio total.</p>
+        <div style="overflow:auto; max-height:560px">
+          <table id="tablePositions">
+            <thead>
+              <tr>
+                <th>Activo</th>
+                <th>Clase</th>
+                <th>ISIN</th>
+                <th>Custodios</th>
+                <th class="num">Cantidad</th>
+                <th class="num">Precio</th>
+                <th class="num">Valor USD</th>
+                <th class="num">% Cartera</th>
+                <th class="num">TER %</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── COSTES TER ─── -->
+  <section id="tab-costes" class="hidden">
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="label">TER Ponderado</div><div class="value" id="terWeighted">—</div><div class="sub">% anual sobre cartera</div></div>
+      <div class="kpi-card"><div class="label">Costo Anual</div><div class="value" id="terCostUSD">—</div><div class="sub">USD / año estimado</div></div>
+      <div class="kpi-card"><div class="label">Activos con TER</div><div class="value" id="terCount">—</div><div class="sub" id="terCov">cobertura de cartera</div></div>
+      <div class="kpi-card"><div class="label">TER Promedio Simple</div><div class="value" id="terAvg">—</div><div class="sub">media aritmética</div></div>
+    </div>
+
+    <div class="chart-row full">
+      <div class="chart-box">
+        <h3>TER Anualizado por Fondo</h3>
+        <p class="desc">Comparación del Expense Ratio (TER) de cada fondo. Las barras se ordenan de menor a mayor costo.</p>
+        <div class="chart-wrap tall"><canvas id="chartTER"></canvas></div>
+      </div>
+    </div>
+
+    <div class="chart-row two">
+      <div class="chart-box">
+        <h3>Costo Anual por Fondo (USD)</h3>
+        <p class="desc">Valor × TER — cuánto cuesta cada posición al año.</p>
+        <div class="chart-wrap tall"><canvas id="chartCostAbs"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <h3>Contribución al Costo Total</h3>
+        <p class="desc">Qué fondos concentran el mayor costo de la cartera.</p>
+        <div class="chart-wrap tall"><canvas id="chartCostPie"></canvas></div>
+      </div>
+    </div>
+
+    <div class="chart-row full">
+      <div class="chart-box">
+        <h3>Detalle TER por Fondo</h3>
+        <p class="desc">Lista completa con TER, valor en cartera, costo anual y metadatos (domicilio, retrocesión, clase).</p>
+        <div style="overflow:auto; max-height:500px">
+          <table id="tableTER">
+            <thead>
+              <tr>
+                <th>Fondo</th>
+                <th>ISIN</th>
+                <th>Dom.</th>
+                <th>Retro</th>
+                <th class="num">Valor USD</th>
+                <th class="num">TER %</th>
+                <th class="num">Costo USD/año</th>
+                <th class="num">% del costo</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── OBJETIVOS ─── -->
+  <section id="tab-objetivos" class="hidden">
+    <h2 class="section-title">Objetivo: Exposición a S&amp;P 500
+      <span class="sub">Define el % de cartera que quieres mantener en productos que replican el S&amp;P 500 y compáralo con la exposición actual e histórica.</span>
+    </h2>
+
+    <div class="chart-row three">
+      <div class="mini-kpi"><div class="label">S&P 500 Actual</div><div class="value" id="spNow">—</div></div>
+      <div class="mini-kpi"><div class="label">Objetivo</div><div class="value" id="spTarget" style="color:#facc15">—</div></div>
+      <div class="mini-kpi"><div class="label">Gap a Colocar</div><div class="value" id="spGap">—</div></div>
+    </div>
+
+    <div class="chart-box" style="margin-top:14px">
+      <h3>Ajustar objetivo</h3>
+      <p class="desc">Mueve el slider para fijar tu objetivo de cartera en S&amp;P 500. El dashboard calcula automáticamente el monto en USD que te falta (o te sobra) para alcanzarlo.</p>
+      <div class="slider-row">
+        <span class="label">0%</span>
+        <input type="range" id="spSlider" min="0" max="80" step="1" value="45"/>
+        <span class="label" style="text-align:right">80%</span>
+        <span class="value" id="spSliderValue">45%</span>
+      </div>
+      <div class="gap-bar">
+        <div class="current" id="spBarCurrent"></div>
+        <div class="target-marker" id="spBarTarget"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:6px">
+        <span>Actual: <span id="spBarActualLabel">—</span></span>
+        <span>Objetivo: <span id="spBarTargetLabel" style="color:#facc15">—</span></span>
+      </div>
+    </div>
+
+    <div class="chart-row two" style="margin-top:14px">
+      <div class="chart-box">
+        <h3>Evolución Histórica: % Cartera en S&amp;P 500</h3>
+        <p class="desc">Línea azul = exposición real mensual. Línea amarilla = objetivo seleccionado.</p>
+        <div class="chart-wrap tall"><canvas id="chartSpHistory"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <h3>Posiciones S&amp;P 500</h3>
+        <p class="desc">Fondos y ETFs que componen la exposición actual al índice.</p>
+        <div style="overflow:auto; max-height:280px">
+          <table id="tableSP">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>ISIN</th>
+                <th class="num">Valor USD</th>
+                <th class="num">% Cartera</th>
+                <th class="num">TER %</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-row full" style="margin-top:14px">
+      <div class="chart-box">
+        <h3>Acción Recomendada</h3>
+        <p class="desc">Cálculo del ajuste necesario para alcanzar el objetivo partiendo de la cartera actual (manteniendo el patrimonio total constante).</p>
+        <div id="spAction" style="font-size:13px; line-height:1.6; color:var(--text); padding:8px 0"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function(){
+  const D = window.JLI_DATA;
+  const fmtUSD = (v) => '$' + Math.round(v).toLocaleString('en-US');
+  const fmtPct = (v, n=1) => (v==null||!isFinite(v))? '—' : v.toFixed(n) + '%';
+  const fmtNum = (v) => v==null ? '—' : v.toLocaleString('en-US', {maximumFractionDigits:2});
+
+  // ── Set as-of label
+  document.getElementById('asofLabel').textContent = 'Datos al ' + D.asOf;
+
+  // ── Classification helpers
+  const classTag = (tipo) => {
+    const map = { 'Renta Variable':'rv','Renta Fija / Liquidez':'rf','Acciones':'acc','Multiactivo':'multi','Efectivo':'cash','Cripto':'cripto' };
+    return `<span class="tag ${map[tipo]||'rv'}">${tipo}</span>`;
+  };
+  const terClass = (ter) => ter==null ? '' : (ter<0.5 ? 'low' : ter<1.2 ? 'mid' : 'high');
+
+  // ─────────────── Consolidado ───────────────
+  const total = D.totalValue;
+  document.getElementById('kpiTotal').textContent = fmtUSD(total);
+  document.getElementById('kpiCount').textContent = D.positions.length;
+  document.getElementById('kpiAccts').textContent = D.accounts.length;
+
+  // Weighted TER
+  let terSum = 0, terWeight = 0;
+  D.positions.forEach(p => { if (p.ter!=null) { terSum += p.ter * p.value; terWeight += p.value; }});
+  const weightedTER = terWeight>0 ? terSum/terWeight : 0;
+  const annualCost = weightedTER/100 * total;
+  document.getElementById('kpiCost').textContent = fmtUSD(annualCost);
+  document.getElementById('kpiCostSub').textContent = fmtPct(weightedTER,2) + ' anual ponderado';
+
+  // Positions table
+  const tbodyPos = document.querySelector('#tablePositions tbody');
+  D.positions.forEach(p => {
+    const accs = Object.entries(p.byAccount).map(([n,v]) => `${n} (${fmtPct(v/p.value*100,0)})`).join(', ');
+    const sp = p.isSP500 ? '<span class="tag sp">S&P</span>' : '';
+    tbodyPos.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td><b>${p.name}</b>${sp}<div style="color:var(--dim); font-size:10px">${p.symbol||''}</div></td>
+        <td>${classTag(p.tipo)}</td>
+        <td style="color:var(--muted); font-size:11px">${p.isin||'—'}</td>
+        <td style="color:var(--muted); font-size:11px">${accs}</td>
+        <td class="num">${fmtNum(p.qty)}</td>
+        <td class="num">${p.price?('$'+p.price.toFixed(2)):'—'}</td>
+        <td class="num"><b>${fmtUSD(p.value)}</b></td>
+        <td class="num">${fmtPct(p.value/total*100)}</td>
+        <td class="num ter-cell ${terClass(p.ter)}">${p.ter==null?'—':p.ter.toFixed(2)}</td>
+      </tr>
+    `);
+  });
+
+  // Composición por clase
+  const byClass = {};
+  D.positions.forEach(p => { byClass[p.tipo] = (byClass[p.tipo]||0) + p.value; });
+  const classLabels = Object.keys(byClass);
+  const classValues = classLabels.map(k=>byClass[k]);
+  const classColors = ['#38bdf8','#a78bfa','#22c55e','#f59e0b','#94a3b8','#ef4444'];
+  new Chart(document.getElementById('chartByClass'), {
+    type:'doughnut',
+    data:{ labels:classLabels, datasets:[{ data:classValues, backgroundColor:classColors, borderColor:'#0f172a', borderWidth:2 }]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right', labels:{ color:'#cbd5e1', font:{size:11}}}, tooltip:{ callbacks:{ label:(ctx)=>{const v=ctx.parsed; return `${ctx.label}: ${fmtUSD(v)} (${(v/total*100).toFixed(1)}%)`;}}}}}
+  });
+
+  // Distribución por custodio
+  const byAcct = {};
+  D.positions.forEach(p => { Object.entries(p.byAccount).forEach(([n,v])=>{ byAcct[n]=(byAcct[n]||0)+v; }); });
+  const acctLabels = Object.keys(byAcct).sort((a,b)=>byAcct[b]-byAcct[a]);
+  const acctValues = acctLabels.map(k=>byAcct[k]);
+  new Chart(document.getElementById('chartByAccount'), {
+    type:'bar',
+    data:{ labels:acctLabels, datasets:[{ data:acctValues, backgroundColor:'#38bdf8', borderColor:'#0ea5e9', borderWidth:1 }]},
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(ctx)=>`${fmtUSD(ctx.parsed.x)} (${(ctx.parsed.x/total*100).toFixed(1)}%)`}}},
+      scales:{ x:{ ticks:{color:'#94a3b8',callback:(v)=>'$'+(v/1e6).toFixed(1)+'M'}, grid:{color:'rgba(148,163,184,0.1)'}}, y:{ ticks:{color:'#cbd5e1'}, grid:{display:false}}}
+    }
+  });
+
+  // ─────────────── Costes TER ───────────────
+  const withTER = D.positions.filter(p => p.ter != null);
+  const coveredValue = withTER.reduce((s,p)=>s+p.value,0);
+  const terAvgSimple = withTER.length ? withTER.reduce((s,p)=>s+p.ter,0)/withTER.length : 0;
+  document.getElementById('terWeighted').textContent = fmtPct(weightedTER, 2);
+  document.getElementById('terCostUSD').textContent = fmtUSD(annualCost);
+  document.getElementById('terCount').textContent = withTER.length + ' / ' + D.positions.length;
+  document.getElementById('terCov').textContent = fmtPct(coveredValue/total*100, 1) + ' de la cartera';
+  document.getElementById('terAvg').textContent = fmtPct(terAvgSimple, 2);
+
+  const terSorted = withTER.slice().sort((a,b) => a.ter - b.ter);
+  const terColors = terSorted.map(p => p.ter < 0.5 ? '#22c55e' : p.ter < 1.2 ? '#facc15' : '#ef4444');
+  new Chart(document.getElementById('chartTER'), {
+    type:'bar',
+    data:{ labels:terSorted.map(p => p.name.length>35 ? p.name.slice(0,32)+'…' : p.name),
+      datasets:[{ label:'TER %', data:terSorted.map(p=>p.ter), backgroundColor:terColors, borderColor:'#0f172a', borderWidth:1 }]},
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(ctx)=>{const p=terSorted[ctx.dataIndex]; return [`TER: ${p.ter.toFixed(2)}%`,`Valor: ${fmtUSD(p.value)}`,`Costo/año: ${fmtUSD(p.ter/100*p.value)}`];}}}},
+      scales:{ x:{ title:{display:true,text:'TER (%)',color:'#94a3b8'},ticks:{color:'#94a3b8'}, grid:{color:'rgba(148,163,184,0.1)'}}, y:{ ticks:{color:'#cbd5e1',font:{size:10}}, grid:{display:false}}}
+    }
+  });
+
+  // Costo absoluto por fondo (valor × TER)
+  const costRanked = withTER.map(p => ({ ...p, costUSD: p.ter/100 * p.value })).sort((a,b) => b.costUSD - a.costUSD);
+  new Chart(document.getElementById('chartCostAbs'), {
+    type:'bar',
+    data:{ labels:costRanked.map(p => p.name.length>28 ? p.name.slice(0,25)+'…' : p.name),
+      datasets:[{ label:'Costo USD/año', data:costRanked.map(p=>p.costUSD), backgroundColor:'#a78bfa', borderColor:'#7c3aed', borderWidth:1 }]},
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(ctx)=>fmtUSD(ctx.parsed.x)+' / año'}}},
+      scales:{ x:{ ticks:{color:'#94a3b8',callback:(v)=>'$'+(v/1000).toFixed(0)+'k'}, grid:{color:'rgba(148,163,184,0.1)'}}, y:{ ticks:{color:'#cbd5e1',font:{size:10}}, grid:{display:false}}}
+    }
+  });
+
+  // Pie costo
+  new Chart(document.getElementById('chartCostPie'), {
+    type:'doughnut',
+    data:{ labels:costRanked.slice(0,10).map(p=>p.name.length>25?p.name.slice(0,22)+'…':p.name),
+      datasets:[{ data:costRanked.slice(0,10).map(p=>p.costUSD), backgroundColor:['#38bdf8','#a78bfa','#22c55e','#facc15','#ef4444','#f97316','#14b8a6','#ec4899','#8b5cf6','#6366f1'], borderColor:'#0f172a', borderWidth:2 }]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'right', labels:{ color:'#cbd5e1', font:{size:10}, boxWidth:12}}, tooltip:{ callbacks:{ label:(ctx)=>{const v=ctx.parsed; return `${ctx.label}: ${fmtUSD(v)} (${(v/annualCost*100).toFixed(1)}%)`;}}}}}
+  });
+
+  // Tabla TER
+  const tbodyTER = document.querySelector('#tableTER tbody');
+  costRanked.forEach(p => {
+    tbodyTER.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td><b>${p.name}</b><div style="color:var(--dim); font-size:10px">${p.symbol||''}</div></td>
+        <td style="color:var(--muted); font-size:11px">${p.isin||'—'}</td>
+        <td style="color:var(--muted); font-size:11px">${p.domic||'—'}</td>
+        <td style="font-size:11px">${p.retro==='si'?'<span class="pill">Sí</span>':'—'}</td>
+        <td class="num">${fmtUSD(p.value)}</td>
+        <td class="num ter-cell ${terClass(p.ter)}">${p.ter.toFixed(2)}</td>
+        <td class="num">${fmtUSD(p.costUSD)}</td>
+        <td class="num">${fmtPct(p.costUSD/annualCost*100)}</td>
+      </tr>
+    `);
+  });
+
+  // ─────────────── Objetivos ───────────────
+  const spPositions = D.positions.filter(p => p.isSP500);
+  const spNowValue = spPositions.reduce((s,p)=>s+p.value, 0);
+  const spNowPct = spNowValue / total * 100;
+
+  const spSlider = document.getElementById('spSlider');
+  spSlider.value = Math.round(spNowPct + 5); // default: slight push up
+  function renderGap() {
+    const target = parseFloat(spSlider.value);
+    const gapPct = target - spNowPct;
+    const gapUSD = gapPct/100 * total;
+    document.getElementById('spNow').textContent = fmtPct(spNowPct,1) + ' · ' + fmtUSD(spNowValue);
+    document.getElementById('spTarget').textContent = fmtPct(target,0);
+    const gapEl = document.getElementById('spGap');
+    gapEl.textContent = (gapPct>=0 ? '+':'') + fmtPct(gapPct,1) + ' · ' + (gapUSD>=0?'+':'') + fmtUSD(gapUSD);
+    gapEl.className = 'value ' + (Math.abs(gapPct)<0.5 ? '' : gapPct>0 ? 'good' : 'bad');
+    document.getElementById('spSliderValue').textContent = target.toFixed(0) + '%';
+    const maxScale = Math.max(target, spNowPct) * 1.3;
+    document.getElementById('spBarCurrent').style.width = (spNowPct/maxScale*100).toFixed(2) + '%';
+    document.getElementById('spBarTarget').style.left = (target/maxScale*100).toFixed(2) + '%';
+    document.getElementById('spBarActualLabel').textContent = fmtPct(spNowPct,1) + ' (' + fmtUSD(spNowValue) + ')';
+    document.getElementById('spBarTargetLabel').textContent = fmtPct(target,0) + ' (' + fmtUSD(target/100*total) + ')';
+
+    // Acción recomendada
+    const actionEl = document.getElementById('spAction');
+    if (Math.abs(gapPct) < 0.5) {
+      actionEl.innerHTML = `<span style="color:var(--good)">✓ Cartera alineada con el objetivo.</span> Exposición actual al S&P 500: <b>${fmtUSD(spNowValue)}</b> (${fmtPct(spNowPct,1)}) vs objetivo <b>${fmtPct(target,0)}</b>.`;
+    } else if (gapPct > 0) {
+      actionEl.innerHTML = `<b style="color:var(--good)">Aumentar</b> exposición al S&P 500 en <b>${fmtUSD(gapUSD)}</b> (${fmtPct(gapPct,1)} de la cartera) para pasar de <b>${fmtPct(spNowPct,1)}</b> actual a <b>${fmtPct(target,0)}</b> objetivo.
+        <br/><span style="color:var(--muted); font-size:12px">Instrumentos sugeridos según el TER de la BBDD: <b>SPYL / SPY5 (0.03%)</b>, <b>Fidelity S&P500 Idx P (0.06%)</b>, <b>iShares Core S&P 500 CSSPX (0.07%)</b>.</span>`;
+    } else {
+      actionEl.innerHTML = `<b style="color:var(--warn)">Reducir</b> exposición al S&P 500 en <b>${fmtUSD(Math.abs(gapUSD))}</b> (${fmtPct(Math.abs(gapPct),1)} de la cartera) para bajar de <b>${fmtPct(spNowPct,1)}</b> actual a <b>${fmtPct(target,0)}</b> objetivo.
+        <br/><span style="color:var(--muted); font-size:12px">El S&P concentra ${fmtPct(spNowPct,1)} del patrimonio — considera rebalancear hacia otras clases.</span>`;
+    }
+
+    // Update history chart target line
+    if (window.__spChart) {
+      window.__spChart.data.datasets[1].data = D.history.map(() => target);
+      window.__spChart.update('none');
+    }
+  }
+  spSlider.addEventListener('input', renderGap);
+
+  // Tabla SP
+  const tbodySP = document.querySelector('#tableSP tbody');
+  spPositions.forEach(p => {
+    tbodySP.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td><b>${p.name}</b></td>
+        <td style="color:var(--muted); font-size:11px">${p.isin||'—'}</td>
+        <td class="num"><b>${fmtUSD(p.value)}</b></td>
+        <td class="num">${fmtPct(p.value/total*100,2)}</td>
+        <td class="num ter-cell ${terClass(p.ter)}">${p.ter==null?'—':p.ter.toFixed(2)}</td>
+      </tr>
+    `);
+  });
+
+  // Histórico
+  const histLabels = D.history.map(h => h.month);
+  const histPct = D.history.map(h => h.spPct);
+  window.__spChart = new Chart(document.getElementById('chartSpHistory'), {
+    type:'line',
+    data:{ labels:histLabels, datasets:[
+      { label:'% cartera en S&P 500', data:histPct, borderColor:'#38bdf8', backgroundColor:'rgba(56,189,248,0.15)', fill:true, tension:0.3, pointRadius:0, borderWidth:2 },
+      { label:'Objetivo', data:histLabels.map(()=>parseFloat(spSlider.value)), borderColor:'#facc15', borderDash:[4,4], pointRadius:0, borderWidth:2, fill:false }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#cbd5e1', font:{size:11}}}, tooltip:{ callbacks:{ label:(ctx)=>ctx.dataset.label+': '+fmtPct(ctx.parsed.y,2)}}},
+      scales:{ x:{ ticks:{color:'#94a3b8',maxRotation:0,autoSkip:true,maxTicksLimit:12}, grid:{color:'rgba(148,163,184,0.08)'}}, y:{ ticks:{color:'#94a3b8',callback:(v)=>v+'%'}, grid:{color:'rgba(148,163,184,0.1)'}}}
+    }
+  });
+  renderGap();
+
+  // ─────────────── Tabs ───────────────
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.content > section').forEach(s => s.classList.add('hidden'));
+      document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+    });
+  });
+})();
+</script>
+</body>
+</html>
