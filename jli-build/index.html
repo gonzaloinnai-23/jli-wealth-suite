@@ -317,18 +317,18 @@
     <p class="sub">Sube el export JSON de Capitally y el CSV de fondos JLI. El dashboard se recalcula localmente — los archivos no salen de tu navegador.</p>
 
     <span class="file-label">1 · Export JSON (Capitally)</span>
-    <label class="drop-zone" id="dropJson">
+    <div class="drop-zone" id="dropJson">
       <input type="file" id="fileJson" accept=".json,application/json" style="display:none"/>
       <span class="hint">Arrastra aquí o haz clic para elegir el archivo <b>.json</b></span>
       <span class="name" id="nameJson"></span>
-    </label>
+    </div>
 
     <span class="file-label" style="margin-top:14px; display:block">2 · BBDD Fondos (.csv)</span>
-    <label class="drop-zone" id="dropCsv">
+    <div class="drop-zone" id="dropCsv">
       <input type="file" id="fileCsv" accept=".csv,text/csv" style="display:none"/>
       <span class="hint">Arrastra aquí o haz clic para elegir el archivo <b>.csv</b></span>
       <span class="name" id="nameCsv"></span>
-    </label>
+    </div>
 
     <div class="status-line" id="uploadStatus"></div>
 
@@ -417,7 +417,7 @@ function processRaw(rawExport, csvText) {
   const rows = parseCSV(csvText);
   const hdr = rows[2] || [];
   const idx = (n) => hdr.findIndex(h => (h||'').trim() === n);
-  const iI = idx('ISIN'), iTER = idx('Expense Ratio (TER)'), iIndice = idx('Indice'), iGeo = idx('Geo Focus'), iMixto = idx('Mixto (%RV)'), iDom = idx('Domiciliado'), iRetro = idx('Retrosecion?'), iTicker = idx('Ticker'), iAUM = idx('AUM'), iAD = idx('Accumulation / Distribution'), iClase = idx('Fund Sh Class Des'), iMin = idx('Min Investment'), i1M = idx('%1M'), iYTD = idx('YTD Return'), i3Y = idx('3 Year Annualized Total Return - Current'), iSharpe = idx('Sharpe Ratio 1Yr'), iVol = idx('Volatil 30D'), iName = idx('Name');
+  const iI = idx('ISIN'), iTER = idx('Expense Ratio (TER)'), iIndice = idx('Indice'), iGeo = idx('Geo Focus'), iMixto = idx('Mixto (%RV)'), iDom = idx('Domiciliado'), iRetro = idx('Retrosecion?'), iTicker = idx('Ticker'), iAUM = idx('AUM'), iAD = idx('Accumulation / Distribution'), iClase = idx('Fund Sh Class Des'), iMin = idx('Min Investment'), i1M = idx('%1M'), iYTD = idx('YTD Return'), i3Y = idx('3 Year Annualized Total Return - Current'), iSharpe = idx('Sharpe Ratio 1Yr'), iVol = idx('Volatil 30D'), iName = idx('Name'), iPx = idx('Ccy Adj Lst Px');
   if (iI < 0) throw new Error('CSV no tiene columna ISIN en la fila 3');
 
   const byIsin = {};
@@ -425,6 +425,7 @@ function processRaw(rawExport, csvText) {
     const r = rows[i]; if (!r[iI]) continue;
     const isin = (r[iI]||'').trim(); if (!isin) continue;
     const ter = parseFloat((r[iTER]||'').replace(',','.'));
+    const px = iPx >= 0 ? parseFloat((r[iPx]||'').replace(',','.')) : NaN;
     if (!byIsin[isin]) byIsin[isin] = {
       isin, ticker:(r[iTicker]||'').trim(), name:(r[iName]||'').trim(),
       ter: isFinite(ter)?ter:null, indice:((r[iIndice]||'').trim()),
@@ -434,7 +435,8 @@ function processRaw(rawExport, csvText) {
       clase:(r[iClase]||'').trim(), min:(r[iMin]||'').trim(),
       p1m:parseFloat(r[i1M])||null, ytd:parseFloat(r[iYTD])||null,
       y3:parseFloat(r[i3Y])||null, sharpe:parseFloat(r[iSharpe])||null,
-      vol:parseFloat(r[iVol])||null
+      vol:parseFloat(r[iVol])||null,
+      lastPx: isFinite(px)?px:null
     };
   }
 
@@ -458,11 +460,12 @@ function processRaw(rawExport, csvText) {
     return 'Renta Variable';
   }
 
-  // Running positions + last prices
+  // Running positions. BALANCE adjustments are applied on top of the
+  // running qty so cash balances and one-off corrections are included.
   const pos = new Map();
-  const prices = new Map();
+  const txPrices = new Map();
   for (const t of tx) {
-    if ((t.type==='OPEN'||t.type==='CLOSE') && t.price!=null) prices.set(t.assetId, t.price);
+    if ((t.type==='OPEN'||t.type==='CLOSE') && t.price!=null) txPrices.set(t.assetId, t.price);
     if (t.type==='OPEN') {
       const k = t.accountId+'|'+t.assetId;
       const p = pos.get(k)||{qty:0,cost:0};
@@ -484,14 +487,30 @@ function processRaw(rawExport, csvText) {
       const pT = pos.get(kTo)||{qty:0,cost:0};
       pT.qty += (t.targetQty||t.qty); pT.cost += (t.targetQty||t.qty)*avg;
       pos.set(kTo,pT);
+    } else if (t.type==='BALANCE') {
+      const k = t.accountId+'|'+t.assetId;
+      const p = pos.get(k)||{qty:0,cost:0};
+      p.qty += (t.qty||0);
+      pos.set(k,p);
     }
+  }
+
+  // Resolve the current price for an asset: prefer CSV "Ccy Adj Lst Px"
+  // (a current market price), fall back to the last OPEN/CLOSE tx price,
+  // use 1 for cash. Stocks without an ISIN in the CSV fall back to tx price.
+  function priceFor(assetId) {
+    const a = assets[assetId]; if (!a) return 0;
+    if (a.type === 'CASH') return 1;
+    const meta = byIsin[a.isin || ''];
+    if (meta && meta.lastPx != null) return meta.lastPx;
+    return txPrices.get(assetId) || 0;
   }
 
   const byAsset = new Map();
   for (const [k,p] of pos) {
     if (p.qty <= 0.00001) continue;
     const [acctId, assetId] = k.split('|');
-    const price = prices.get(assetId) || 0;
+    const price = priceFor(assetId);
     const value = p.qty * price;
     const cur = byAsset.get(assetId) || {qty:0, cost:0, value:0, byAccount:{}};
     cur.qty += p.qty; cur.cost += p.cost; cur.value += value;
@@ -507,7 +526,7 @@ function processRaw(rawExport, csvText) {
     const meta = byIsin[isin] || {};
     positions.push({
       assetId, name:a.name, isin, symbol:a.symbol||meta.ticker||'', type:a.type, currency:a.currencyId,
-      qty:s.qty, cost:s.cost, value:s.value, price:prices.get(assetId)||0,
+      qty:s.qty, cost:s.cost, value:s.value, price:priceFor(assetId),
       byAccount:s.byAccount,
       ter: meta.ter!=null ? meta.ter : null,
       indice: meta.indice||'', geo: meta.geo||'', mixtoRV: meta.mixtoRV,
@@ -534,6 +553,7 @@ function processRaw(rawExport, csvText) {
       if (t.type==='OPEN') { const k=t.accountId+'|'+t.assetId; const p=running.get(k)||{qty:0}; p.qty+=t.qty; running.set(k,p); if (t.price) lastPriceByAsset[t.assetId]=t.price; }
       else if (t.type==='CLOSE') { const k=t.accountId+'|'+t.assetId; const p=running.get(k)||{qty:0}; p.qty-=t.qty; running.set(k,p); if (t.price) lastPriceByAsset[t.assetId]=t.price; }
       else if (t.type==='CONVERT') { const kF=t.accountId+'|'+t.assetId; const pF=running.get(kF)||{qty:0}; pF.qty-=t.qty; running.set(kF,pF); const kT=(t.targetAccountId||t.accountId)+'|'+(t.targetAssetId||t.assetId); const pT=running.get(kT)||{qty:0}; pT.qty+=(t.targetQty||t.qty); running.set(kT,pT); }
+      else if (t.type==='BALANCE') { const k=t.accountId+'|'+t.assetId; const p=running.get(k)||{qty:0}; p.qty+=(t.qty||0); running.set(k,p); }
     }
     let total = 0, sp = 0;
     for (const [k,p] of running) {
