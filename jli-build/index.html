@@ -366,19 +366,19 @@
 <div id="uploadModal" class="modal hidden">
   <div class="modal-box">
     <h2>Actualizar datos</h2>
-    <p class="sub">Sube el export JSON de Capitally y el CSV de fondos JLI. El dashboard se recalcula localmente — los archivos no salen de tu navegador.</p>
+    <p class="sub">Sube el export JSON de Capitally. El CSV de fondos es opcional — si no lo subes, se usa el último cargado. Todo se procesa localmente.</p>
 
-    <span class="file-label">1 · Export JSON (Capitally)</span>
+    <span class="file-label">1 · Export JSON (Capitally) <span style="color:#ef4444">*</span></span>
     <div class="drop-zone" id="dropJson">
       <input type="file" id="fileJson" accept=".json,application/json" style="display:none"/>
       <span class="hint">Arrastra aquí o haz clic para elegir el archivo <b>.json</b></span>
       <span class="name" id="nameJson"></span>
     </div>
 
-    <span class="file-label" style="margin-top:14px; display:block">2 · BBDD Fondos (.csv)</span>
+    <span class="file-label" style="margin-top:14px; display:block">2 · BBDD Fondos (.csv) — opcional</span>
     <div class="drop-zone" id="dropCsv">
       <input type="file" id="fileCsv" accept=".csv,text/csv" style="display:none"/>
-      <span class="hint">Arrastra aquí o haz clic para elegir el archivo <b>.csv</b></span>
+      <span class="hint">Opcional. Si no lo subes, se reusa la BBDD ya cargada.</span>
       <span class="name" id="nameCsv"></span>
     </div>
 
@@ -475,38 +475,44 @@ function parseCSV(s) {
   });
 }
 
-function processRaw(rawExport, csvText) {
+function processRaw(rawExport, csvText, fallbackByIsin) {
   const d = rawExport.data;
   if (!d || !d.transactions || !d.assets || !d.accounts) throw new Error('JSON no tiene la estructura esperada de Capitally');
   const accounts = d.accounts;
   const assets = d.assets;
   const tx = Object.values(d.transactions).filter(Boolean).sort((a,b)=>new Date(a.date)-new Date(b.date));
 
-  // Parse CSV into byIsin lookup
-  const rows = parseCSV(csvText);
-  const hdr = rows[2] || [];
-  const idx = (n) => hdr.findIndex(h => (h||'').trim() === n);
-  const iI = idx('ISIN'), iTER = idx('Expense Ratio (TER)'), iIndice = idx('Indice'), iGeo = idx('Geo Focus'), iMixto = idx('Mixto (%RV)'), iDom = idx('Domiciliado'), iRetro = idx('Retrosecion?'), iTicker = idx('Ticker'), iAUM = idx('AUM'), iAD = idx('Accumulation / Distribution'), iClase = idx('Fund Sh Class Des'), iMin = idx('Min Investment'), i1M = idx('%1M'), iYTD = idx('YTD Return'), i3Y = idx('3 Year Annualized Total Return - Current'), iSharpe = idx('Sharpe Ratio 1Yr'), iVol = idx('Volatil 30D'), iName = idx('Name'), iPx = idx('Ccy Adj Lst Px');
-  if (iI < 0) throw new Error('CSV no tiene columna ISIN en la fila 3');
+  let byIsin;
+  if (csvText) {
+    const rows = parseCSV(csvText);
+    const hdr = rows[2] || [];
+    const idx = (n) => hdr.findIndex(h => (h||'').trim() === n);
+    const iI = idx('ISIN'), iTER = idx('Expense Ratio (TER)'), iIndice = idx('Indice'), iGeo = idx('Geo Focus'), iMixto = idx('Mixto (%RV)'), iDom = idx('Domiciliado'), iRetro = idx('Retrosecion?'), iTicker = idx('Ticker'), iAUM = idx('AUM'), iAD = idx('Accumulation / Distribution'), iClase = idx('Fund Sh Class Des'), iMin = idx('Min Investment'), i1M = idx('%1M'), iYTD = idx('YTD Return'), i3Y = idx('3 Year Annualized Total Return - Current'), iSharpe = idx('Sharpe Ratio 1Yr'), iVol = idx('Volatil 30D'), iName = idx('Name'), iPx = idx('Ccy Adj Lst Px');
+    if (iI < 0) throw new Error('CSV no tiene columna ISIN en la fila 3');
 
-  const byIsin = {};
-  for (let i=3; i<rows.length; i++) {
-    const r = rows[i]; if (!r[iI]) continue;
-    const isin = (r[iI]||'').trim(); if (!isin) continue;
-    const ter = parseFloat((r[iTER]||'').replace(',','.'));
-    const px = iPx >= 0 ? parseFloat((r[iPx]||'').replace(/,/g,'')) : NaN;
-    if (!byIsin[isin]) byIsin[isin] = {
-      isin, ticker:(r[iTicker]||'').trim(), name:(r[iName]||'').trim(),
-      ter: isFinite(ter)?ter:null, indice:((r[iIndice]||'').trim()),
-      geo:(r[iGeo]||'').trim(), mixtoRV:parseFloat(r[iMixto])||null,
-      domic:(r[iDom]||'').trim(), retro:(r[iRetro]||'').trim(),
-      aum:(r[iAUM]||'').trim(), accDist:(r[iAD]||'').trim(),
-      clase:(r[iClase]||'').trim(), min:(r[iMin]||'').trim(),
-      p1m:parseFloat(r[i1M])||null, ytd:parseFloat(r[iYTD])||null,
-      y3:parseFloat(r[i3Y])||null, sharpe:parseFloat(r[iSharpe])||null,
-      vol:parseFloat(r[iVol])||null,
-      lastPx: isFinite(px)?px:null
-    };
+    byIsin = {};
+    for (let i=3; i<rows.length; i++) {
+      const r = rows[i]; if (!r[iI]) continue;
+      const isin = (r[iI]||'').trim(); if (!isin) continue;
+      const ter = parseFloat((r[iTER]||'').replace(',','.'));
+      const px = iPx >= 0 ? parseFloat((r[iPx]||'').replace(/,/g,'')) : NaN;
+      if (!byIsin[isin]) byIsin[isin] = {
+        isin, ticker:(r[iTicker]||'').trim(), name:(r[iName]||'').trim(),
+        ter: isFinite(ter)?ter:null, indice:((r[iIndice]||'').trim()),
+        geo:(r[iGeo]||'').trim(), mixtoRV:parseFloat(r[iMixto])||null,
+        domic:(r[iDom]||'').trim(), retro:(r[iRetro]||'').trim(),
+        aum:(r[iAUM]||'').trim(), accDist:(r[iAD]||'').trim(),
+        clase:(r[iClase]||'').trim(), min:(r[iMin]||'').trim(),
+        p1m:parseFloat(r[i1M])||null, ytd:parseFloat(r[iYTD])||null,
+        y3:parseFloat(r[i3Y])||null, sharpe:parseFloat(r[iSharpe])||null,
+        vol:parseFloat(r[iVol])||null,
+        lastPx: isFinite(px)?px:null
+      };
+    }
+  } else if (fallbackByIsin) {
+    byIsin = fallbackByIsin;
+  } else {
+    throw new Error('Falta el CSV de fondos y no hay BBDD previa cargada.');
   }
 
   function isSP500(assetId) {
@@ -1034,9 +1040,11 @@ function setupDrop(dropEl, inputEl, labelEl, onFile) {
       labelEl.textContent = f.name + ' (' + Math.round(f.size/1024) + ' kB)';
       dropEl.classList.add('loaded');
       onFile(reader.result, f);
-      const ready = uploadState.jsonText && uploadState.csvText;
+      const ready = !!uploadState.jsonText;
       document.getElementById('btnUploadRun').disabled = !ready;
-      document.getElementById('uploadStatus').textContent = ready ? 'Listo para procesar.' : 'Esperando el otro archivo…';
+      const msg = !ready ? 'Falta el JSON de Capitally.'
+        : (uploadState.csvText ? 'Listo para procesar (con CSV nuevo).' : 'Listo para procesar (reusando BBDD actual).');
+      document.getElementById('uploadStatus').textContent = msg;
       document.getElementById('uploadStatus').className = 'status-line' + (ready?' ok':'');
     };
     reader.readAsText(f);
@@ -1057,7 +1065,8 @@ document.getElementById('btnUploadRun').addEventListener('click', () => {
   try {
     statusEl.textContent = 'Procesando…'; statusEl.className = 'status-line';
     const raw = JSON.parse(uploadState.jsonText);
-    const D = processRaw(raw, uploadState.csvText);
+    const fallback = (window.__CURRENT_DATA__ || window.JLI_DATA)?.fundMeta;
+    const D = processRaw(raw, uploadState.csvText, fallback);
     window.__CURRENT_DATA__ = D;
     renderAll(D);
     statusEl.textContent = '✓ Actualizado (' + D.positions.length + ' posiciones, total ' + fmtUSD(D.totalValue) + ').';
