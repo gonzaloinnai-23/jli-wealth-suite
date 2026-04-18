@@ -104,6 +104,18 @@
   .status-line.err { color:#ef4444; }
   .status-line.ok { color:var(--good); }
   .file-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:4px; display:block; }
+  /* Sortable table headers */
+  th[data-sort-key] { cursor:pointer; user-select:none; position:relative; }
+  th[data-sort-key]:hover { color:#e2e8f0; }
+  th[data-sort-key]::after { content:'⇅'; font-size:9px; color:var(--dim); margin-left:4px; opacity:0.55; }
+  th[data-sort-key][data-sorted="asc"]::after { content:'▲'; color:var(--accent); opacity:1; }
+  th[data-sort-key][data-sorted="desc"]::after { content:'▼'; color:var(--accent); opacity:1; }
+  /* Active filter chip */
+  .filter-bar { display:none; align-items:center; gap:8px; margin-bottom:10px; font-size:12px; color:var(--muted); }
+  .filter-bar.active { display:flex; }
+  .filter-chip { background:rgba(56,189,248,0.15); color:var(--accent); border:1px solid rgba(56,189,248,0.4); border-radius:14px; padding:3px 10px 3px 10px; display:inline-flex; align-items:center; gap:6px; font-size:12px; }
+  .filter-chip button { background:transparent; border:0; color:var(--accent); cursor:pointer; font-size:15px; line-height:1; padding:0; opacity:0.8; }
+  .filter-chip button:hover { opacity:1; }
 
   /* Chat widget (bottom-right). Hidden until logged in via #app ancestry. */
   #chatFab { position:fixed; bottom:22px; right:22px; width:54px; height:54px; border-radius:50%; background:var(--accent); color:#0f172a; border:0; font-size:22px; font-weight:700; cursor:pointer; box-shadow:0 12px 28px rgba(0,0,0,0.45); z-index:900; transition:transform .15s, opacity .15s; }
@@ -192,20 +204,24 @@
       <div class="chart-row full">
         <div class="chart-box">
           <h3>Cartera Consolidada</h3>
-          <p class="desc">Posiciones ordenadas por valor de mercado. Los porcentajes y pesos se calculan sobre el patrimonio total.</p>
+          <p class="desc">Posiciones ordenadas por valor de mercado. Click en el gráfico de custodios para filtrar; click en los títulos para ordenar.</p>
+          <div class="filter-bar" id="posFilterBar">
+            Filtrando por custodio:
+            <span class="filter-chip"><span id="posFilterName"></span><button id="posFilterClear" title="Quitar filtro">×</button></span>
+          </div>
           <div style="overflow:auto; max-height:560px">
             <table id="tablePositions">
               <thead>
                 <tr>
-                  <th>Activo</th>
-                  <th>Clase</th>
-                  <th>ISIN</th>
+                  <th data-sort-key="name">Activo</th>
+                  <th data-sort-key="tipo">Clase</th>
+                  <th data-sort-key="isin">ISIN</th>
                   <th>Custodios</th>
-                  <th class="num">Cantidad</th>
-                  <th class="num">Precio</th>
-                  <th class="num">Valor USD</th>
-                  <th class="num">% Cartera</th>
-                  <th class="num">TER %</th>
+                  <th class="num" data-sort-key="qty">Cantidad</th>
+                  <th class="num" data-sort-key="price">Precio</th>
+                  <th class="num" data-sort-key="value">Valor USD</th>
+                  <th class="num" data-sort-key="pct">% Cartera</th>
+                  <th class="num" data-sort-key="ter">TER %</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -222,6 +238,13 @@
         <div class="kpi-card"><div class="label">Costo Anual</div><div class="value" id="terCostUSD">—</div><div class="sub">USD / año estimado</div></div>
         <div class="kpi-card"><div class="label">Activos con TER</div><div class="value" id="terCount">—</div><div class="sub" id="terCov">cobertura de cartera</div></div>
         <div class="kpi-card"><div class="label">TER Promedio Simple</div><div class="value" id="terAvg">—</div><div class="sub">media aritmética</div></div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-card"><div class="label">Retrocesión Estimada</div><div class="value" id="retroUSD">—</div><div class="sub" id="retroSub">70% del TER en activos con retrocesión</div></div>
+        <div class="kpi-card"><div class="label">% sobre TER Total</div><div class="value" id="retroPct">—</div><div class="sub">del costo TER anual</div></div>
+        <div class="kpi-card"><div class="label">Costo Neto (Gestora)</div><div class="value" id="retroNet">—</div><div class="sub">USD / año tras retrocesión</div></div>
+        <div class="kpi-card"><div class="label">Activos con Retrocesión</div><div class="value" id="retroCount">—</div><div class="sub" id="retroCoverage">cobertura de cartera</div></div>
       </div>
 
       <div class="chart-row full">
@@ -248,19 +271,20 @@
       <div class="chart-row full">
         <div class="chart-box">
           <h3>Detalle TER por Fondo</h3>
-          <p class="desc">Lista completa con TER, valor en cartera, costo anual y metadatos (domicilio, retrocesión, clase).</p>
+          <p class="desc">Lista completa con TER, valor en cartera, costo anual y metadatos (domicilio, retrocesión, clase). Click en los títulos para ordenar.</p>
           <div style="overflow:auto; max-height:500px">
             <table id="tableTER">
               <thead>
                 <tr>
-                  <th>Fondo</th>
-                  <th>ISIN</th>
-                  <th>Dom.</th>
-                  <th>Retro</th>
-                  <th class="num">Valor USD</th>
-                  <th class="num">TER %</th>
-                  <th class="num">Costo USD/año</th>
-                  <th class="num">% del costo</th>
+                  <th data-sort-key="name">Fondo</th>
+                  <th data-sort-key="isin">ISIN</th>
+                  <th data-sort-key="domic">Dom.</th>
+                  <th data-sort-key="retro">Retro</th>
+                  <th class="num" data-sort-key="value">Valor USD</th>
+                  <th class="num" data-sort-key="ter">TER %</th>
+                  <th class="num" data-sort-key="costUSD">Costo USD/año</th>
+                  <th class="num" data-sort-key="retroCost">Retro USD/año</th>
+                  <th class="num" data-sort-key="costPct">% del costo</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -314,11 +338,11 @@
             <table id="tableSP">
               <thead>
                 <tr>
-                  <th>Producto</th>
-                  <th>ISIN</th>
-                  <th class="num">Valor USD</th>
-                  <th class="num">% Cartera</th>
-                  <th class="num">TER %</th>
+                  <th data-sort-key="name">Producto</th>
+                  <th data-sort-key="isin">ISIN</th>
+                  <th class="num" data-sort-key="value">Valor USD</th>
+                  <th class="num" data-sort-key="pct">% Cartera</th>
+                  <th class="num" data-sort-key="ter">TER %</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -643,9 +667,63 @@ const classTag = (tipo) => {
 };
 const terClass = (ter) => ter==null ? '' : (ter<0.5 ? 'low' : ter<1.2 ? 'mid' : 'high');
 
+// Retrocesión estimada = 70% del TER en activos marcados como retrocesión.
+const RETRO_PCT = 0.70;
+const retroCostOf = (p) => (p.retro === 'si' && p.ter != null) ? RETRO_PCT * (p.ter/100) * p.value : 0;
+
+// Turns a table's <th data-sort-key> cells into clickable sort controls.
+// columns = { key: {type:'num'|'str', get:(row)=>value} }
+// Default sort direction: -1 (desc) for numeric, +1 (asc) for strings.
+function makeSortable(tableSelector, columns, getRows, renderRow, defaults) {
+  const table = document.querySelector(tableSelector);
+  if (!table) return () => {};
+  const ths = table.querySelectorAll('thead th');
+  let state = { key: defaults?.key || null, dir: defaults?.dir || -1 };
+
+  function render() {
+    const rows = getRows().slice();
+    if (state.key && columns[state.key]) {
+      const col = columns[state.key];
+      rows.sort((a, b) => {
+        const va = col.get(a), vb = col.get(b);
+        if (va == null && vb == null) return 0;
+        if (va == null) return 1;
+        if (vb == null) return -1;
+        if (col.type === 'str') return String(va).localeCompare(String(vb)) * state.dir;
+        return (va - vb) * state.dir;
+      });
+    }
+    const tbody = table.querySelector('tbody');
+    tbody.innerHTML = rows.map(renderRow).join('');
+    ths.forEach(th => {
+      const k = th.dataset.sortKey;
+      if (!k) return;
+      th.dataset.sorted = (k === state.key) ? (state.dir > 0 ? 'asc' : 'desc') : '';
+    });
+  }
+
+  ths.forEach(th => {
+    const k = th.dataset.sortKey;
+    if (!k || !columns[k]) return;
+    th.addEventListener('click', () => {
+      if (state.key === k) state.dir = -state.dir;
+      else { state.key = k; state.dir = columns[k].type === 'num' ? -1 : 1; }
+      render();
+    });
+  });
+
+  return render;
+}
+
+// Custodian filter state (only the positions table reacts to this).
+const posFilter = { custodian: null };
+
 function renderAll(D) {
   destroyAllCharts();
   clearTableBody('#tablePositions'); clearTableBody('#tableTER'); clearTableBody('#tableSP');
+  // Reset custodian filter chip across rerenders.
+  posFilter.custodian = null;
+  document.getElementById('posFilterBar').classList.remove('active');
 
   document.getElementById('asofLabel').textContent = 'Datos al ' + D.asOf;
   const total = D.totalValue;
@@ -661,25 +739,72 @@ function renderAll(D) {
   document.getElementById('kpiCost').textContent = fmtUSD(annualCost);
   document.getElementById('kpiCostSub').textContent = fmtPct(weightedTER,2) + ' anual ponderado';
 
-  // Positions table
-  const tbodyPos = document.querySelector('#tablePositions tbody');
-  D.positions.forEach(p => {
+  // Positions table — sortable + filterable by custodian.
+  const posRows = () => {
+    const f = posFilter.custodian;
+    // When filtering, each row's displayed value = value in that custodian,
+    // and %Cartera = share of that custodian holding.
+    if (!f) return D.positions.map(p => ({
+      ...p,
+      _displayValue: p.value,
+      _displayQty: p.qty,
+      _pct: p.value / total * 100
+    }));
+    const held = D.positions.filter(p => p.byAccount[f] != null);
+    const custTotal = held.reduce((s, p) => s + (p.byAccount[f] || 0), 0);
+    return held.map(p => {
+      const v = p.byAccount[f] || 0;
+      const ratio = p.value > 0 ? v / p.value : 0;
+      return {
+        ...p,
+        _displayValue: v,
+        _displayQty: p.qty * ratio,
+        _pct: custTotal > 0 ? v / custTotal * 100 : 0
+      };
+    });
+  };
+  const renderPosRow = (p) => {
     const accs = Object.entries(p.byAccount).map(([n,v]) => `${n} (${fmtPct(v/p.value*100,0)})`).join(', ');
     const sp = p.isSP500 ? '<span class="tag sp">S&P</span>' : '';
-    tbodyPos.insertAdjacentHTML('beforeend', `
+    return `
       <tr>
         <td><b>${p.name}</b>${sp}<div style="color:var(--dim); font-size:10px">${p.symbol||''}</div></td>
         <td>${classTag(p.tipo)}</td>
         <td style="color:var(--muted); font-size:11px">${p.isin||'—'}</td>
         <td style="color:var(--muted); font-size:11px">${accs}</td>
-        <td class="num">${fmtNum(p.qty)}</td>
+        <td class="num">${fmtNum(p._displayQty)}</td>
         <td class="num">${p.price?('$'+p.price.toFixed(2)):'—'}</td>
-        <td class="num"><b>${fmtUSD(p.value)}</b></td>
-        <td class="num">${fmtPct(p.value/total*100)}</td>
+        <td class="num"><b>${fmtUSD(p._displayValue)}</b></td>
+        <td class="num">${fmtPct(p._pct)}</td>
         <td class="num ter-cell ${terClass(p.ter)}">${p.ter==null?'—':p.ter.toFixed(2)}</td>
-      </tr>
-    `);
-  });
+      </tr>`;
+  };
+  const renderPositions = makeSortable('#tablePositions', {
+    name:  { type:'str', get:p=>p.name },
+    tipo:  { type:'str', get:p=>p.tipo },
+    isin:  { type:'str', get:p=>p.isin||'' },
+    qty:   { type:'num', get:p=>p._displayQty },
+    price: { type:'num', get:p=>p.price },
+    value: { type:'num', get:p=>p._displayValue },
+    pct:   { type:'num', get:p=>p._pct },
+    ter:   { type:'num', get:p=>p.ter }
+  }, posRows, renderPosRow, { key:'value', dir:-1 });
+  renderPositions();
+
+  function applyPosFilter(custodian) {
+    posFilter.custodian = custodian;
+    const bar = document.getElementById('posFilterBar');
+    const nameEl = document.getElementById('posFilterName');
+    if (custodian) {
+      nameEl.textContent = custodian;
+      bar.classList.add('active');
+    } else {
+      bar.classList.remove('active');
+    }
+    renderPositions();
+  }
+  document.getElementById('posFilterClear').onclick = () => applyPosFilter(null);
+  window.__applyPosFilter = applyPosFilter;
 
   // Clases
   const byClass = {};
@@ -698,11 +823,24 @@ function renderAll(D) {
   D.positions.forEach(p => { Object.entries(p.byAccount).forEach(([n,v])=>{ byAcct[n]=(byAcct[n]||0)+v; }); });
   const acctLabels = Object.keys(byAcct).sort((a,b)=>byAcct[b]-byAcct[a]);
   const acctValues = acctLabels.map(k=>byAcct[k]);
+  const acctBarColors = () => acctLabels.map(n =>
+    posFilter.custodian && n !== posFilter.custodian ? 'rgba(56,189,248,0.25)' : '#38bdf8'
+  );
   charts.byAcct = new Chart(document.getElementById('chartByAccount'), {
     type:'bar',
-    data:{ labels:acctLabels, datasets:[{ data:acctValues, backgroundColor:'#38bdf8', borderColor:'#0ea5e9', borderWidth:1 }]},
+    data:{ labels:acctLabels, datasets:[{ data:acctValues, backgroundColor:acctBarColors(), borderColor:'#0ea5e9', borderWidth:1 }]},
     options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(ctx)=>`${fmtUSD(ctx.parsed.x)} (${(ctx.parsed.x/total*100).toFixed(1)}%)`}}},
+      onClick: (evt, elements) => {
+        if (!elements.length) return;
+        const idx = elements[0].index;
+        const name = acctLabels[idx];
+        const next = posFilter.custodian === name ? null : name;
+        applyPosFilter(next);
+        charts.byAcct.data.datasets[0].backgroundColor = acctBarColors();
+        charts.byAcct.update();
+      },
+      onHover: (evt, elements) => { evt.native.target.style.cursor = elements.length ? 'pointer' : 'default'; },
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(ctx)=>`${fmtUSD(ctx.parsed.x)} (${(ctx.parsed.x/total*100).toFixed(1)}%) · click para filtrar`}}},
       scales:{ x:{ ticks:{color:'#94a3b8',callback:(v)=>'$'+(v/1e6).toFixed(1)+'M'}, grid:{color:'rgba(148,163,184,0.1)'}}, y:{ ticks:{color:'#cbd5e1'}, grid:{display:false}}}
     }
   });
@@ -748,21 +886,45 @@ function renderAll(D) {
       plugins:{ legend:{ position:'right', labels:{ color:'#cbd5e1', font:{size:10}, boxWidth:12}}, tooltip:{ callbacks:{ label:(ctx)=>{const v=ctx.parsed; return `${ctx.label}: ${fmtUSD(v)} (${(v/annualCost*100).toFixed(1)}%)`;}}}}}
   });
 
-  const tbodyTER = document.querySelector('#tableTER tbody');
+  // Enrich costRanked with retrocession numbers per position.
   costRanked.forEach(p => {
-    tbodyTER.insertAdjacentHTML('beforeend', `
-      <tr>
-        <td><b>${p.name}</b><div style="color:var(--dim); font-size:10px">${p.symbol||''}</div></td>
-        <td style="color:var(--muted); font-size:11px">${p.isin||'—'}</td>
-        <td style="color:var(--muted); font-size:11px">${p.domic||'—'}</td>
-        <td style="font-size:11px">${p.retro==='si'?'<span class="pill">Sí</span>':'—'}</td>
-        <td class="num">${fmtUSD(p.value)}</td>
-        <td class="num ter-cell ${terClass(p.ter)}">${p.ter.toFixed(2)}</td>
-        <td class="num">${fmtUSD(p.costUSD)}</td>
-        <td class="num">${fmtPct(p.costUSD/annualCost*100)}</td>
-      </tr>
-    `);
+    p.retroCost = retroCostOf(p);
+    p.costPct = annualCost > 0 ? p.costUSD / annualCost * 100 : 0;
   });
+
+  // Retrocession totals for KPI row.
+  const retroTotal = costRanked.reduce((s, p) => s + p.retroCost, 0);
+  const retroHolders = costRanked.filter(p => p.retro === 'si');
+  const retroHolderValue = retroHolders.reduce((s, p) => s + p.value, 0);
+  document.getElementById('retroUSD').textContent = fmtUSD(retroTotal);
+  document.getElementById('retroPct').textContent = annualCost > 0 ? fmtPct(retroTotal/annualCost*100, 1) : '—';
+  document.getElementById('retroNet').textContent = fmtUSD(annualCost - retroTotal);
+  document.getElementById('retroCount').textContent = retroHolders.length + ' / ' + D.positions.length;
+  document.getElementById('retroCoverage').textContent = fmtPct(retroHolderValue/total*100, 1) + ' de la cartera';
+
+  const renderTERRow = (p) => `
+    <tr>
+      <td><b>${p.name}</b><div style="color:var(--dim); font-size:10px">${p.symbol||''}</div></td>
+      <td style="color:var(--muted); font-size:11px">${p.isin||'—'}</td>
+      <td style="color:var(--muted); font-size:11px">${p.domic||'—'}</td>
+      <td style="font-size:11px">${p.retro==='si'?'<span class="pill">Sí</span>':'—'}</td>
+      <td class="num">${fmtUSD(p.value)}</td>
+      <td class="num ter-cell ${terClass(p.ter)}">${p.ter.toFixed(2)}</td>
+      <td class="num">${fmtUSD(p.costUSD)}</td>
+      <td class="num" style="${p.retroCost>0?'color:#facc15':''}">${p.retroCost>0?fmtUSD(p.retroCost):'—'}</td>
+      <td class="num">${fmtPct(p.costPct)}</td>
+    </tr>`;
+  makeSortable('#tableTER', {
+    name:      { type:'str', get:p=>p.name },
+    isin:      { type:'str', get:p=>p.isin||'' },
+    domic:     { type:'str', get:p=>p.domic||'' },
+    retro:     { type:'str', get:p=>p.retro||'' },
+    value:     { type:'num', get:p=>p.value },
+    ter:       { type:'num', get:p=>p.ter },
+    costUSD:   { type:'num', get:p=>p.costUSD },
+    retroCost: { type:'num', get:p=>p.retroCost },
+    costPct:   { type:'num', get:p=>p.costPct }
+  }, () => costRanked, renderTERRow, { key:'costUSD', dir:-1 })();
 
   // Objetivos S&P
   const spPositions = D.positions.filter(p => p.isSP500);
@@ -804,18 +966,22 @@ function renderAll(D) {
   }
   spSlider.oninput = renderGap;
 
-  const tbodySP = document.querySelector('#tableSP tbody');
-  spPositions.forEach(p => {
-    tbodySP.insertAdjacentHTML('beforeend', `
-      <tr>
-        <td><b>${p.name}</b></td>
-        <td style="color:var(--muted); font-size:11px">${p.isin||'—'}</td>
-        <td class="num"><b>${fmtUSD(p.value)}</b></td>
-        <td class="num">${fmtPct(p.value/total*100,2)}</td>
-        <td class="num ter-cell ${terClass(p.ter)}">${p.ter==null?'—':p.ter.toFixed(2)}</td>
-      </tr>
-    `);
-  });
+  const spRowsData = spPositions.map(p => ({ ...p, _pct: p.value/total*100 }));
+  const renderSPRow = (p) => `
+    <tr>
+      <td><b>${p.name}</b></td>
+      <td style="color:var(--muted); font-size:11px">${p.isin||'—'}</td>
+      <td class="num"><b>${fmtUSD(p.value)}</b></td>
+      <td class="num">${fmtPct(p._pct, 2)}</td>
+      <td class="num ter-cell ${terClass(p.ter)}">${p.ter==null?'—':p.ter.toFixed(2)}</td>
+    </tr>`;
+  makeSortable('#tableSP', {
+    name:  { type:'str', get:p=>p.name },
+    isin:  { type:'str', get:p=>p.isin||'' },
+    value: { type:'num', get:p=>p.value },
+    pct:   { type:'num', get:p=>p._pct },
+    ter:   { type:'num', get:p=>p.ter }
+  }, () => spRowsData, renderSPRow, { key:'value', dir:-1 })();
 
   const histLabels = D.history.map(h => h.month);
   const histPct = D.history.map(h => h.spPct);
