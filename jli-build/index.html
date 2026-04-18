@@ -494,7 +494,7 @@ function processRaw(rawExport, csvText) {
     const r = rows[i]; if (!r[iI]) continue;
     const isin = (r[iI]||'').trim(); if (!isin) continue;
     const ter = parseFloat((r[iTER]||'').replace(',','.'));
-    const px = iPx >= 0 ? parseFloat((r[iPx]||'').replace(',','.')) : NaN;
+    const px = iPx >= 0 ? parseFloat((r[iPx]||'').replace(/,/g,'')) : NaN;
     if (!byIsin[isin]) byIsin[isin] = {
       isin, ticker:(r[iTicker]||'').trim(), name:(r[iName]||'').trim(),
       ter: isFinite(ter)?ter:null, indice:((r[iIndice]||'').trim()),

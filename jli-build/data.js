@@ -1,6 +1,6 @@
 window.JLI_DATA = {
   "asOf": "2026-04-17",
-  "totalValue": 45284955.325,
+  "totalValue": 47487315.760000005,
   "positions": [
     {
       "assetId": "isin-IE00B6YX5C33",
@@ -178,6 +178,35 @@ window.JLI_DATA = {
       "ytd": 1.4,
       "y3": 19.6,
       "p1m": 0.68
+    },
+    {
+      "assetId": "isin-US58733R1023",
+      "name": "MercadoLibre Inc.",
+      "isin": "US58733R1023",
+      "symbol": "MELI",
+      "type": "STOCK",
+      "currency": "c-USD",
+      "qty": 1023,
+      "cost": 433978.5254034451,
+      "value": 2204565,
+      "price": 2155,
+      "byAccount": {
+        "Galicia Securities": 2204565
+      },
+      "ter": null,
+      "indice": "",
+      "geo": "Latam",
+      "mixtoRV": 100,
+      "domic": "Estados Unidos",
+      "retro": "no",
+      "accDist": "",
+      "tipo": "Acciones",
+      "isSP500": false,
+      "sharpe": null,
+      "vol": 40,
+      "ytd": 7,
+      "y3": 20.7,
+      "p1m": 9.19
     },
     {
       "assetId": "isin-IE0032077012",
@@ -839,35 +868,6 @@ window.JLI_DATA = {
       "ytd": 2.7,
       "y3": 10.2,
       "p1m": 0.75
-    },
-    {
-      "assetId": "isin-US58733R1023",
-      "name": "MercadoLibre Inc.",
-      "isin": "US58733R1023",
-      "symbol": "MELI",
-      "type": "STOCK",
-      "currency": "c-USD",
-      "qty": 1023,
-      "cost": 433978.5254034451,
-      "value": 2204.5649999999996,
-      "price": 2.155,
-      "byAccount": {
-        "Galicia Securities": 2204.5649999999996
-      },
-      "ter": null,
-      "indice": "",
-      "geo": "Latam",
-      "mixtoRV": 100,
-      "domic": "Estados Unidos",
-      "retro": "no",
-      "accDist": "",
-      "tipo": "Acciones",
-      "isSP500": false,
-      "sharpe": null,
-      "vol": 40,
-      "ytd": 7,
-      "y3": 20.7,
-      "p1m": 9.19
     }
   ],
   "fundMeta": {
@@ -1205,7 +1205,7 @@ window.JLI_DATA = {
       "y3": 4.8,
       "sharpe": -0.2,
       "vol": null,
-      "lastPx": 16.348
+      "lastPx": 16348
     },
     "IE000N6I8IU2": {
       "isin": "IE000N6I8IU2",
@@ -1499,7 +1499,7 @@ window.JLI_DATA = {
       "y3": 20.7,
       "sharpe": null,
       "vol": 40,
-      "lastPx": 2.155
+      "lastPx": 2155
     },
     "BMG667211046": {
       "isin": "BMG667211046",
@@ -1625,7 +1625,7 @@ window.JLI_DATA = {
       "y3": 20.2,
       "sharpe": null,
       "vol": 10,
-      "lastPx": 6.966
+      "lastPx": 6966
     },
     "ARCAVA460131": {
       "isin": "ARCAVA460131",
