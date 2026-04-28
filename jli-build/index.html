@@ -116,6 +116,22 @@
   .filter-chip { background:rgba(56,189,248,0.15); color:var(--accent); border:1px solid rgba(56,189,248,0.4); border-radius:14px; padding:3px 10px 3px 10px; display:inline-flex; align-items:center; gap:6px; font-size:12px; }
   .filter-chip button { background:transparent; border:0; color:var(--accent); cursor:pointer; font-size:15px; line-height:1; padding:0; opacity:0.8; }
   .filter-chip button:hover { opacity:1; }
+  /* Política tab */
+  .pol-pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
+  .pol-pill.ok  { background:rgba(34,197,94,0.18); color:#86efac; }
+  .pol-pill.warn{ background:rgba(250,204,21,0.18); color:#fde047; }
+  .pol-pill.bad { background:rgba(239,68,68,0.18); color:#fca5a5; }
+  .pol-pill.neutral { background:rgba(148,163,184,0.18); color:#cbd5e1; }
+  .pol-bucket-row td { vertical-align: middle; }
+  .pol-bar { display:block; position:relative; width:100%; height:8px; background:var(--panel2); border-radius:4px; overflow:hidden; }
+  .pol-bar .fill { position:absolute; top:0; bottom:0; left:0; background:var(--accent); }
+  .pol-bar .target { position:absolute; top:-2px; bottom:-2px; background:rgba(250,204,21,0.4); border:1px solid #facc15; border-radius:2px; }
+  .pol-filter-item { padding:8px 10px; border:1px solid var(--border); border-radius:6px; margin-bottom:6px; background:var(--panel2); }
+  .pol-filter-item.bad { border-color:rgba(239,68,68,0.5); background:rgba(239,68,68,0.06); }
+  .pol-filter-item .cat { font-weight:600; color:var(--text); }
+  .pol-filter-item .crit { color:var(--muted); font-size:11px; }
+  .pol-filter-item .why { color:var(--dim); font-size:11px; margin-top:2px; }
+  .pol-filter-item .violators { margin-top:6px; color:#fca5a5; font-size:11px; }
 
   /* Chat widget (bottom-right). Hidden until logged in via #app ancestry. */
   #chatFab { position:fixed; bottom:22px; right:22px; width:54px; height:54px; border-radius:50%; background:var(--accent); color:#0f172a; border:0; font-size:22px; font-weight:700; cursor:pointer; box-shadow:0 12px 28px rgba(0,0,0,0.45); z-index:900; transition:transform .15s, opacity .15s; }
@@ -175,7 +191,8 @@
   <div class="tabs">
     <button class="tab-btn active" data-tab="consolidado">Consolidado</button>
     <button class="tab-btn" data-tab="costes">Costes TER</button>
-    <button class="tab-btn" data-tab="objetivos">Objetivos</button>
+    <button class="tab-btn" data-tab="objetivos">Objetivo S&amp;P</button>
+    <button class="tab-btn" data-tab="politica">Política</button>
   </div>
 
   <div class="content">
@@ -198,6 +215,14 @@
           <h3>Distribución por Custodio</h3>
           <p class="desc">Concentración del patrimonio por banco / broker.</p>
           <div class="chart-wrap"><canvas id="chartByAccount"></canvas></div>
+        </div>
+      </div>
+
+      <div class="chart-row full">
+        <div class="chart-box">
+          <h3>Evolución del Patrimonio</h3>
+          <p class="desc">Total mensual reconstruido desde el histórico de transacciones. Las líneas amarillas marcan las fechas en las que se aprobó una versión de la <b>Política de Inversión</b>.</p>
+          <div class="chart-wrap tall"><canvas id="chartPatHistory"></canvas></div>
         </div>
       </div>
 
@@ -359,6 +384,104 @@
         </div>
       </div>
     </section>
+
+    <!-- ─── POLÍTICA ─── -->
+    <section id="tab-politica" class="hidden">
+      <div class="chart-box" style="margin-bottom:14px">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap">
+          <div style="flex:1; min-width:280px">
+            <h3 style="margin:0 0 4px 0">Política de Inversión</h3>
+            <p class="desc" style="margin:0">Marco regulatorio único para la gestión del patrimonio. Cada versión queda registrada y se referencia en la línea de tiempo del patrimonio.</p>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px">
+            <label style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.6px">Versión</label>
+            <select id="polVersionSelect" style="background:var(--panel2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-size:13px"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-row full">
+        <div class="chart-box">
+          <div id="polHeader" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px"></div>
+          <p class="desc" id="polObjetivo" style="margin-top:14px"></p>
+        </div>
+      </div>
+
+      <div class="chart-row two" style="margin-top:14px">
+        <div class="chart-box">
+          <h3>Asignación Estratégica vs Cartera Actual</h3>
+          <p class="desc">Comparación del peso real de cada bucket frente al rango objetivo definido en la política.</p>
+          <div class="chart-wrap tall"><canvas id="chartAllocation"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <h3>Brechas por Bucket</h3>
+          <p class="desc">Distancia (en USD) entre la cartera actual y el rango objetivo. Verde = dentro del rango. Rojo = fuera.</p>
+          <div style="overflow:auto">
+            <table id="tableAllocation">
+              <thead>
+                <tr>
+                  <th>Bucket</th>
+                  <th>Índice</th>
+                  <th class="num">Objetivo %</th>
+                  <th class="num">Actual %</th>
+                  <th class="num">Actual USD</th>
+                  <th class="num">Brecha</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-row two" style="margin-top:14px">
+        <div class="chart-box">
+          <h3>Cumplimiento de KPIs</h3>
+          <p class="desc">Cuánto del patrimonio cumple cada criterio mínimo obligatorio. Las celdas en rojo indican fondos que infringen la política.</p>
+          <div id="polKpiGrid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px"></div>
+        </div>
+        <div class="chart-box">
+          <h3>Filtros de Exclusión</h3>
+          <p class="desc">Reglas que ningún activo puede vulnerar. Si una se incumple, aparece en rojo con la lista de fondos.</p>
+          <div id="polFiltersList" style="font-size:12px; line-height:1.5"></div>
+        </div>
+      </div>
+
+      <div class="chart-row full" style="margin-top:14px">
+        <div class="chart-box">
+          <h3>Posiciones por Bucket</h3>
+          <p class="desc">Cómo se mapea cada activo de la cartera a un bucket de la política. Click en los títulos para ordenar.</p>
+          <div style="overflow:auto; max-height:480px">
+            <table id="tablePolPositions">
+              <thead>
+                <tr>
+                  <th data-sort-key="bucket">Bucket</th>
+                  <th data-sort-key="name">Activo</th>
+                  <th data-sort-key="isin">ISIN</th>
+                  <th class="num" data-sort-key="value">Valor USD</th>
+                  <th class="num" data-sort-key="pct">% Cartera</th>
+                  <th class="num" data-sort-key="ter">TER %</th>
+                  <th data-sort-key="domic">Dom.</th>
+                  <th data-sort-key="retro">Retro</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-row two" style="margin-top:14px">
+        <div class="chart-box">
+          <h3>Principios de Ejecución</h3>
+          <div id="polPrincipios" style="font-size:12px; line-height:1.6"></div>
+        </div>
+        <div class="chart-box">
+          <h3>Plazo y Oportunidad</h3>
+          <div id="polPlazo" style="font-size:12px; line-height:1.6"></div>
+        </div>
+      </div>
+    </section>
   </div>
 </div>
 
@@ -409,6 +532,7 @@
 </div>
 
 <script src="data.js"></script>
+<script src="policies.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════
 // Login — client-side SHA-256 credential check. NOT a security
@@ -1003,6 +1127,231 @@ function renderAll(D) {
     }
   });
   renderGap();
+
+  // ── Patrimonio history (Consolidado) with policy markers ──
+  const policies = (window.JLI_POLICIES || []).slice().sort((a,b) => a.date.localeCompare(b.date));
+  const policyMonths = policies.map(p => p.date.slice(0,7));
+  const policyPlugin = {
+    id: 'policyMarkers',
+    afterDatasetsDraw(chart) {
+      const xScale = chart.scales.x; const yScale = chart.scales.y;
+      if (!xScale || !yScale) return;
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.strokeStyle = '#facc15'; ctx.lineWidth = 1.5; ctx.setLineDash([4,4]);
+      ctx.fillStyle = '#facc15'; ctx.font = '11px system-ui';
+      policies.forEach(p => {
+        const m = p.date.slice(0,7);
+        const idx = histLabels.indexOf(m);
+        if (idx < 0) return;
+        const x = xScale.getPixelForValue(idx);
+        ctx.beginPath(); ctx.moveTo(x, yScale.top); ctx.lineTo(x, yScale.bottom); ctx.stroke();
+        ctx.fillText('Política v' + p.version, x + 4, yScale.top + 12);
+      });
+      ctx.restore();
+    }
+  };
+  charts.patHistory = new Chart(document.getElementById('chartPatHistory'), {
+    type:'line',
+    data:{ labels: histLabels, datasets:[
+      { label:'Patrimonio (USD)', data: D.history.map(h => h.total), borderColor:'#38bdf8', backgroundColor:'rgba(56,189,248,0.18)', fill:true, tension:0.25, pointRadius:0, borderWidth:2 }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:(ctx)=>fmtUSD(ctx.parsed.y) }}},
+      scales:{
+        x:{ ticks:{color:'#94a3b8',maxRotation:0,autoSkip:true,maxTicksLimit:12}, grid:{color:'rgba(148,163,184,0.08)'}},
+        y:{ ticks:{color:'#94a3b8',callback:(v)=>'$'+(v/1e6).toFixed(1)+'M'}, grid:{color:'rgba(148,163,184,0.1)'}}
+      }
+    },
+    plugins:[policyPlugin]
+  });
+
+  // ── Política tab ──
+  renderPolicy(D);
+}
+
+// ══════════════════════════════════════════════════════════════
+// Política — version selector + asset-allocation gap analysis +
+// KPI compliance + filter violations.
+// ══════════════════════════════════════════════════════════════
+function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function classifyPosition(p, allocation) {
+  for (const b of allocation) { if (b.match(p)) return b.id; }
+  return null; // out of policy
+}
+
+function renderPolicy(D) {
+  const policies = (window.JLI_POLICIES || []).slice().sort((a,b) => b.date.localeCompare(a.date));
+  const sel = document.getElementById('polVersionSelect');
+  if (!policies.length) { sel.innerHTML = '<option>(sin políticas)</option>'; return; }
+
+  // (Re)populate version select once.
+  if (sel.dataset.populated !== '1') {
+    sel.innerHTML = policies.map((p,i) => `<option value="${i}">v${p.version} — ${p.date}</option>`).join('');
+    sel.dataset.populated = '1';
+    sel.addEventListener('change', () => renderPolicy(window.__CURRENT_DATA__ || D));
+  }
+  const idx = parseInt(sel.value || '0', 10);
+  const pol = policies[idx];
+
+  // ── Header ──
+  const headEl = document.getElementById('polHeader');
+  headEl.innerHTML = [
+    ['Versión', `v${pol.version}`],
+    ['Fecha', pol.date],
+    ['Titular', pol.titular],
+    ['Horizonte', pol.horizonte],
+    ['Perfil', pol.perfil]
+  ].map(([k,v]) => `<div class="mini-kpi"><div class="label">${k}</div><div class="value" style="font-size:14px">${escapeHtml(v)}</div></div>`).join('');
+  document.getElementById('polObjetivo').innerHTML = '<b>Objetivo:</b> ' + escapeHtml(pol.objetivo);
+
+  // ── Allocation comparison ──
+  const total = D.totalValue || D.positions.reduce((s,p)=>s+p.value, 0);
+  const buckets = pol.allocation.map(b => ({ ...b, valueUSD:0, pct:0, positions: [] }));
+  const otros = { id:'__otros', region:'—', tipo:'Fuera de Política', indice:'—', min:0, max:0, color:'#475569', valueUSD:0, pct:0, positions:[] };
+  D.positions.forEach(p => {
+    const id = classifyPosition(p, pol.allocation);
+    const target = id ? buckets.find(b => b.id === id) : otros;
+    target.valueUSD += p.value;
+    target.positions.push(p);
+  });
+  [...buckets, otros].forEach(b => { b.pct = total > 0 ? b.valueUSD/total*100 : 0; });
+
+  // Allocation chart: stacked bar — actual vs target range.
+  if (charts.allocation) charts.allocation.destroy();
+  const allBuckets = [...buckets, otros];
+  charts.allocation = new Chart(document.getElementById('chartAllocation'), {
+    type:'bar',
+    data:{
+      labels: allBuckets.map(b => b.indice + ' (' + b.tipo + ')'),
+      datasets: [
+        { label:'Actual %', data: allBuckets.map(b => b.pct), backgroundColor: allBuckets.map(b => b.color), borderWidth:0 },
+        { label:'Objetivo mín', data: allBuckets.map(b => b.min), type:'line', borderColor:'#facc15', borderWidth:2, borderDash:[3,3], pointRadius:3, pointBackgroundColor:'#facc15', fill:false },
+        { label:'Objetivo máx', data: allBuckets.map(b => b.max), type:'line', borderColor:'#fbbf24', borderWidth:2, borderDash:[3,3], pointRadius:3, pointBackgroundColor:'#fbbf24', fill:false }
+      ]
+    },
+    options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y',
+      plugins:{ legend:{ labels:{color:'#cbd5e1', font:{size:10}, boxWidth:12}}, tooltip:{ callbacks:{ label:(ctx)=>ctx.dataset.label+': '+ctx.parsed.x.toFixed(1)+'%'}}},
+      scales:{ x:{ ticks:{color:'#94a3b8',callback:v=>v+'%'}, grid:{color:'rgba(148,163,184,0.1)'}}, y:{ ticks:{color:'#cbd5e1', font:{size:11}}, grid:{display:false}}}
+    }
+  });
+
+  // Allocation table
+  const tbody = document.querySelector('#tableAllocation tbody');
+  tbody.innerHTML = allBuckets.map(b => {
+    const inRange = b.id !== '__otros' && b.pct >= b.min && b.pct <= b.max;
+    const below = b.id !== '__otros' && b.pct < b.min;
+    const minUSD = total * b.min/100, maxUSD = total * b.max/100;
+    let gap = 0, gapLabel = '—', pillClass = 'neutral', pillText = '—';
+    if (b.id === '__otros') {
+      pillClass = b.valueUSD > 0 ? 'warn' : 'ok';
+      pillText = b.valueUSD > 0 ? 'fuera de política' : 'sin posiciones';
+      gapLabel = b.valueUSD > 0 ? `−${fmtUSD(b.valueUSD)} a reasignar` : '—';
+    } else if (inRange) { pillClass = 'ok'; pillText = 'en rango'; gapLabel = '✓'; }
+    else if (below) { gap = minUSD - b.valueUSD; pillClass = 'bad'; pillText = 'falta'; gapLabel = `+${fmtUSD(gap)}`; }
+    else { gap = b.valueUSD - maxUSD; pillClass = 'bad'; pillText = 'excede'; gapLabel = `−${fmtUSD(gap)}`; }
+    const targetLabel = b.id === '__otros' ? '0%' : `${b.min}–${b.max}%`;
+    return `<tr class="pol-bucket-row">
+      <td><b>${escapeHtml(b.tipo)}</b><div style="color:var(--dim); font-size:10px">${escapeHtml(b.region)}</div></td>
+      <td style="color:var(--muted); font-size:11px">${escapeHtml(b.indice)}</td>
+      <td class="num">${targetLabel}</td>
+      <td class="num">${b.pct.toFixed(1)}%</td>
+      <td class="num">${fmtUSD(b.valueUSD)}</td>
+      <td class="num"><span class="pol-pill ${pillClass}">${pillText}</span><div style="color:var(--dim); font-size:10px; margin-top:2px">${gapLabel}</div></td>
+    </tr>`;
+  }).join('');
+
+  // ── KPIs (cumplimiento) ──
+  const k = pol.kpis;
+  const withTER = D.positions.filter(p => p.ter != null);
+  const totalCovered = withTER.reduce((s,p) => s+p.value, 0);
+  const overTERValue = withTER.filter(p => p.ter > k.terMaxPct).reduce((s,p) => s+p.value, 0);
+  const overTERCount = withTER.filter(p => p.ter > k.terMaxPct).length;
+  const okTERPct = totalCovered > 0 ? (1 - overTERValue/totalCovered) * 100 : 0;
+  // Acumulación
+  const distValue = D.positions.filter(p => /distrib/i.test(p.accDist||'')).reduce((s,p)=>s+p.value, 0);
+  const accuPct = total > 0 ? (1 - distValue/total) * 100 : 0;
+  // Domicilio EE.UU.
+  const usValue = D.positions.filter(p => /U\.?S\.?A?\.?$|estados unidos/i.test(p.domic||'')).reduce((s,p)=>s+p.value, 0);
+  const usPct = total > 0 ? usValue/total*100 : 0;
+  // Concentración por gestora — using parent-of-name heuristic via first-word of `name` if no separate field.
+  // (Actual gestora field is not in our data, so skip a hard check; report informational only.)
+  const kpiCards = [
+    { label:'TER ≤ ' + k.terMaxPct.toFixed(2) + '%', value: okTERPct.toFixed(1) + '%', sub: overTERCount + ' fondos por encima', pill: okTERPct >= 90 ? 'ok' : (okTERPct >= 70 ? 'warn' : 'bad') },
+    { label:'Acumulación', value: accuPct.toFixed(1) + '%', sub: distValue > 0 ? fmtUSD(distValue) + ' en distribución' : 'sin fondos de distribución', pill: accuPct >= 95 ? 'ok' : (accuPct >= 80 ? 'warn' : 'bad') },
+    { label:'AUM ≥ $' + (k.aumMinUSD/1e9).toFixed(0) + 'B', value: '—', sub: 'verificación manual (AUM en BBDD es texto)', pill: 'neutral' },
+    { label:'Track Record ≥ ' + k.trackRecordMinYears + 'a', value: '—', sub: 'verificación manual', pill: 'neutral' },
+    { label:'Domicilio EE.UU.', value: usPct.toFixed(1) + '%', sub: 'objetivo: minimizar Estate Tax', pill: usPct < 10 ? 'ok' : (usPct < 25 ? 'warn' : 'bad') }
+  ];
+  document.getElementById('polKpiGrid').innerHTML = kpiCards.map(c => `
+    <div class="kpi-card">
+      <div class="label">${c.label} <span class="pol-pill ${c.pill}" style="margin-left:4px">${c.pill === 'ok' ? '✓' : (c.pill === 'bad' ? '✗' : '—')}</span></div>
+      <div class="value" style="font-size:18px">${c.value}</div>
+      <div class="sub">${escapeHtml(c.sub)}</div>
+    </div>
+  `).join('');
+
+  // ── Filtros (con violaciones detectadas) ──
+  const violators = {
+    'Banca Comercial': D.positions.filter(p => /jp ?morgan|santander|hsbc|bbva|citi|barclays/i.test(p.name||'') && p.tipo !== 'Efectivo'),
+    'Retrocesiones': D.positions.filter(p => /^si$/i.test(p.retro||'')),
+    'Domicilio en EE.UU.': D.positions.filter(p => /U\.?S\.?A?\.?$|estados unidos/i.test(p.domic||'')),
+    'Fondos Mixtos o Híbridos': D.positions.filter(p => p.tipo === 'Multiactivo')
+  };
+  document.getElementById('polFiltersList').innerHTML = pol.filtros.map(f => {
+    const v = violators[f.criterio] || [];
+    const bad = v.length > 0;
+    const list = bad ? `<div class="violators">${v.length} fondo${v.length>1?'s':''}: ${v.slice(0,4).map(p => escapeHtml(p.name)).join(', ')}${v.length>4?'…':''}</div>` : '';
+    return `<div class="pol-filter-item ${bad?'bad':''}">
+      <div><span class="cat">${escapeHtml(f.categoria)}</span> <span class="pol-pill ${bad?'bad':'ok'}">${bad?'incumple':'ok'}</span></div>
+      <div class="crit">${escapeHtml(f.criterio)}</div>
+      <div class="why">${escapeHtml(f.justif)}</div>
+      ${list}
+    </div>`;
+  }).join('');
+
+  // ── Posiciones por bucket ──
+  const polRows = D.positions.map(p => {
+    const id = classifyPosition(p, pol.allocation);
+    const b = pol.allocation.find(bb => bb.id === id);
+    return {
+      ...p,
+      bucket: b ? b.tipo : 'Fuera de política',
+      _pct: total > 0 ? p.value/total*100 : 0
+    };
+  });
+  const renderPolRow = (p) => `
+    <tr>
+      <td><b>${escapeHtml(p.bucket)}</b></td>
+      <td>${escapeHtml(p.name)}<div style="color:var(--dim); font-size:10px">${escapeHtml(p.symbol||'')}</div></td>
+      <td style="color:var(--muted); font-size:11px">${escapeHtml(p.isin||'—')}</td>
+      <td class="num">${fmtUSD(p.value)}</td>
+      <td class="num">${p._pct.toFixed(1)}%</td>
+      <td class="num">${p.ter == null ? '—' : p.ter.toFixed(2)}</td>
+      <td style="color:var(--muted); font-size:11px">${escapeHtml(p.domic||'—')}</td>
+      <td>${p.retro === 'si' ? '<span class="pol-pill warn">sí</span>' : '<span class="pol-pill ok">no</span>'}</td>
+    </tr>`;
+  makeSortable('#tablePolPositions', {
+    bucket: { type:'str', get:p=>p.bucket },
+    name:   { type:'str', get:p=>p.name },
+    isin:   { type:'str', get:p=>p.isin||'' },
+    value:  { type:'num', get:p=>p.value },
+    pct:    { type:'num', get:p=>p._pct },
+    ter:    { type:'num', get:p=>p.ter },
+    domic:  { type:'str', get:p=>p.domic||'' },
+    retro:  { type:'str', get:p=>p.retro||'' }
+  }, () => polRows, renderPolRow, { key:'value', dir:-1 })();
+
+  // ── Principios y plazos ──
+  document.getElementById('polPrincipios').innerHTML = pol.principios
+    .map(p => `<div style="margin-bottom:8px"><b>${escapeHtml(p.titulo)}.</b> <span style="color:var(--muted)">${escapeHtml(p.detalle)}</span></div>`).join('');
+  document.getElementById('polPlazo').innerHTML = `
+    <div style="margin-bottom:8px"><b>Estimado.</b> <span style="color:var(--muted)">${escapeHtml(pol.plazo.estimado)}</span></div>
+    <div style="margin-bottom:8px"><b>Oportunidad.</b> <span style="color:var(--muted)">${escapeHtml(pol.plazo.oportunidad)}</span></div>
+    <div style="margin-bottom:8px"><b>Fiscal.</b> <span style="color:var(--muted)">${escapeHtml(pol.plazo.fiscal)}</span></div>
+    <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border); color:var(--dim); font-size:11px; font-style:italic">${escapeHtml(pol.notas)}</div>
+  `;
 }
 
 // ══════════════════════════════════════════════════════════════
