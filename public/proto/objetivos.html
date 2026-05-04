@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Objetivos · JLI</title>
+<script>
+  // Auth guard — si abren la página directa sin sesión, vuelven al shell
+  (function () {
+    try {
+      if (window.top === window.self && !sessionStorage.getItem('jli_auth')) {
+        window.location.replace('/proto/');
+      }
+    } catch (e) {}
+  })();
+</script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  html, body, #root { margin: 0; padding: 0; height: 100%; }
+  body { background: #fafaf7; }
+  #boot {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #6b6b64; font-family: 'Geist', -apple-system, sans-serif; font-size: 13px;
+    background: #fafaf7;
+  }
+</style>
+</head>
+<body>
+<div id="boot">cargando objetivos…</div>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ============================================================
+   SNAP SLIDER
+============================================================ */
+function SnapSlider({ steps, value, onChange, labels, formatValue }) {
+  const trackRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const valueToIndex = (v) => {
+    let closestIdx = 0;
+    let closestDiff = Infinity;
+    steps.forEach((s, i) => {
+      const d = Math.abs(s - v);
+      if (d < closestDiff) { closestDiff = d; closestIdx = i; }
+    });
+    return closestIdx;
+  };
+
+  const currentIdx = valueToIndex(value);
+  const pctForIdx = (i) => (i / (steps.length - 1)) * 100;
+
+  const handlePointerPos = useCallback((clientX) => {
+    if (!trackRef.current) return;
+    const rect = trackRef.current.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const rawIdx = pct * (steps.length - 1);
+    onChange(steps[Math.round(rawIdx)]);
+  }, [steps, onChange]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const handleMove = (e) => {
+      const x = e.touches ? e.touches[0].clientX : e.clientX;
+      handlePointerPos(x);
+    };
+    const handleUp = () => setIsDragging(false);
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
+    window.addEventListener("touchmove", handleMove);
+    window.addEventListener("touchend", handleUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("touchend", handleUp);
+    };
+  }, [isDragging, handlePointerPos]);
+
+  const startDrag = (e) => {
+    e.preventDefault();
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    handlePointerPos(x);
+    setIsDragging(true);
+  };
+
+  return (
+    <div>
+      <div ref={trackRef} className="snap-slider-wrap"
+           onMouseDown={startDrag} onTouchStart={startDrag}
+           style={{ cursor: isDragging ? "grabbing" : "pointer" }}>
+        <div className="snap-slider-track" />
+        <div className="snap-slider-fill" style={{ width: `${pctForIdx(currentIdx)}%` }} />
+        <div className="snap-dots">
+          {steps.map((s, i) => {
+            const isActive = i === currentIdx;
+            const isPassed = i < currentIdx;
+            return (
+              <div key={i}
+                   className={`snap-dot ${isActive ? "active" : ""} ${isPassed ? "passed" : ""}`}
+                   onClick={(e) => { e.stopPropagation(); onChange(s); }}
+                   title={formatValue ? formatValue(s) : s} />
+            );
+          })}
+        </div>
+      </div>
+      {labels && (
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 11, color: "#a8a89e", fontVariantNumeric: "tabular-nums" }}>
+          {labels.map((l, i) => <span key={i}>{l}</span>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   YEAR RANGE PICKER
+============================================================ */
+function YearRangePicker({ totalYears, startYear, endYear, onChange }) {
+  const trackRef = useRef(null);
+  const [dragging, setDragging] = useState(null);
+  const [dragStartX, setDragStartX] = useState(null);
+  const [dragInitialRange, setDragInitialRange] = useState(null);
+
+  const yearFromPos = (clientX) => {
+    if (!trackRef.current) return 1;
+    const rect = trackRef.current.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    return Math.max(1, Math.min(totalYears, Math.round(pct * (totalYears - 1)) + 1));
+  };
+
+  useEffect(() => {
+    if (!dragging) return;
+    const handleMove = (e) => {
+      const x = e.touches ? e.touches[0].clientX : e.clientX;
+      if (dragging === "start") {
+        const y = yearFromPos(x);
+        onChange(Math.min(y, endYear), endYear);
+      } else if (dragging === "end") {
+        const y = yearFromPos(x);
+        onChange(startYear, Math.max(y, startYear));
+      } else if (dragging === "range" && dragStartX !== null && dragInitialRange) {
+        const rect = trackRef.current.getBoundingClientRect();
+        const cellWidth = rect.width / (totalYears - 1);
+        const deltaCells = Math.round((x - dragStartX) / cellWidth);
+        const newStart = Math.max(1, Math.min(totalYears - (dragInitialRange.end - dragInitialRange.start), dragInitialRange.start + deltaCells));
+        const newEnd = newStart + (dragInitialRange.end - dragInitialRange.start);
+        onChange(newStart, newEnd);
+      }
+    };
+    const handleUp = () => { setDragging(null); setDragStartX(null); setDragInitialRange(null); };
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
+    window.addEventListener("touchmove", handleMove);
+    window.addEventListener("touchend", handleUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("touchend", handleUp);
+    };
+  }, [dragging, startYear, endYear, totalYears, onChange, dragStartX, dragInitialRange]);
+
+  const startPct = ((startYear - 1) / (totalYears - 1)) * 100;
+  const endPct = ((endYear - 1) / (totalYears - 1)) * 100;
+
+  return (
+    <div style={{ padding: "24px 0 8px" }}>
+      <div ref={trackRef} style={{ position: "relative", height: 48, cursor: dragging === "range" ? "grabbing" : "default" }}>
+        <div style={{ position: "absolute", top: "50%", left: 0, right: 0, height: 4, background: "#ebebe4", borderRadius: 999, transform: "translateY(-50%)" }} />
+        <div onMouseDown={(e) => { e.preventDefault(); setDragging("range"); setDragStartX(e.clientX); setDragInitialRange({ start: startYear, end: endYear }); }}
+             onTouchStart={(e) => { setDragging("range"); setDragStartX(e.touches[0].clientX); setDragInitialRange({ start: startYear, end: endYear }); }}
+             style={{ position: "absolute", top: "50%", left: `${startPct}%`, width: `${endPct - startPct}%`, height: 4, background: "#0a0a0a", borderRadius: 999, transform: "translateY(-50%)", cursor: "grab", transition: dragging ? "none" : "all 0.15s ease" }} />
+        <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "space-between", alignItems: "center", pointerEvents: "none" }}>
+          {Array.from({ length: totalYears }, (_, i) => {
+            const year = i + 1;
+            const inRange = year >= startYear && year <= endYear;
+            const dotSize = totalYears <= 15 ? 6 : totalYears <= 30 ? 5 : 4;
+            return (
+              <div key={i} style={{ width: dotSize, height: dotSize, borderRadius: "50%", background: inRange ? "#0a0a0a" : "#fff", border: `2px solid ${inRange ? "#0a0a0a" : "#c9c9c0"}`, zIndex: 1, flexShrink: 0, transition: "all 0.2s ease" }} />
+            );
+          })}
+        </div>
+        <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setDragging("start"); }}
+             onTouchStart={(e) => { e.stopPropagation(); setDragging("start"); }}
+             style={{ position: "absolute", top: "50%", left: `${startPct}%`, width: 24, height: 24, borderRadius: "50%", background: "#fff", border: "2px solid #0a0a0a", transform: "translate(-50%, -50%)", cursor: "ew-resize", boxShadow: "0 2px 10px rgba(0,0,0,0.15)", zIndex: 3, transition: dragging === "start" ? "none" : "transform 0.15s ease" }} />
+        <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setDragging("end"); }}
+             onTouchStart={(e) => { e.stopPropagation(); setDragging("end"); }}
+             style={{ position: "absolute", top: "50%", left: `${endPct}%`, width: 24, height: 24, borderRadius: "50%", background: "#fff", border: "2px solid #0a0a0a", transform: "translate(-50%, -50%)", cursor: "ew-resize", boxShadow: "0 2px 10px rgba(0,0,0,0.15)", zIndex: 3, transition: dragging === "end" ? "none" : "transform 0.15s ease" }} />
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, fontSize: 11, color: "#a8a89e", fontVariantNumeric: "tabular-nums" }}>
+        {Array.from({ length: totalYears }, (_, i) => {
+          const year = i + 1;
+          const inRange = year >= startYear && year <= endYear;
+          const isEndpoint = year === startYear || year === endYear;
+          const showLabel = totalYears <= 15 ? true : year === 1 || year === totalYears || year % 5 === 0 || isEndpoint;
+          return (
+            <span key={i} style={{ color: inRange ? "#0a0a0a" : "#a8a89e", fontWeight: inRange ? 500 : 400, transition: "color 0.2s ease", width: 20, textAlign: "center", visibility: showLabel ? "visible" : "hidden" }}>
+              {year}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   MAIN
+============================================================ */
+function WealthPlanningWorkflow() {
+  const visibleYears = 10;
+  const maxYear = 40;
+  const [currentStep, setCurrentStep] = useState(0);
+
+  const expenseSteps = [1000, 2000, 3000, 4000, 5000, 7000, 9000, 11000, 13000, 15000, 17000, 19000, 21000, 23000, 25000];
+  const incomeSteps = [0, 1000, 2000, 3000, 5000, 7000, 10000, 13000, 16000, 20000, 25000];
+  const psmSteps = [5000, 25000, 50000, 100000, 200000, 300000, 400000, 500000, 650000, 800000, 1000000, 1200000, 1400000, 1600000, 1800000, 2000000];
+  const eduSteps = [5000, 10000, 15000, 20000, 30000, 40000, 50000, 60000, 75000, 90000, 110000, 130000, 150000];
+  const intergenSteps = [500000, 1000000, 2000000, 3000000, 5000000, 7500000, 10000000, 15000000, 20000000, 30000000, 50000000, 75000000, 100000000];
+
+  const [monthlyExpense, setMonthlyExpense] = useState(9000);
+  const [displayedExpense, setDisplayedExpense] = useState(9000);
+  const [monthlyIncome, setMonthlyIncome] = useState(3000);
+  const [displayedIncome, setDisplayedIncome] = useState(3000);
+  const [psmValue, setPsmValue] = useState(500000);
+  const [displayedPsm, setDisplayedPsm] = useState(500000);
+  const [psmUserTouched, setPsmUserTouched] = useState(false);
+  const [eduPerYear, setEduPerYear] = useState(30000);
+  const [displayedEdu, setDisplayedEdu] = useState(30000);
+  const [eduStartYear, setEduStartYear] = useState(5);
+  const [eduEndYear, setEduEndYear] = useState(10);
+  const [yearsToRetirement, setYearsToRetirement] = useState(15);
+  const [retirementMultiplier, setRetirementMultiplier] = useState(25);
+  const [intergenCapital, setIntergenCapital] = useState(5000000);
+  const [displayedIntergen, setDisplayedIntergen] = useState(5000000);
+
+  const [confirmedExpense, setConfirmedExpense] = useState(null);
+  const [confirmedIncome, setConfirmedIncome] = useState(null);
+  const [confirmedPsm, setConfirmedPsm] = useState(null);
+  const [confirmedEdu, setConfirmedEdu] = useState(null);
+  const [confirmedRetirement, setConfirmedRetirement] = useState(null);
+  const [confirmedIntergen, setConfirmedIntergen] = useState(null);
+
+  const [mnvStart, setMnvStart] = useState(1);
+  const [mnvDuration, setMnvDuration] = useState(2);
+  const [psmStart, setPsmStart] = useState(1);
+  const [psmDuration, setPsmDuration] = useState(3);
+  const [eduStart, setEduStart] = useState(5);
+  const [eduDuration, setEduDuration] = useState(6);
+  const [retStart, setRetStart] = useState(15);
+  const [, setRetDuration] = useState(1);
+  const [intergenStart, setIntergenStart] = useState(11);
+  const [intergenDuration, setIntergenDuration] = useState(1);
+
+  const [customObjectives, setCustomObjectives] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newObjName, setNewObjName] = useState("");
+  const [newObjAmount, setNewObjAmount] = useState("");
+
+  const [mnvAnnualOverride, setMnvAnnualOverride] = useState(null);
+  const [psmTotalOverride, setPsmTotalOverride] = useState(null);
+  const [eduAnnualOverride, setEduAnnualOverride] = useState(null);
+  const [retCapitalOverride, setRetCapitalOverride] = useState(null);
+  const [intergenOverride, setIntergenOverride] = useState(null);
+
+  useEffect(() => {
+    const diff = monthlyExpense - displayedExpense;
+    if (Math.abs(diff) < 1) return setDisplayedExpense(monthlyExpense);
+    const t = setTimeout(() => setDisplayedExpense((p) => p + diff / 6), 16);
+    return () => clearTimeout(t);
+  }, [monthlyExpense, displayedExpense]);
+  useEffect(() => {
+    const diff = monthlyIncome - displayedIncome;
+    if (Math.abs(diff) < 1) return setDisplayedIncome(monthlyIncome);
+    const t = setTimeout(() => setDisplayedIncome((p) => p + diff / 6), 16);
+    return () => clearTimeout(t);
+  }, [monthlyIncome, displayedIncome]);
+  useEffect(() => {
+    const diff = psmValue - displayedPsm;
+    if (Math.abs(diff) < 1) return setDisplayedPsm(psmValue);
+    const t = setTimeout(() => setDisplayedPsm((p) => p + diff / 6), 16);
+    return () => clearTimeout(t);
+  }, [psmValue, displayedPsm]);
+  useEffect(() => {
+    const diff = eduPerYear - displayedEdu;
+    if (Math.abs(diff) < 1) return setDisplayedEdu(eduPerYear);
+    const t = setTimeout(() => setDisplayedEdu((p) => p + diff / 6), 16);
+    return () => clearTimeout(t);
+  }, [eduPerYear, displayedEdu]);
+  useEffect(() => {
+    const diff = intergenCapital - displayedIntergen;
+    if (Math.abs(diff) < 1) return setDisplayedIntergen(intergenCapital);
+    const t = setTimeout(() => setDisplayedIntergen((p) => p + diff / 6), 16);
+    return () => clearTimeout(t);
+  }, [intergenCapital, displayedIntergen]);
+
+  useEffect(() => {
+    if (psmUserTouched) return;
+    if (confirmedExpense === null) return;
+    const annualMnv = confirmedExpense * 12;
+    const suggested = annualMnv * 5;
+    const clamped = Math.max(5000, Math.min(2000000, suggested));
+    let closest = psmSteps[0];
+    let minDiff = Infinity;
+    psmSteps.forEach((s) => {
+      const d = Math.abs(s - clamped);
+      if (d < minDiff) { minDiff = d; closest = s; }
+    });
+    setPsmValue(closest);
+  }, [confirmedExpense, psmUserTouched]);
+
+  const baseMonthlyExpense = confirmedExpense ?? monthlyExpense;
+  const annualExpense = mnvAnnualOverride ?? baseMonthlyExpense * 12;
+  const annualIncome = confirmedIncome !== null ? confirmedIncome * 12 : 0;
+  const mnvGross = annualExpense * mnvDuration;
+  const mnvNet = confirmedIncome !== null ? Math.max(0, mnvGross - annualIncome * mnvDuration) : mnvGross;
+  const psmAmount = psmTotalOverride ?? (confirmedPsm ?? 0);
+  const eduAnnual = eduAnnualOverride ?? (confirmedEdu ?? 0);
+  const eduTotal = eduAnnual * eduDuration;
+  const retirementCapital = retCapitalOverride ?? baseMonthlyExpense * 12 * retirementMultiplier;
+  const intergenInvestable = intergenOverride ?? (confirmedIntergen ?? 0);
+
+  const formatUSD = (n) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+  const formatShort = (n) => {
+    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`;
+    if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
+    return `$${n}`;
+  };
+  const formatWithCommas = (n) => new Intl.NumberFormat("en-US").format(n);
+
+  const objectives = [];
+  if (confirmedExpense !== null) {
+    objectives.push({ id: "mnv", code: "MNV", name: "Mantener Nivel de Vida", startYear: mnvStart, duration: mnvDuration, capital: mnvNet, capitalGross: mnvGross, color: "#0a0a0a", annualPerYear: annualExpense, perYearLabel: "gasto anual" });
+  }
+  if (confirmedPsm !== null) {
+    objectives.push({ id: "psm", code: "PSM", name: "Por Si Las Moscas", startYear: psmStart, duration: psmDuration, capital: psmAmount, color: "#2d2d2d", isLumpSum: true, perYearLabel: "total" });
+  }
+  if (confirmedEdu !== null) {
+    objectives.push({ id: "edu", code: "EDU", name: "Educación de los hijos", startYear: eduStart, duration: eduDuration, capital: eduTotal, color: "#4a3f2a", annualPerYear: eduAnnual, perYearLabel: "por año" });
+  }
+  if (confirmedRetirement !== null) {
+    objectives.push({ id: "ret", code: "JUB", name: "Jubilación", startYear: retStart, duration: retirementMultiplier, capital: retirementCapital, color: "#1a3a2e", annualPerYear: baseMonthlyExpense * 12, perYearLabel: "gasto anual" });
+  }
+  customObjectives.forEach((obj) => {
+    objectives.push({ ...obj, isLumpSum: true, perYearLabel: "monto", isCustom: true });
+  });
+
+  const capitalNeeded = objectives.reduce((s, o) => s + o.capital, 0);
+  const intergenAmount = Math.max(0, intergenInvestable - capitalNeeded);
+  const capitalDeficit = Math.max(0, capitalNeeded - intergenInvestable);
+
+  if (confirmedIntergen !== null && intergenAmount > 0) {
+    objectives.push({ id: "intergen", code: "INT", name: "Capital Intergeneracional", startYear: intergenStart, duration: intergenDuration, capital: intergenAmount, color: "#5c4a7a", isLumpSum: true, isMilestone: true, perYearLabel: "excedente" });
+  }
+
+  const handleConfirmStep0 = () => { setConfirmedExpense(monthlyExpense); setCurrentStep(1); };
+  const handleConfirmStep1 = () => { setConfirmedIncome(monthlyIncome); setCurrentStep(2); };
+  const handleConfirmStep2 = () => { setConfirmedPsm(psmValue); setPsmStart(1); setPsmDuration(3); setCurrentStep(3); };
+  const handleConfirmStep3 = () => {
+    setConfirmedEdu(eduPerYear);
+    setEduStart(eduStartYear);
+    setEduDuration(eduEndYear - eduStartYear + 1);
+    setCurrentStep(4);
+  };
+  const handleConfirmStep4 = () => {
+    setConfirmedRetirement(yearsToRetirement);
+    setRetStart(yearsToRetirement);
+    setRetDuration(1);
+    setCurrentStep(5);
+  };
+  const handleConfirmStep5 = () => {
+    setConfirmedIntergen(intergenCapital);
+    setIntergenStart(11);
+    setIntergenDuration(1);
+    setCurrentStep(6);
+  };
+  const handleBack = () => {
+    if (currentStep === 1) { setCurrentStep(0); setConfirmedExpense(null); }
+    else if (currentStep === 2) { setCurrentStep(1); setConfirmedIncome(null); }
+    else if (currentStep === 3) { setCurrentStep(2); setConfirmedPsm(null); }
+    else if (currentStep === 4) { setCurrentStep(3); setConfirmedEdu(null); }
+    else if (currentStep === 5) { setCurrentStep(4); setConfirmedRetirement(null); }
+    else if (currentStep === 6) { setCurrentStep(5); setConfirmedIntergen(null); }
+  };
+
+  const ganttTrackRef = useRef(null);
+  const [dragState, setDragState] = useState(null);
+  const TOTAL_COLUMNS = 11;
+
+  const yearToColumn = (year) => Math.min(year, visibleYears + 1);
+  const columnSpanFor = (startYear, duration) => {
+    const endYear = startYear + duration - 1;
+    const startCol = yearToColumn(startYear);
+    const endCol = yearToColumn(endYear);
+    return { startCol, span: endCol - startCol + 1 };
+  };
+
+  const setStartFor = (id, val) => {
+    if (id === "mnv") setMnvStart(val);
+    else if (id === "psm") setPsmStart(val);
+    else if (id === "edu") setEduStart(val);
+    else if (id === "ret") setRetStart(val);
+    else if (id === "intergen") setIntergenStart(val);
+    else if (id.startsWith("custom-")) setCustomObjectives((prev) => prev.map((o) => (o.id === id ? { ...o, startYear: val } : o)));
+  };
+  const setDurationFor = (id, val) => {
+    if (id === "mnv") setMnvDuration(val);
+    else if (id === "psm") setPsmDuration(val);
+    else if (id === "edu") setEduDuration(val);
+    else if (id === "ret") setRetirementMultiplier(val);
+    else if (id === "intergen") setIntergenDuration(val);
+    else if (id.startsWith("custom-")) setCustomObjectives((prev) => prev.map((o) => (o.id === id ? { ...o, duration: val } : o)));
+  };
+
+  useEffect(() => {
+    if (!dragState) return;
+    const handleMove = (e) => {
+      if (!ganttTrackRef.current) return;
+      const x = e.touches ? e.touches[0].clientX : e.clientX;
+      const rect = ganttTrackRef.current.getBoundingClientRect();
+      const innerWidth = rect.width - 12;
+      const cellWidth = innerWidth / TOTAL_COLUMNS;
+      const deltaX = x - dragState.startX;
+      const deltaCells = Math.round(deltaX / cellWidth);
+
+      if (dragState.mode === "resize-right") {
+        let newDuration = Math.max(1, dragState.initialDuration + deltaCells);
+        newDuration = Math.min(newDuration, maxYear - dragState.initialStart + 1);
+        setDurationFor(dragState.id, newDuration);
+      } else if (dragState.mode === "resize-left") {
+        let newStart = dragState.initialStart + deltaCells;
+        const endYear = dragState.initialStart + dragState.initialDuration - 1;
+        newStart = Math.max(1, Math.min(endYear, newStart));
+        const newDuration = endYear - newStart + 1;
+        setStartFor(dragState.id, newStart);
+        setDurationFor(dragState.id, newDuration);
+      } else if (dragState.mode === "move") {
+        let newStart = dragState.initialStart + deltaCells;
+        newStart = Math.max(1, Math.min(maxYear - dragState.initialDuration + 1, newStart));
+        setStartFor(dragState.id, newStart);
+      }
+    };
+    const handleUp = () => setDragState(null);
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
+    window.addEventListener("touchmove", handleMove);
+    window.addEventListener("touchend", handleUp);
+    document.body.style.cursor = dragState.mode === "move" ? "grabbing" : "ew-resize";
+    document.body.style.userSelect = "none";
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("touchend", handleUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [dragState]);
+
+  const [editingAmount, setEditingAmount] = useState(null);
+  const [amountDraft, setAmountDraft] = useState("");
+
+  const startEditAmount = (obj) => {
+    setEditingAmount(obj.id);
+    let cur;
+    if (obj.id === "mnv") cur = Math.round(annualExpense);
+    else if (obj.id === "psm") cur = Math.round(psmAmount);
+    else if (obj.id === "edu") cur = Math.round(eduAnnual);
+    else if (obj.id === "ret") cur = Math.round(retirementCapital);
+    else if (obj.id === "intergen") cur = Math.round(intergenAmount);
+    else if (obj.id.startsWith("custom-")) cur = Math.round(obj.capital);
+    setAmountDraft(formatWithCommas(cur));
+  };
+  const commitAmountEdit = (id) => {
+    const parsed = parseInt(amountDraft.replace(/[^0-9]/g, ""), 10);
+    if (!isNaN(parsed) && parsed >= 0) {
+      if (id === "mnv") setMnvAnnualOverride(parsed);
+      else if (id === "psm") setPsmTotalOverride(parsed);
+      else if (id === "edu") setEduAnnualOverride(parsed);
+      else if (id === "ret") setRetCapitalOverride(parsed);
+      else if (id === "intergen") setIntergenOverride(parsed);
+      else if (id.startsWith("custom-")) setCustomObjectives((prev) => prev.map((o) => (o.id === id ? { ...o, capital: parsed } : o)));
+    }
+    setEditingAmount(null);
+    setAmountDraft("");
+  };
+
+  const [mixOverrides, setMixOverrides] = useState({});
+
+  const handleCreateCustom = () => {
+    const trimmedName = newObjName.trim();
+    const parsed = parseInt(newObjAmount.replace(/[^0-9]/g, ""), 10);
+    if (!trimmedName || isNaN(parsed) || parsed <= 0) return;
+    const code = trimmedName.slice(0, 3).toUpperCase();
+    const colorPool = ["#3a5a8c", "#7a4a4a", "#4a7a5a", "#7a6a4a", "#5a4a7a", "#8c5a3a"];
+    const color = colorPool[customObjectives.length % colorPool.length];
+    const newObj = { id: `custom-${Date.now()}`, code, name: trimmedName, startYear: 1, duration: 1, capital: parsed, color };
+    setCustomObjectives((prev) => [...prev, newObj]);
+    setMixOverrides({});
+    setNewObjName("");
+    setNewObjAmount("");
+    setShowAddModal(false);
+  };
+
+  const objectivesOnlyTotal = objectives.filter((o) => o.id !== "intergen").reduce((s, o) => s + o.capital, 0);
+  const objectivesOnlyCount = objectives.filter((o) => o.id !== "intergen").length;
+
+  const computeDefaultSplit = (obj) => {
+    if (obj.id === "mnv") return { mm: obj.capital, fi: 0, rv: 0 };
+    if (obj.id === "psm") return { mm: obj.capital * 0.4, fi: obj.capital * 0.4, rv: obj.capital * 0.2 };
+    if ((obj.isLumpSum || obj.isMilestone) && !(obj.isCustom && obj.duration > 1)) {
+      const y = obj.startYear;
+      if (y === 1) return { mm: obj.capital, fi: 0, rv: 0 };
+      if (y >= 2 && y <= 3) return { mm: 0, fi: obj.capital, rv: 0 };
+      return { mm: 0, fi: 0, rv: obj.capital };
+    }
+    const perYear = obj.capital / obj.duration;
+    let mm = 0, fi = 0, rv = 0;
+    for (let y = obj.startYear; y < obj.startYear + obj.duration; y++) {
+      if (y === 1) mm += perYear;
+      else if (y >= 2 && y <= 3) fi += perYear;
+      else rv += perYear;
+    }
+    return { mm, fi, rv };
+  };
+  const getSplit = (obj) => {
+    const def = computeDefaultSplit(obj);
+    const ov = mixOverrides[obj.id];
+    if (!ov) return def;
+    return { mm: obj.capital * ov.mm, fi: obj.capital * ov.fi, rv: obj.capital * ov.rv };
+  };
+  const assetTotals = objectives.reduce((acc, obj) => {
+    const s = getSplit(obj);
+    acc.mm += s.mm; acc.fi += s.fi; acc.rv += s.rv;
+    return acc;
+  }, { mm: 0, fi: 0, rv: 0 });
+  const assetGrandTotal = assetTotals.mm + assetTotals.fi + assetTotals.rv;
+  const pctOf = (n) => (assetGrandTotal > 0 ? (n / assetGrandTotal) * 100 : 0);
+
+  // Al llegar al paso 6 (onboarding completo) persistir snapshot y enfocar el gantt
+  useEffect(() => {
+    if (currentStep !== 6) return;
+    try {
+      localStorage.setItem('jli_objetivos', JSON.stringify({
+        cortoPlazoUSD: Math.round(assetTotals.mm),
+        medianoPlazoUSD: Math.round(assetTotals.fi),
+        largoPlazoUSD: Math.round(assetTotals.rv),
+        totalUSD: Math.round(assetGrandTotal),
+        objetivosTotalUSD: Math.round(objectivesOnlyTotal),
+        intergenUSD: Math.round(intergenAmount),
+        capitalDisponibleUSD: Math.round(intergenInvestable),
+        completedAt: new Date().toISOString(),
+      }));
+    } catch (e) {}
+    const t = setTimeout(() => {
+      const gantt = document.querySelector('[data-gantt="true"]');
+      if (gantt) gantt.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 350);
+    return () => clearTimeout(t);
+  }, [currentStep, assetTotals.mm, assetTotals.fi, assetTotals.rv, assetGrandTotal, objectivesOnlyTotal, intergenAmount, intergenInvestable]);
+
+  const updateCardMix = (cardId, newSplit) => {
+    const sum = newSplit.mm + newSplit.fi + newSplit.rv;
+    if (sum <= 0) return;
+    setMixOverrides((prev) => ({ ...prev, [cardId]: { mm: newSplit.mm / sum, fi: newSplit.fi / sum, rv: newSplit.rv / sum } }));
+  };
+  const resetCardMix = (cardId) => {
+    setMixOverrides((prev) => { const n = { ...prev }; delete n[cardId]; return n; });
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#fafaf7", fontFamily: "'Geist', -apple-system, BlinkMacSystemFont, sans-serif", color: "#0a0a0a" }}>
+      <style>{`
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        .serif { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; }
+
+        .snap-slider-wrap { position: relative; padding: 18px 0; user-select: none; }
+        .snap-slider-track { position: absolute; top: 50%; left: 0; right: 0; height: 4px; background: #ebebe4; border-radius: 999px; transform: translateY(-50%); pointer-events: none; }
+        .snap-slider-fill { position: absolute; top: 50%; left: 0; height: 4px; background: #0a0a0a; border-radius: 999px; transform: translateY(-50%); transition: width 0.18s cubic-bezier(0.22, 1, 0.36, 1); pointer-events: none; }
+        .snap-dots { position: relative; display: flex; justify-content: space-between; align-items: center; width: 100%; height: 28px; }
+        .snap-dot { width: 10px; height: 10px; border-radius: 50%; background: #fff; border: 2px solid #c9c9c0; cursor: pointer; z-index: 2; transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1); flex-shrink: 0; }
+        .snap-dot:hover { border-color: #0a0a0a; transform: scale(1.3); }
+        .snap-dot.passed { background: #0a0a0a; border-color: #0a0a0a; }
+        .snap-dot.active { background: #fff; border: 2px solid #0a0a0a; width: 22px; height: 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+
+        @keyframes slideInCard { from { opacity: 0; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes questionEnter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .card-enter { animation: slideInCard 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        .fade-up { animation: fadeUp 0.5s ease forwards; }
+        .question-active { animation: questionEnter 0.4s ease forwards; }
+
+        .nav-btn { font-family: inherit; font-size: 14px; font-weight: 500; border-radius: 999px; cursor: pointer; padding: 13px 26px; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s ease; min-width: 140px; justify-content: center; }
+        .nav-back { background: transparent; color: #6b6b64; border: 1px solid #ebebe4; }
+        .nav-back:hover { color: #0a0a0a; border-color: #0a0a0a; background: #fafaf7; }
+        .nav-next { background: #0a0a0a; color: #fafaf7; border: 1px solid #0a0a0a; }
+        .nav-next:hover { background: #1a1a1a; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(10,10,10,0.15); }
+
+        .add-obj-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px 7px 12px; border-radius: 999px; background: #0a0a0a; color: #fafaf7; border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500; transition: all 0.2s ease; }
+        .add-obj-btn:hover { background: #1a1a1a; transform: translateY(-1px); }
+
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(10, 10, 10, 0.45); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px; animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes modalIn { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .modal-card { background: #fafaf7; border-radius: 20px; padding: 32px; max-width: 420px; width: 100%; box-shadow: 0 20px 60px rgba(10,10,10,0.25); animation: modalIn 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+        .modal-input { background: #fff; border: 1px solid #ebebe4; border-radius: 10px; padding: 12px 14px; font-family: inherit; font-size: 15px; width: 100%; outline: none; transition: border-color 0.2s ease; font-variant-numeric: tabular-nums; color: #0a0a0a; }
+        .modal-input:focus { border-color: #0a0a0a; box-shadow: 0 0 0 3px rgba(10,10,10,0.06); }
+
+        .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f0f0e8; font-size: 11px; font-weight: 500; color: #6b6b64; letter-spacing: 0.02em; }
+        .chip-dot { width: 5px; height: 5px; border-radius: 50%; background: #0a0a0a; }
+
+        .card-interactive { position: relative; transition: box-shadow 0.2s ease, filter 0.2s ease; }
+        .card-interactive:hover { filter: brightness(1.08); }
+        .resize-handle { position: absolute; top: 8px; bottom: 8px; width: 8px; cursor: ew-resize; z-index: 5; opacity: 0; transition: opacity 0.2s ease; }
+        .resize-handle.right { right: -2px; }
+        .resize-handle.left { left: -2px; }
+        .card-interactive:hover .resize-handle { opacity: 1; }
+
+        .overflow-col { background: repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(168, 168, 158, 0.08) 6px, rgba(168, 168, 158, 0.08) 12px); }
+      `}</style>
+
+      {/* TOP BAR */}
+      <div style={{ position: "sticky", top: 0, zIndex: 10, background: "rgba(250, 250, 247, 0.85)", backdropFilter: "blur(12px)", borderBottom: "1px solid #ebebe4" }}>
+        <div style={{ maxWidth: 1120, margin: "0 auto", padding: "14px 32px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", color: "#fafaf7", fontSize: 13, fontWeight: 600 }}>⌘</div>
+            <span style={{ fontSize: 14, fontWeight: 500 }}>blueprint</span>
+          </div>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <div key={i} style={{ width: i === currentStep ? 24 : 6, height: 6, borderRadius: 999, background: i <= currentStep ? "#0a0a0a" : "#ebebe4", transition: "all 0.4s cubic-bezier(0.22, 1, 0.36, 1)" }} />
+            ))}
+            <span style={{ marginLeft: 10, fontSize: 12, color: "#6b6b64", fontVariantNumeric: "tabular-nums" }}>
+              {String(Math.min(currentStep + 1, 6)).padStart(2, "0")} / 06
+            </span>
+          </div>
+          <div style={{ display: "flex", alignItems: "stretch", gap: 8 }}>
+            {/* Card 1: Objetivos */}
+            <div style={{
+              display: "flex", flexDirection: "column",
+              padding: "10px 16px",
+              borderRadius: 12,
+              background: "#ffffff",
+              border: "1px solid #ebebe4",
+              minWidth: 130,
+              opacity: objectivesOnlyCount > 0 ? 1 : 0.5,
+              transition: "all 0.35s cubic-bezier(0.22,1,0.36,1)"
+            }}>
+              <span style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#9b9a96", fontWeight: 600, marginBottom: 4 }}>Objetivos</span>
+              <span className="serif" style={{ fontSize: 22, lineHeight: 1, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", color: "#1a1917" }}>
+                {objectivesOnlyCount > 0 ? formatShort(objectivesOnlyTotal) : "$0"}
+              </span>
+            </div>
+            {/* Card 2: Capital intergeneracional (texto completo) */}
+            <div style={{
+              display: "flex", flexDirection: "column",
+              padding: "10px 16px",
+              borderRadius: 12,
+              background: "#ffffff",
+              border: "1px solid #ebebe4",
+              minWidth: 150,
+              opacity: confirmedIntergen !== null ? 1 : 0.5,
+              transition: "all 0.35s cubic-bezier(0.22,1,0.36,1)"
+            }}>
+              <span style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#9b9a96", fontWeight: 600, marginBottom: 4 }}>Capital intergeneracional</span>
+              <span className="serif" style={{ fontSize: 22, lineHeight: 1, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", color: "#1a1917" }}>
+                {confirmedIntergen !== null ? formatShort(intergenAmount) : "—"}
+              </span>
+            </div>
+            {/* Card 3: A invertir en largo plazo — clickeable, va a Política de inversión */}
+            <div
+              role="button"
+              tabIndex={confirmedIntergen !== null ? 0 : -1}
+              onClick={() => {
+                if (confirmedIntergen === null) return;
+                try { window.parent.location.hash = '#politica'; } catch (e) {}
+              }}
+              onKeyDown={(e) => {
+                if (confirmedIntergen === null) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  try { window.parent.location.hash = '#politica'; } catch (err) {}
+                }
+              }}
+              style={{
+                display: "flex", flexDirection: "column",
+                padding: "10px 16px",
+                borderRadius: 12,
+                background: confirmedIntergen !== null ? "#0a0a0a" : "#ffffff",
+                color: confirmedIntergen !== null ? "#fafaf7" : "#1a1917",
+                border: "1px solid " + (confirmedIntergen !== null ? "#0a0a0a" : "#ebebe4"),
+                minWidth: 170,
+                cursor: confirmedIntergen !== null ? "pointer" : "default",
+                opacity: confirmedIntergen !== null ? 1 : 0.5,
+                transition: "all 0.35s cubic-bezier(0.22,1,0.36,1), transform 0.35s cubic-bezier(0.22,1,0.36,1)",
+                transform: currentStep === 6 ? "translateX(-8px)" : "translateX(0)",
+                outline: "none",
+              }}
+              onMouseEnter={(e) => { if (confirmedIntergen !== null) e.currentTarget.style.transform = "translateY(-1px) translateX(" + (currentStep === 6 ? '-8px' : '0') + ")"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = currentStep === 6 ? "translateX(-8px)" : "translateX(0)"; }}
+              title={confirmedIntergen !== null ? "Definir política de inversión →" : ""}
+            >
+              <span style={{
+                fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase",
+                color: confirmedIntergen !== null ? "rgba(250,250,247,0.55)" : "#9b9a96",
+                fontWeight: 600, marginBottom: 4
+              }}>A invertir en largo plazo {confirmedIntergen !== null ? "→" : ""}</span>
+              <span className="serif" style={{ fontSize: 22, lineHeight: 1, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
+                {confirmedIntergen !== null ? formatShort(assetTotals.rv) : "—"}
+              </span>
+            </div>
+          </div>
+          {confirmedIntergen !== null && capitalDeficit > 0 && (
+            <div className="fade-up" style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderRadius: 999, background: "#fdf0ed", border: "1px solid #e8c0b5", color: "#8c3a3a", fontSize: 12 }}>
+              <span>⚠</span><span style={{ fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>déficit {formatShort(capitalDeficit)}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* QUESTIONS */}
+      <section style={{ maxWidth: 1120, margin: "0 auto", padding: currentStep === 6 ? "16px 32px 0" : "56px 32px 40px", minHeight: currentStep === 6 ? 0 : 560, display: "flex", flexDirection: "column" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          {currentStep === 0 && (
+            <div className="question-active" key="step-0">
+              <h1 className="serif" style={{ fontSize: 52, lineHeight: 1.05, letterSpacing: "-0.02em", marginBottom: 32, maxWidth: 820 }}>
+                ¿Cuánto gastás por mes para mantener tu <em style={{ fontStyle: "italic", color: "#6b6b64" }}>nivel de vida</em>?
+              </h1>
+              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 48, alignItems: "center", marginBottom: 32 }}>
+                <SnapSlider steps={expenseSteps} value={monthlyExpense} onChange={setMonthlyExpense} labels={["$1K", "$7K", "$13K", "$19K", "$25K"]} />
+                <div className="serif" style={{ fontSize: 80, lineHeight: 0.95, letterSpacing: "-0.04em", fontVariantNumeric: "tabular-nums" }}>{formatUSD(displayedExpense)}</div>
+              </div>
+            </div>
+          )}
+          {currentStep === 1 && (
+            <div className="question-active" key="step-1">
+              <h1 className="serif" style={{ fontSize: 52, lineHeight: 1.05, letterSpacing: "-0.02em", marginBottom: 32, maxWidth: 820 }}>
+                ¿Cuánto recibís por mes en <em style={{ fontStyle: "italic", color: "#6b6b64" }}>ingresos no financieros</em>?
+              </h1>
+              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 48, alignItems: "center", marginBottom: 32 }}>
+                <SnapSlider steps={incomeSteps} value={monthlyIncome} onChange={setMonthlyIncome} labels={["$0", "$5K", "$10K", "$16K", "$25K"]} />
+                <div className="serif" style={{ fontSize: 80, lineHeight: 0.95, letterSpacing: "-0.04em", fontVariantNumeric: "tabular-nums" }}>{formatUSD(displayedIncome)}</div>
+              </div>
+            </div>
+          )}
+          {currentStep === 2 && (
+            <div className="question-active" key="step-2">
+              <h1 className="serif" style={{ fontSize: 52, lineHeight: 1.05, letterSpacing: "-0.02em", marginBottom: 14, maxWidth: 860 }}>
+                ¿Cuánto reservás para <em style={{ fontStyle: "italic", color: "#6b6b64" }}>gastos importantes y emergencias</em>?
+              </h1>
+              <p style={{ fontSize: 15, color: "#6b6b64", lineHeight: 1.5, maxWidth: 640, marginBottom: 32 }}>
+                Un auto, reformar la casa, un viaje especial, o un imprevisto. Sugerido: <span style={{ color: "#0a0a0a", fontWeight: 500 }}>5× tu gasto anual</span>.
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 48, alignItems: "center", marginBottom: 32 }}>
+                <SnapSlider steps={psmSteps} value={psmValue} onChange={(v) => { setPsmValue(v); setPsmUserTouched(true); }} labels={["$5K", "$400K", "$1M", "$1.5M", "$2M"]} />
+                <div className="serif" style={{ fontSize: 80, lineHeight: 0.95, letterSpacing: "-0.04em", fontVariantNumeric: "tabular-nums" }}>{formatUSD(displayedPsm)}</div>
+              </div>
+            </div>
+          )}
+          {currentStep === 3 && (
+            <div className="question-active" key="step-3">
+              <h1 className="serif" style={{ fontSize: 52, lineHeight: 1.05, letterSpacing: "-0.02em", marginBottom: 32, maxWidth: 860 }}>
+                ¿Cuánto querés disponer para la <em style={{ fontStyle: "italic", color: "#6b6b64" }}>educación de tus hijos</em>?
+              </h1>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, marginBottom: 32 }}>
+                <div>
+                  <SnapSlider steps={eduSteps} value={eduPerYear} onChange={setEduPerYear} labels={["$5K", "$40K", "$75K", "$130K", "$150K"]} />
+                  <div style={{ marginTop: 24 }} className="serif">
+                    <span style={{ fontSize: 48, lineHeight: 1, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" }}>{formatUSD(displayedEdu)}</span>
+                    <span style={{ fontSize: 16, color: "#a8a89e", fontFamily: "'Geist', sans-serif", fontWeight: 400, marginLeft: 8 }}>/ año</span>
+                  </div>
+                </div>
+                <div>
+                  <YearRangePicker totalYears={15} startYear={eduStartYear} endYear={eduEndYear} onChange={(s, e) => { setEduStartYear(s); setEduEndYear(e); }} />
+                  <div className="serif" style={{ marginTop: 24, fontSize: 32, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
+                    {eduEndYear - eduStartYear + 1} <span style={{ fontSize: 14, color: "#6b6b64", fontFamily: "'Geist', sans-serif" }}>años</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {currentStep === 4 && (
+            <div className="question-active" key="step-4">
+              <h1 className="serif" style={{ fontSize: 52, lineHeight: 1.05, letterSpacing: "-0.02em", marginBottom: 14, maxWidth: 860 }}>
+                ¿Cuándo querés <em style={{ fontStyle: "italic", color: "#6b6b64" }}>jubilarte</em>?
+              </h1>
+              <p style={{ fontSize: 15, color: "#6b6b64", lineHeight: 1.5, maxWidth: 640, marginBottom: 32 }}>
+                Arrastrá los bordes para definir en qué año empieza y cuántos años querés cubrir.
+              </p>
+              <div style={{ marginBottom: 32 }}>
+                <YearRangePicker totalYears={70} startYear={yearsToRetirement} endYear={yearsToRetirement + retirementMultiplier - 1} onChange={(s, e) => { setYearsToRetirement(s); setRetirementMultiplier(Math.max(1, e - s + 1)); }} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.2fr", gap: 20, padding: "20px 24px", background: "#faf7ed", border: "1px solid #ebebe4", borderRadius: 14 }}>
+                <div>
+                  <div style={{ fontSize: 10, color: "#a8a89e", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4 }}>jubilarte en</div>
+                  <div className="serif" style={{ fontSize: 26, fontVariantNumeric: "tabular-nums" }}>año {yearsToRetirement}</div>
+                </div>
+                <div style={{ borderLeft: "1px solid #ebebe4", paddingLeft: 16 }}>
+                  <div style={{ fontSize: 10, color: "#a8a89e", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4 }}>cobertura</div>
+                  <div className="serif" style={{ fontSize: 26, fontVariantNumeric: "tabular-nums" }}>{retirementMultiplier} años</div>
+                </div>
+                <div style={{ borderLeft: "1px solid #ebebe4", paddingLeft: 16 }}>
+                  <div style={{ fontSize: 10, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4, color: "#8a7a3a", fontWeight: 600 }}>capital necesario</div>
+                  <div className="serif" style={{ fontSize: 28, fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>{formatUSD(baseMonthlyExpense * 12 * retirementMultiplier)}</div>
+                </div>
+              </div>
+            </div>
+          )}
+          {currentStep === 5 && (
+            <div className="question-active" key="step-5">
+              <h1 className="serif" style={{ fontSize: 52, lineHeight: 1.05, letterSpacing: "-0.02em", marginBottom: 32, maxWidth: 860 }}>
+                ¿Cuánto capital tenés hoy para <em style={{ fontStyle: "italic", color: "#6b6b64" }}>invertir</em>?
+              </h1>
+              <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 48, alignItems: "center", marginBottom: 24 }}>
+                <SnapSlider steps={intergenSteps} value={intergenCapital} onChange={setIntergenCapital} labels={["$500K", "$3M", "$10M", "$30M", "$100M"]} />
+                <div className="serif" style={{ fontSize: 72, lineHeight: 0.95, letterSpacing: "-0.04em", fontVariantNumeric: "tabular-nums" }}>{formatUSD(displayedIntergen)}</div>
+              </div>
+              {(() => {
+                const needed = capitalNeeded;
+                const investable = intergenCapital;
+                const surplus = investable - needed;
+                const isSurplus = surplus >= 0;
+                return (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, padding: "20px 24px", background: "#faf7ed", border: "1px solid #ebebe4", borderRadius: 14 }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: "#a8a89e", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4 }}>Disponible</div>
+                      <div className="serif" style={{ fontSize: 26, fontVariantNumeric: "tabular-nums" }}>{formatShort(investable)}</div>
+                    </div>
+                    <div style={{ borderLeft: "1px solid #ebebe4", paddingLeft: 16 }}>
+                      <div style={{ fontSize: 10, color: "#a8a89e", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4 }}>Objetivos</div>
+                      <div className="serif" style={{ fontSize: 26, fontVariantNumeric: "tabular-nums" }}>−{formatShort(needed)}</div>
+                    </div>
+                    <div style={{ borderLeft: "1px solid #ebebe4", paddingLeft: 16 }}>
+                      <div style={{ fontSize: 10, color: isSurplus ? "#1a3a2e" : "#8c3a3a", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4, fontWeight: 600 }}>{isSurplus ? "Intergeneracional" : "Déficit"}</div>
+                      <div className="serif" style={{ fontSize: 26, fontVariantNumeric: "tabular-nums", color: isSurplus ? "#1a3a2e" : "#8c3a3a", fontWeight: 500 }}>{isSurplus ? formatShort(surplus) : `−${formatShort(Math.abs(surplus))}`}</div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+          {currentStep === 6 && (
+            <div className="question-active" key="step-6" />
+          )}
+        </div>
+
+        <div style={{ marginTop: 48, paddingTop: 24, borderTop: "1px solid #ebebe4", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <button className="nav-btn nav-back" onClick={handleBack} disabled={currentStep === 0} style={{ opacity: currentStep === 0 ? 0.3 : 1, pointerEvents: currentStep === 0 ? "none" : "auto" }}>
+            <span style={{ fontSize: 16, lineHeight: 1 }}>←</span> Anterior
+          </button>
+          <div />
+          {currentStep < 6 ? (
+            <button className="nav-btn nav-next" onClick={() => {
+              if (currentStep === 0) handleConfirmStep0();
+              else if (currentStep === 1) handleConfirmStep1();
+              else if (currentStep === 2) handleConfirmStep2();
+              else if (currentStep === 3) handleConfirmStep3();
+              else if (currentStep === 4) handleConfirmStep4();
+              else if (currentStep === 5) handleConfirmStep5();
+            }}>
+              {currentStep === 5 ? "Finalizar" : "Siguiente"} <span style={{ fontSize: 16, lineHeight: 1 }}>→</span>
+            </button>
+          ) : (
+            <button className="nav-btn nav-next" onClick={() => {
+              const gantt = document.querySelector('[data-gantt="true"]');
+              if (gantt) gantt.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }} style={{ background: "transparent", color: "#0a0a0a", border: "1px solid #0a0a0a" }}>
+              Ver mapa <span style={{ fontSize: 16, lineHeight: 1 }}>↓</span>
+            </button>
+          )}
+        </div>
+      </section>
+
+      {/* GANTT */}
+      <section data-gantt="true" style={{ maxWidth: 1120, margin: "0 auto", padding: "0 32px 80px" }}>
+        <div style={{ background: "#fff", border: "1px solid #ebebe4", borderRadius: 20, padding: "28px 28px 24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 500, letterSpacing: "-0.01em" }}>Horizonte patrimonial</h3>
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              {objectives.length > 0 && (
+                <span className="chip"><span className="chip-dot" />{objectives.length} {objectives.length === 1 ? "objetivo" : "objetivos"}</span>
+              )}
+              <button className="add-obj-btn" onClick={() => setShowAddModal(true)}>
+                <span style={{ fontSize: 16, lineHeight: 1, fontWeight: 400 }}>+</span> Nuevo objetivo
+              </button>
+            </div>
+          </div>
+
+          {showAddModal && (
+            <div className="modal-backdrop" onClick={() => setShowAddModal(false)}>
+              <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+                <h3 className="serif" style={{ fontSize: 28, letterSpacing: "-0.02em", marginBottom: 20 }}>Nuevo objetivo</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 24 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, color: "#a8a89e", marginBottom: 6, letterSpacing: "0.02em", textTransform: "uppercase" }}>Nombre</label>
+                    <input autoFocus type="text" placeholder="Ej. casa nueva, barco…" value={newObjName} onChange={(e) => setNewObjName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleCreateCustom(); if (e.key === "Escape") setShowAddModal(false); }} className="modal-input" maxLength={40} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, color: "#a8a89e", marginBottom: 6, letterSpacing: "0.02em", textTransform: "uppercase" }}>Monto (USD)</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 16, color: "#6b6b64" }}>$</span>
+                      <input type="text" inputMode="numeric" placeholder="50,000" value={newObjAmount}
+                        onChange={(e) => { const r = e.target.value.replace(/[^0-9]/g, ""); setNewObjAmount(r === "" ? "" : formatWithCommas(parseInt(r, 10))); }}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleCreateCustom(); if (e.key === "Escape") setShowAddModal(false); }}
+                        className="modal-input" style={{ flex: 1 }} />
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                  <button className="nav-btn nav-back" onClick={() => { setShowAddModal(false); setNewObjName(""); setNewObjAmount(""); }} style={{ minWidth: 110 }}>Cancelar</button>
+                  <button className="nav-btn nav-next" onClick={handleCreateCustom} disabled={!newObjName.trim() || !newObjAmount} style={{ minWidth: 110, opacity: !newObjName.trim() || !newObjAmount ? 0.4 : 1, pointerEvents: !newObjName.trim() || !newObjAmount ? "none" : "auto" }}>Crear →</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${TOTAL_COLUMNS}, 1fr)`, gap: 6, marginBottom: 10 }}>
+            {Array.from({ length: visibleYears }, (_, i) => {
+              const year = i + 1;
+              const isActive = objectives.some((o) => year >= o.startYear && year < o.startYear + o.duration);
+              return (
+                <div key={i} style={{ textAlign: "center", fontSize: 11, color: isActive ? "#0a0a0a" : "#a8a89e", fontWeight: isActive ? 500 : 400, fontVariantNumeric: "tabular-nums", paddingBottom: 8 }}>año {year}</div>
+              );
+            })}
+            <div style={{ textAlign: "center", fontSize: 11, color: objectives.some(o => o.startYear > visibleYears || o.startYear + o.duration - 1 > visibleYears) ? "#0a0a0a" : "#a8a89e", fontWeight: 500, fontVariantNumeric: "tabular-nums", paddingBottom: 8 }}>10+</div>
+          </div>
+
+          <div ref={ganttTrackRef} style={{ position: "relative", background: "#fafaf7", borderRadius: 12, padding: 6, minHeight: 120 }}>
+            <div style={{ position: "absolute", inset: 6, display: "grid", gridTemplateColumns: `repeat(${TOTAL_COLUMNS}, 1fr)`, gap: 6, pointerEvents: "none" }}>
+              {Array.from({ length: TOTAL_COLUMNS }, (_, i) => (
+                <div key={i} className={i === TOTAL_COLUMNS - 1 ? "overflow-col" : ""} style={{ borderRight: i < TOTAL_COLUMNS - 1 ? "1px dashed #ebebe4" : "none", borderLeft: i === TOTAL_COLUMNS - 1 ? "1px dashed #d4d4c8" : "none", borderRadius: i === TOTAL_COLUMNS - 1 ? "0 8px 8px 0" : 0 }} />
+              ))}
+            </div>
+
+            {objectives.length === 0 ? (
+              <div style={{ padding: "36px 24px", textAlign: "center", color: "#a8a89e", fontSize: 14 }} className="serif">
+                <em>Respondé la pregunta de arriba para empezar.</em>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {objectives.map((obj, idx) => {
+                  const wasReduced = obj.code === "MNV" && confirmedIncome !== null && obj.capitalGross > obj.capital;
+                  const isDraggingThis = dragState?.id === obj.id;
+                  const { startCol, span } = columnSpanFor(obj.startYear, obj.duration);
+                  const isInOverflow = obj.startYear > visibleYears;
+                  return (
+                    <div key={obj.id} style={{ display: "grid", gridTemplateColumns: `repeat(${TOTAL_COLUMNS}, 1fr)`, gap: 6, position: "relative" }}>
+                      <div className={`card-enter card-interactive ${isDraggingThis ? "card-dragging" : ""}`}
+                        style={{ gridColumn: `${startCol} / span ${span}`, background: obj.color, color: "#fafaf7", borderRadius: 10, padding: "14px 22px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 100, animationDelay: `${idx * 0.1}s`, position: "relative", overflow: "visible" }}>
+                        <div className="resize-handle left" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setDragState({ id: obj.id, mode: "resize-left", initialStart: obj.startYear, initialDuration: obj.duration, startX: e.clientX }); }} />
+                        <div className="resize-handle right" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setDragState({ id: obj.id, mode: "resize-right", initialStart: obj.startYear, initialDuration: obj.duration, startX: e.clientX }); }} />
+
+                        <div onMouseDown={(e) => {
+                          if (e.target.closest(".resize-handle")) return;
+                          if (e.target.closest(".amount-input")) return;
+                          e.preventDefault();
+                          const startX = e.clientX, startY = e.clientY;
+                          let becameDrag = false;
+                          const onMove = (mv) => {
+                            const dx = Math.abs(mv.clientX - startX), dy = Math.abs(mv.clientY - startY);
+                            if (!becameDrag && (dx > 5 || dy > 5)) {
+                              becameDrag = true;
+                              setDragState({ id: obj.id, mode: "move", initialStart: obj.startYear, initialDuration: obj.duration, startX });
+                            }
+                          };
+                          const onUp = () => {
+                            window.removeEventListener("mousemove", onMove);
+                            window.removeEventListener("mouseup", onUp);
+                            if (!becameDrag) startEditAmount(obj);
+                          };
+                          window.addEventListener("mousemove", onMove);
+                          window.addEventListener("mouseup", onUp);
+                        }} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", padding: "3px 7px", background: "rgba(250,250,247,0.15)", borderRadius: 5 }}>{obj.code}</span>
+                            <span style={{ fontSize: 13, opacity: 0.85 }}>{obj.name}</span>
+                            {wasReduced && <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: "rgba(250,250,247,0.12)" }}>− ingresos</span>}
+                            {isInOverflow && <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: "rgba(250,250,247,0.18)" }}>año {obj.startYear}{obj.duration > 1 ? `–${obj.startYear + obj.duration - 1}` : ""}</span>}
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12, marginTop: 10 }}>
+                            <div>
+                              <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 2 }}>{obj.perYearLabel}</div>
+                              {editingAmount === obj.id ? (
+                                <input autoFocus type="text" className="amount-input"
+                                  style={{ background: "rgba(250,250,247,0.2)", border: "1px solid rgba(250,250,247,0.4)", color: "#fafaf7", borderRadius: 5, padding: "2px 6px", fontFamily: "'Instrument Serif', serif", fontSize: 22, width: 110, outline: "none", fontVariantNumeric: "tabular-nums" }}
+                                  value={amountDraft}
+                                  onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}
+                                  onChange={(e) => { const r = e.target.value.replace(/[^0-9]/g, ""); setAmountDraft(r === "" ? "" : formatWithCommas(parseInt(r, 10))); }}
+                                  onBlur={() => commitAmountEdit(obj.id)}
+                                  onKeyDown={(e) => { if (e.key === "Enter") commitAmountEdit(obj.id); if (e.key === "Escape") { setEditingAmount(null); setAmountDraft(""); } }} />
+                              ) : (
+                                <div className="serif" style={{ fontSize: 22, fontVariantNumeric: "tabular-nums" }}>
+                                  {obj.isLumpSum ? formatShort(obj.capital) : formatShort(obj.annualPerYear)}
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ textAlign: "right" }}>
+                              <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 2 }}>total</div>
+                              <div className="serif" style={{ fontSize: 15, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>{formatShort(obj.capital)}</div>
+                              <div style={{ fontSize: 10, opacity: 0.55, marginTop: 2 }}>{obj.isMilestone ? `en año ${obj.startYear}` : `${obj.duration} ${obj.duration === 1 ? "año" : "años"}`}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ASSET MIX */}
+        {objectives.length > 0 && (
+          <div className="fade-up" style={{ maxWidth: 1120, margin: "20px auto 0", background: "#fff", border: "1px solid #ebebe4", borderRadius: 20, padding: "28px 28px 24px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 500, letterSpacing: "-0.01em" }}>Mix de activos financieros</h3>
+              {Object.keys(mixOverrides).length > 0 && (
+                <button className="nav-btn nav-back" style={{ minWidth: "auto", padding: "8px 16px", fontSize: 12 }} onClick={() => setMixOverrides({})}>Restablecer receta</button>
+              )}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 40, alignItems: "center", marginBottom: 32 }}>
+              <div style={{ position: "relative", width: 200, height: 200 }}>
+                {(() => {
+                  const r = 72, cx = 100, cy = 100;
+                  const C = 2 * Math.PI * r;
+                  const mmPct = pctOf(assetTotals.mm) / 100;
+                  const fiPct = pctOf(assetTotals.fi) / 100;
+                  const rvPct = pctOf(assetTotals.rv) / 100;
+                  return (
+                    <svg viewBox="0 0 200 200" width="200" height="200">
+                      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f0f0e8" strokeWidth="28" />
+                      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#1f3a2e" strokeWidth="28" strokeDasharray={`${mmPct * C} ${C}`} transform={`rotate(-90 ${cx} ${cy})`} />
+                      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#6b6b64" strokeWidth="28" strokeDasharray={`${fiPct * C} ${C}`} strokeDashoffset={-mmPct * C} transform={`rotate(-90 ${cx} ${cy})`} />
+                      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#c9a55a" strokeWidth="28" strokeDasharray={`${rvPct * C} ${C}`} strokeDashoffset={-(mmPct + fiPct) * C} transform={`rotate(-90 ${cx} ${cy})`} />
+                    </svg>
+                  );
+                })()}
+                <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+                  <div style={{ fontSize: 10, color: "#a8a89e", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 2 }}>total</div>
+                  <div className="serif" style={{ fontSize: 22, fontVariantNumeric: "tabular-nums" }}>{formatShort(assetGrandTotal)}</div>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                {[
+                  { label: "Corto plazo", sub: "Money Market", amount: assetTotals.mm, color: "#1f3a2e" },
+                  { label: "Mediano plazo", sub: "Renta Fija", amount: assetTotals.fi, color: "#6b6b64" },
+                  { label: "Largo plazo", sub: "Renta Variable", amount: assetTotals.rv, color: "#c9a55a" },
+                ].map((row) => {
+                  const pct = pctOf(row.amount);
+                  return (
+                    <div key={row.label}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ width: 10, height: 10, borderRadius: 3, background: row.color }} />
+                          <span style={{ fontSize: 14, fontWeight: 500 }}>{row.label}</span>
+                          <span style={{ fontSize: 12, color: "#a8a89e" }}>· {row.sub}</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
+                          <span className="serif" style={{ fontSize: 20, fontVariantNumeric: "tabular-nums" }}>{formatShort(row.amount)}</span>
+                          <span style={{ fontSize: 12, color: "#6b6b64", fontVariantNumeric: "tabular-nums", minWidth: 44, textAlign: "right" }}>{pct.toFixed(1)}%</span>
+                        </div>
+                      </div>
+                      <div style={{ height: 8, background: "#f0f0e8", borderRadius: 999, overflow: "hidden" }}>
+                        <div style={{ width: `${pct}%`, height: "100%", background: row.color, borderRadius: 999, transition: "width 0.5s" }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<WealthPlanningWorkflow />);
+document.getElementById("boot").remove();
+</script>
+
+</body>
+</html>

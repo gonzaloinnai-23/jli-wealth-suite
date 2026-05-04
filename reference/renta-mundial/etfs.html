@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa de Inversiones | ETFs Seleccionables</title>
+<style>
+  :root {
+    --bg: #0a1929;
+    --panel: #0f2744;
+    --panel-2: #14324f;
+    --border: #1e3a5f;
+    --text: #e6edf3;
+    --text-dim: #8b9cb3;
+    --accent: #4fc3f7;
+    --us: #1e88e5;
+    --eu: #fbc02d;
+    --jp: #e53935;
+    --cn: #43a047;
+    --em: #ab47bc;
+    --world: #4fc3f7;
+    --other: #78909c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', Roboto, sans-serif;
+    background: linear-gradient(135deg, #061324 0%, #0a1929 50%, #0d1f3a 100%);
+    color: var(--text);
+    min-height: 100vh;
+    padding-top: 0;
+  }
+  .container { max-width: 1400px; margin: 0 auto; padding: 20px; padding-top: 10px; }
+
+  /* ============ HEADER FIJO ============ */
+  .sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: rgba(10, 25, 41, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .sticky-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 20px;
+    align-items: center;
+  }
+  .sticky-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .brand-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--eu));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+  .sticky-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    max-width: 700px;
+  }
+  @media (max-width: 768px) {
+    .sticky-content { grid-template-columns: 1fr; gap: 10px; }
+    .sticky-stats { grid-template-columns: repeat(4, 1fr); }
+  }
+  .mini-stat {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    text-align: center;
+    transition: all 0.3s;
+  }
+  .mini-stat.updated {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(79,195,247,0.4);
+  }
+  .mini-stat-label {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1px;
+  }
+  .mini-stat-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+  .mini-stat-value.score {
+    color: var(--accent);
+  }
+  .mini-stat-subvalue {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-top: 1px;
+  }
+  .sticky-cta {
+    display: flex;
+    gap: 8px;
+  }
+  .cta-btn {
+    background: linear-gradient(135deg, #4fc3f7, #1e88e5);
+    color: #0a1929;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .cta-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(79,195,247,0.4);
+  }
+  .cta-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  .cta-btn.secondary {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .cta-btn.secondary:hover:not(:disabled) { background: #1a3a5c; border-color: var(--accent); }
+
+  /* ============ RESTO ============ */
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    transition: all 0.2s;
+    margin-bottom: 20px;
+  }
+  .back-link:hover { background: var(--panel-2); border-color: var(--accent); }
+
+  header.page-header {
+    text-align: center;
+    padding: 10px 0 25px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 25px;
+  }
+  h1 {
+    font-size: 2.3rem;
+    font-weight: 300;
+    letter-spacing: -0.5px;
+    margin-bottom: 10px;
+    background: linear-gradient(90deg, #4fc3f7, #fbc02d);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle { color: var(--text-dim); font-size: 0.95rem; font-weight: 300; }
+
+  /* PORTFOLIO SUGGEST con aplicación directa */
+  .portfolio-suggest {
+    background: linear-gradient(135deg, rgba(79,195,247,0.08), rgba(171,71,188,0.08));
+    border: 1px solid rgba(79,195,247,0.3);
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 25px;
+  }
+  .portfolio-suggest h2 {
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .portfolio-suggest > p {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-bottom: 15px;
+  }
+  .suggest-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 15px;
+  }
+  .suggest-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .suggest-card h3 {
+    font-size: 0.85rem;
+    color: var(--accent);
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+  .suggest-metrics {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+  .suggest-metric {
+    background: rgba(0,0,0,0.25);
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  .suggest-metric strong { color: var(--text); font-weight: 600; }
+  .suggest-metric.score strong { color: var(--accent); }
+  .suggest-tickers {
+    font-size: 0.8rem;
+    line-height: 1.7;
+    color: var(--text);
+    flex: 1;
+  }
+  .suggest-tickers strong {
+    font-family: monospace;
+    background: rgba(79,195,247,0.15);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin: 0 2px;
+  }
+  .apply-btn {
+    background: var(--accent);
+    color: #0a1929;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .apply-btn:hover { background: #81d4fa; transform: translateY(-1px); }
+
+  /* REGIONES */
+  .region-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--region-color);
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 20px;
+  }
+  .region-header-sec {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .region-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--region-color);
+  }
+  .region-weight {
+    background: var(--region-color);
+    color: #0a1929;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+  }
+  .region-desc {
+    color: var(--text-dim);
+    font-size: 0.88rem;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  .etf-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    gap: 12px;
+  }
+
+  .etf-card {
+    background: var(--panel-2);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    transition: all 0.2s;
+    position: relative;
+    cursor: pointer;
+  }
+  .etf-card:hover {
+    border-color: var(--region-color);
+    transform: translateY(-2px);
+  }
+  .etf-card.selected {
+    border-color: var(--region-color);
+    background: linear-gradient(135deg, var(--panel-2), rgba(79,195,247,0.08));
+    box-shadow: 0 0 0 2px var(--region-color), 0 4px 20px rgba(79,195,247,0.2);
+  }
+  .etf-card.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 26px;
+    height: 26px;
+    background: var(--region-color);
+    color: #0a1929;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 1rem;
+  }
+  .etf-badge {
+    position: absolute;
+    top: -8px;
+    left: 12px;
+    background: var(--region-color);
+    color: #0a1929;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.3px;
+  }
+  .etf-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
+    margin-right: 30px;
+  }
+  .etf-ticker {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 1px;
+  }
+  .etf-name {
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    margin-bottom: 10px;
+    line-height: 1.3;
+  }
+  .etf-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+  .stat {
+    background: rgba(0,0,0,0.3);
+    padding: 6px;
+    border-radius: 5px;
+    text-align: center;
+  }
+  .stat-label {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1px;
+  }
+  .stat-value {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .stat-value.good { color: #66bb6a; }
+
+  .warning-box {
+    background: rgba(251, 192, 45, 0.08);
+    border: 1px solid rgba(251, 192, 45, 0.3);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 25px 0;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .warning-box strong { color: #fbc02d; }
+
+  .footnote {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    line-height: 1.7;
+  }
+
+  /* Toast de confirmación */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--accent);
+    color: #0a1929;
+    padding: 12px 22px;
+    border-radius: 25px;
+    font-weight: 600;
+    box-shadow: 0 8px 30px rgba(79,195,247,0.4);
+    transition: transform 0.3s;
+    z-index: 2000;
+    font-size: 0.9rem;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ===== MODAL DE INFO DIVERSIFICACIÓN ===== */
+  .info-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--accent);
+    font-size: 0.72rem;
+    cursor: pointer;
+    text-decoration: none;
+    padding: 2px 6px;
+    border-radius: 10px;
+    border: 1px solid rgba(79,195,247,0.3);
+    background: rgba(79,195,247,0.08);
+    transition: all 0.2s;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .info-link:hover {
+    background: rgba(79,195,247,0.18);
+    border-color: var(--accent);
+  }
+  .info-link-big {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent);
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+  }
+  .info-link-big:hover { color: #81d4fa; }
+
+  .modal-backdrop {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(6, 19, 36, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 3000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.25s;
+  }
+  .modal-backdrop.open { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal-content {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    max-width: 760px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  @keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal-header {
+    padding: 22px 28px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    background: var(--panel);
+    border-radius: 14px 14px 0 0;
+    z-index: 10;
+  }
+  .modal-title {
+    font-size: 1.3rem;
+    font-weight: 500;
+    background: linear-gradient(90deg, #4fc3f7, #fbc02d);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .modal-close {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .modal-close:hover { background: rgba(239, 83, 80, 0.15); color: #ef5350; border-color: #ef5350; }
+
+  .modal-body { padding: 22px 28px 28px; }
+  .modal-body h3 {
+    font-size: 1rem;
+    color: var(--accent);
+    margin: 20px 0 10px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .modal-body h3:first-child { margin-top: 0; }
+  .modal-body p {
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  .modal-body p.muted {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+  }
+  .modal-formula {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: #e6edf3;
+    margin: 10px 0 14px;
+    overflow-x: auto;
+  }
+  .modal-formula .comment { color: var(--text-dim); }
+  .modal-formula .hl { color: #fbc02d; }
+
+  .modal-body ul {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 14px;
+  }
+  .modal-body li {
+    padding: 6px 0 6px 22px;
+    position: relative;
+    font-size: 0.88rem;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .modal-body li::before {
+    content: '▸';
+    position: absolute;
+    left: 6px;
+    color: var(--accent);
+  }
+  .modal-body li strong { color: #fbc02d; }
+
+  .modal-example-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 14px;
+    font-size: 0.82rem;
+  }
+  .modal-example-table th, .modal-example-table td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-example-table th {
+    color: var(--text-dim);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+  }
+  .modal-example-table td {
+    color: var(--text);
+  }
+  .modal-example-table .score-cell {
+    font-weight: 700;
+    color: var(--accent);
+    font-family: monospace;
+  }
+
+  .modal-warning {
+    background: rgba(251, 192, 45, 0.08);
+    border: 1px solid rgba(251, 192, 45, 0.3);
+    border-left: 3px solid #fbc02d;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 0.85rem;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .modal-warning strong { color: #fbc02d; }
+
+  .modal-pro-list {
+    background: rgba(102, 187, 106, 0.08);
+    border: 1px solid rgba(102, 187, 106, 0.3);
+    border-left: 3px solid #66bb6a;
+    border-radius: 6px;
+    padding: 12px 16px 12px 16px;
+    margin: 10px 0 14px;
+    font-size: 0.85rem;
+  }
+  .modal-pro-list strong { color: #66bb6a; }
+  .modal-pro-list ul { margin: 6px 0 0; }
+  .modal-pro-list li { padding: 3px 0 3px 18px; font-size: 0.82rem; }
+  .modal-pro-list li::before { content: '✓'; color: #66bb6a; }
+
+</style>
+</head>
+<body>
+
+<!-- ============ HEADER FIJO ============ -->
+<div class="sticky-header">
+  <div class="sticky-content">
+    <div class="sticky-brand">
+      <div class="brand-icon">💼</div>
+      <div>
+        <div>Tu Portfolio</div>
+        <div style="font-size:0.7rem;color:var(--text-dim);font-weight:400;">Selecciona ETFs abajo</div>
+      </div>
+    </div>
+    <div class="sticky-stats">
+      <div class="mini-stat" id="stat-funds">
+        <div class="mini-stat-label">Fondos</div>
+        <div class="mini-stat-value" id="val-funds">0</div>
+        <div class="mini-stat-subvalue">ETFs elegidos</div>
+      </div>
+      <div class="mini-stat" id="stat-companies">
+        <div class="mini-stat-label">Empresas</div>
+        <div class="mini-stat-value" id="val-companies">0</div>
+        <div class="mini-stat-subvalue">aprox. cubiertas</div>
+      </div>
+      <div class="mini-stat" id="stat-score">
+        <div class="mini-stat-label">Diversif. <a class="info-link" onclick="openDiversModal()" title="¿Cómo se calcula?">ⓘ</a></div>
+        <div class="mini-stat-value score" id="val-score">0.0</div>
+        <div class="mini-stat-subvalue">de 10</div>
+      </div>
+      <div class="mini-stat" id="stat-ter">
+        <div class="mini-stat-label">TER medio</div>
+        <div class="mini-stat-value" id="val-ter">0.00%</div>
+        <div class="mini-stat-subvalue">coste anual</div>
+      </div>
+    </div>
+    <div class="sticky-cta">
+      <button class="cta-btn secondary" id="btn-clear" onclick="clearAllSelection()">Limpiar</button>
+      <button class="cta-btn" id="btn-launch" onclick="launchPortfolio()" disabled>
+        🚀 Ver Portfolio →
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <a href="index.html" class="back-link">← Volver al mapa mundial</a>
+
+  <header class="page-header">
+    <h1>🚀 Mapa de Inversiones Globales</h1>
+    <div class="subtitle">Selecciona los ETFs que quieres combinar · Ve las métricas de tu portfolio en tiempo real arriba</div>
+  </header>
+
+  <!-- PORTFOLIOS SUGERIDOS -->
+  <div class="portfolio-suggest">
+    <h2>💡 Portfolios modelo — Haz clic en "Aplicar" para seleccionarlos</h2>
+    <p>Cuatro estrategias pre-calculadas con sus métricas. Al aplicar uno, se marcarán los ETFs correspondientes y podrás lanzarlo directamente. <a class="info-link-big" onclick="openDiversModal()">ⓘ ¿Cómo se calcula el índice de diversificación?</a></p>
+    <div class="suggest-grid" id="suggest-grid">
+      <!-- Se rellenan via JS -->
+    </div>
+  </div>
+
+  <!-- Las secciones de ETFs las rellenamos dinámicamente desde JS -->
+  <div id="etf-sections"></div>
+
+  <div class="warning-box">
+    <strong>⚠️ Aviso importante:</strong> Esta información es puramente educativa y NO constituye asesoramiento financiero. Los datos de TER, AUM y composición
+    son aproximados a abril de 2026 y pueden variar. Antes de invertir, consulta siempre el prospecto oficial del ETF, verifica la disponibilidad en tu bróker
+    (los ETFs US no están disponibles para inversores minoristas europeos por regulación PRIIPs — busca versiones UCITS equivalentes), y considera tu situación
+    fiscal personal. La rentabilidad pasada no garantiza rentabilidades futuras. Invertir en acciones conlleva riesgo de pérdida del capital.
+  </div>
+
+  <div class="footnote">
+    Datos actualizados abril 2026. Fuentes: Vanguard, BlackRock/iShares, Schwab, State Street, Invesco, ETF Database, Siblis Research.<br>
+    Distribución del capital corporativo mundial basada en capitalización bursátil por domicilio.<br>
+    <a href="index.html" style="color:var(--accent);margin-top:10px;display:inline-block;">← Volver al mapa interactivo</a>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="etf_data.js"></script>
+<script>
+// ============================================================
+// ESTADO
+// ============================================================
+let selectedTickers = loadSelection();
+
+// ============================================================
+// RENDER DE SECCIONES DE ETF
+// ============================================================
+const REGION_INFO = {
+  us: {
+    title: '🇺🇸 ESTADOS UNIDOS',
+    weight: '62% del mercado global',
+    desc: 'El mercado más profundo, líquido y eficiente. Las "Magnificent 7" (Apple, Microsoft, Nvidia, Alphabet, Amazon, Meta, Tesla) concentran ~30% del S&P 500. Valuaciones altas (Shiller CAPE ~40), pero domina la innovación global (IA, biotech, software).',
+    tickers: ['VOO','SPY','VTI','QQQ','IVV','SCHD']
+  },
+  eu: {
+    title: '🇪🇺 EUROPA',
+    weight: '14% del mercado global',
+    desc: 'Valuaciones más baratas (PER ~14 vs 25 de EEUU), dividendos mayores (~3.5%). Fuerte en lujo (LVMH, Hermès), farmacéuticas (Novo Nordisk, Roche), industriales y banca. Menor peso tecnológico y demografía adversa son los lastres estructurales.',
+    tickers: ['VGK','IEUR','CSPX','EZU','EWG','EWU']
+  },
+  cn: {
+    title: '🇨🇳 CHINA',
+    weight: '9% del mercado global',
+    desc: 'Segunda economía mundial, pero con el mercado bursátil comprimido por tensiones geopolíticas y regulación. Valuaciones muy baratas (PER ~10). Alibaba, Tencent, BYD, PDD, Meituan. Alta volatilidad, alto potencial si hay reapertura política.',
+    tickers: ['MCHI','FXI','KWEB','ASHR']
+  },
+  jp: {
+    title: '🇯🇵 JAPÓN',
+    weight: '5.5% del mercado global',
+    desc: 'Por primera vez en 30 años, Japón rompió máximos del Nikkei (1989). Reforma corporativa del TSE, valuaciones bajas, Warren Buffett comprando sogo shosha. Toyota, Sony, Mitsubishi, Tokyo Electron. Riesgo: yen debilitado y demografía adversa.',
+    tickers: ['EWJ','DXJ','BBJP','SCJ']
+  },
+  em: {
+    title: '🌏 MERCADOS EMERGENTES',
+    weight: '~15% del mercado global (incl. China)',
+    desc: 'India, Taiwán, Brasil, México, Corea del Sur, Indonesia. Goldman proyecta que pasen del ~15% actual al 47% del market cap mundial en 2050. Mayor crecimiento demográfico, menor penetración financiera. Gran potencial, alta volatilidad.',
+    tickers: ['VWO','IEMG','EMXC','INDA','EWZ','EWW','EWT','EWY']
+  },
+  world: {
+    title: '🌍 GLOBALES (TODO EL MUNDO EN UNO)',
+    weight: 'Diversificación automática',
+    desc: 'Si quieres replicar automáticamente la distribución del mapa mundial sin rebalancear manualmente, estos ETFs lo hacen por ti. Ideal para inversores pasivos que "compran el mundo entero".',
+    tickers: ['VT','ACWI','VWCE','VXUS']
+  }
+};
+
+function renderETFSections() {
+  const container = document.getElementById('etf-sections');
+  container.innerHTML = '';
+
+  Object.entries(REGION_INFO).forEach(([regionKey, info]) => {
+    const meta = REGION_META[regionKey];
+    const section = document.createElement('div');
+    section.className = 'region-section';
+    section.style.setProperty('--region-color', meta.hex);
+
+    let cardsHTML = '';
+    info.tickers.forEach(ticker => {
+      const etf = ETF_DB[ticker];
+      if (!etf) return;
+      const isSelected = selectedTickers.includes(ticker);
+      const badgeHTML = etf.tag ? `<span class="etf-badge">${etf.tag}</span>` : '';
+      const terClass = etf.ter <= 0.10 ? 'good' : '';
+
+      cardsHTML += `
+        <div class="etf-card ${isSelected ? 'selected' : ''}" data-ticker="${ticker}" onclick="toggleSelection('${ticker}')">
+          ${badgeHTML}
+          <div class="etf-header-row">
+            <div class="etf-ticker">${ticker}</div>
+          </div>
+          <div class="etf-name">${etf.name}</div>
+          <div class="etf-stats">
+            <div class="stat">
+              <div class="stat-label">TER</div>
+              <div class="stat-value ${terClass}">${etf.ter.toFixed(2)}%</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Empresas</div>
+              <div class="stat-value">${etf.holdings >= 1000 ? (etf.holdings/1000).toFixed(1)+'K' : etf.holdings}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">AUM</div>
+              <div class="stat-value">$${etf.aum >= 1000 ? (etf.aum/1000).toFixed(1)+'T' : etf.aum+'B'}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    section.innerHTML = `
+      <div class="region-header-sec">
+        <div class="region-title">${info.title}</div>
+        <div class="region-weight">${info.weight}</div>
+      </div>
+      <div class="region-desc">${info.desc}</div>
+      <div class="etf-grid">${cardsHTML}</div>
+    `;
+    container.appendChild(section);
+  });
+}
+
+// ============================================================
+// PORTFOLIOS SUGERIDOS
+// ============================================================
+const SUGGESTED = [
+  {
+    id: 'passive',
+    title: '🌍 PASIVO GLOBAL',
+    desc: '1 sólo ETF — Replica todo el mundo. Ideal si no quieres pensar.',
+    tickers: ['VT']
+  },
+  {
+    id: 'classic',
+    title: '⚖️ CLÁSICO BOGLEHEADS',
+    desc: '3 ETFs — La asignación de libro: USA, Desarrollado ex-USA, Emergentes.',
+    tickers: ['VOO', 'VXUS', 'VWO']
+  },
+  {
+    id: 'mirror',
+    title: '🎯 ESPEJO DEL MERCADO',
+    desc: '5 ETFs — Cada región con peso similar al del mapa mundial actual.',
+    tickers: ['VOO', 'VGK', 'MCHI', 'EWJ', 'EMXC']
+  },
+  {
+    id: 'contrarian',
+    title: '🚀 CONTRARIAN 2050',
+    desc: '4 ETFs — Sobrepondera India y emergentes según proyección 2050.',
+    tickers: ['VOO', 'INDA', 'EMXC', 'VGK']
+  }
+];
+
+function renderSuggestedPortfolios() {
+  const grid = document.getElementById('suggest-grid');
+  grid.innerHTML = '';
+  SUGGESTED.forEach(port => {
+    const score = computeDiversificationScore(port.tickers);
+    const companies = computeTotalHoldings(port.tickers);
+    const ter = computeAvgTER(port.tickers);
+    const tickerBadges = port.tickers.map(t => `<strong>${t}</strong>`).join(' ');
+
+    const card = document.createElement('div');
+    card.className = 'suggest-card';
+    card.innerHTML = `
+      <h3>${port.title}</h3>
+      <div style="font-size:0.8rem;color:var(--text-dim);">${port.desc}</div>
+      <div class="suggest-tickers">${tickerBadges}</div>
+      <div class="suggest-metrics">
+        <div class="suggest-metric"><strong>${port.tickers.length}</strong> fondos</div>
+        <div class="suggest-metric"><strong>${companies.toLocaleString('es')}</strong> empresas</div>
+        <div class="suggest-metric score">Divers. <strong>${score}/10</strong></div>
+        <div class="suggest-metric">TER <strong>${ter.toFixed(2)}%</strong></div>
+      </div>
+      <button class="apply-btn" onclick="applyPortfolio('${port.id}')">Aplicar este portfolio</button>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ============================================================
+// INTERACTIVIDAD
+// ============================================================
+function toggleSelection(ticker) {
+  const idx = selectedTickers.indexOf(ticker);
+  if (idx >= 0) selectedTickers.splice(idx, 1);
+  else selectedTickers.push(ticker);
+  saveSelection(selectedTickers);
+  updateUI();
+}
+
+function applyPortfolio(id) {
+  const port = SUGGESTED.find(p => p.id === id);
+  if (!port) return;
+  selectedTickers = [...port.tickers];
+  saveSelection(selectedTickers);
+  updateUI();
+  showToast(`✓ Portfolio "${port.title}" aplicado (${port.tickers.length} ETFs)`);
+  // Scroll suave a los ETFs
+  setTimeout(() => {
+    document.getElementById('etf-sections').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 300);
+}
+
+function clearAllSelection() {
+  if (selectedTickers.length === 0) return;
+  selectedTickers = [];
+  saveSelection(selectedTickers);
+  updateUI();
+  showToast('Selección limpiada');
+}
+
+function launchPortfolio() {
+  if (selectedTickers.length === 0) return;
+  saveSelection(selectedTickers);
+  window.location.href = 'portfolio.html';
+}
+
+function updateUI() {
+  // Actualizar métricas del header
+  const funds = selectedTickers.length;
+  const companies = computeTotalHoldings(selectedTickers);
+  const score = computeDiversificationScore(selectedTickers);
+  const ter = computeAvgTER(selectedTickers);
+
+  document.getElementById('val-funds').textContent = funds;
+  document.getElementById('val-companies').textContent = companies >= 1000 ? (companies/1000).toFixed(1)+'K' : companies;
+  document.getElementById('val-score').textContent = score.toFixed(1);
+  document.getElementById('val-ter').textContent = ter.toFixed(2) + '%';
+
+  // Animación pulso en las stats actualizadas
+  ['stat-funds', 'stat-companies', 'stat-score', 'stat-ter'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('updated');
+    void el.offsetWidth; // reflow
+    el.classList.add('updated');
+    setTimeout(() => el.classList.remove('updated'), 800);
+  });
+
+  // Botón lanzar
+  const launchBtn = document.getElementById('btn-launch');
+  launchBtn.disabled = funds === 0;
+  launchBtn.textContent = funds === 0
+    ? '🚀 Ver Portfolio →'
+    : `🚀 Ver Portfolio (${funds}) →`;
+
+  // Actualizar todas las cards: añadir/quitar clase selected
+  document.querySelectorAll('.etf-card').forEach(card => {
+    const ticker = card.dataset.ticker;
+    if (selectedTickers.includes(ticker)) {
+      card.classList.add('selected');
+    } else {
+      card.classList.remove('selected');
+    }
+  });
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+
+function openDiversModal() {
+  document.getElementById('diversificationModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDiversModal() {
+  document.getElementById('diversificationModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDiversModal();
+});
+
+
+// INIT
+// ============================================================
+renderSuggestedPortfolios();
+renderETFSections();
+updateUI();
+</script>
+
+<!-- ========== MODAL: Cómo se calcula la diversificación ========== -->
+<div class="modal-backdrop" id="diversificationModal" onclick="if(event.target===this) closeDiversModal()">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">📊 ¿Cómo se calcula el índice de diversificación?</div>
+      <button class="modal-close" onclick="closeDiversModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Es una <strong>heurística orientativa</strong> con escala 0-10 construida a partir de tres componentes ponderados:</p>
+
+      <div class="modal-formula">
+Score = <span class="hl">40%</span> × Geografía + <span class="hl">40%</span> × Empresas + <span class="hl">20%</span> × Nº de ETFs
+      </div>
+
+      <h3>1. Diversificación geográfica (40%)</h3>
+      <p>Mide qué tan <strong>uniformemente repartido</strong> está el portfolio entre las 6 regiones (EEUU, Europa, China, Japón, Emergentes, Resto) usando la <strong>entropía de Shannon</strong>, la misma fórmula que se usa en ecología para medir biodiversidad.</p>
+      <div class="modal-formula">
+entropy = -Σ (p × log₂(p))  <span class="comment">// para cada región con peso p</span>
+geoScore = (entropy / log₂(6)) × 10
+      </div>
+      <ul>
+        <li>100% en una sola región → <strong>0/10</strong></li>
+        <li>50%-50% entre dos regiones → <strong>3.9/10</strong></li>
+        <li>16.7% en cada una de las 6 regiones → <strong>10/10</strong></li>
+      </ul>
+
+      <h3>2. Empresas cubiertas (40%)</h3>
+      <p>La intuición: pasar de 50 a 500 empresas mejora mucho la diversificación, pero pasar de 2.000 a 3.000 apenas aporta. Por eso usamos una <strong>escala logarítmica</strong>:</p>
+      <div class="modal-formula">
+holdingsScore = log₁₀(empresas) / log₁₀(3000) × 10
+      </div>
+      <ul>
+        <li>100 empresas → <strong>5.8/10</strong></li>
+        <li>500 empresas → <strong>7.7/10</strong></li>
+        <li>3.000 o más → <strong>10/10</strong></li>
+      </ul>
+      <p class="muted">Ajuste por solapamiento: si hay varios ETFs en la misma región, solo el mayor cuenta completo; los demás aportan un 25% extra. VOO + SPY no cuenta como 1.000 empresas (serían las mismas 500), sino como 625.</p>
+
+      <h3>3. Número de ETFs (20%)</h3>
+      <p>Más ETFs = diversificación operativa (distintos emisores, metodologías, riesgo de tracking). Lineal capado en 6:</p>
+      <div class="modal-formula">
+etfScore = min(10, nº_ETFs × 10/6)
+      </div>
+
+      <h3>Ejemplos reales</h3>
+      <table class="modal-example-table">
+        <thead>
+          <tr><th>Portfolio</th><th>Geo</th><th>Empresas</th><th>Nº ETFs</th><th>Total</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Solo VOO (S&P 500)</td><td>0</td><td>7.7</td><td>1.7</td><td class="score-cell">3.4</td></tr>
+          <tr><td>Solo VT (todo el mundo)</td><td>7.1</td><td>10</td><td>1.7</td><td class="score-cell">7.1</td></tr>
+          <tr><td>VOO + VXUS + VWO</td><td>6.2</td><td>10</td><td>5.0</td><td class="score-cell">8.0</td></tr>
+          <tr><td>5 ETFs regiones iguales</td><td>9.3</td><td>10</td><td>8.3</td><td class="score-cell">9.3</td></tr>
+        </tbody>
+      </table>
+
+      <h3>⚠️ Limitaciones importantes</h3>
+      <div class="modal-warning">
+        <strong>Esta fórmula NO mide:</strong>
+        <ul style="margin-top:8px;">
+          <li><strong>Correlación real</strong> entre activos. Dos ETFs de regiones diferentes pueden moverse juntos en crisis globales (2008, 2020).</li>
+          <li><strong>Concentración sectorial</strong>. VOO+QQQ+MCHI puede ser 40% tecnología aunque esté diversificado geográficamente.</li>
+          <li><strong>Peso real</strong>. Se asume 1/N (igual reparto). Si pones 90% en VOO y 10% en VWO, tu diversificación real es mucho peor de lo que dice el score.</li>
+          <li><strong>Solapamiento entre índices distintos</strong>. VTI y VOO solapan casi totalmente en las 500 grandes americanas, pero la fórmula los trata como diferentes.</li>
+          <li><strong>Calidad vs cantidad</strong>. Una small-cap brasileña ilíquida cuenta igual que Apple.</li>
+          <li><strong>Riesgos no diversificables</strong>: divisa, geopolítico, regulatorio.</li>
+        </ul>
+      </div>
+
+      <h3>¿Es útil entonces?</h3>
+      <p>Como <strong>heurística rápida y orientativa</strong>: sí. Te indica a grandes rasgos si estás muy concentrado o bien repartido. Pero no es una medida rigurosa de gestión profesional de riesgos.</p>
+
+      <div class="modal-pro-list">
+        <strong>Métricas profesionales más rigurosas que NO usa esta herramienta:</strong>
+        <ul>
+          <li>Ratio de Sharpe (retorno ajustado al riesgo)</li>
+          <li>Max drawdown histórico</li>
+          <li>Correlaciones móviles entre componentes</li>
+          <li>VaR / CVaR (Value at Risk)</li>
+          <li>Índice Herfindahl-Hirschman aplicado a concentración sectorial</li>
+          <li>Análisis factorial (exposición a factores de riesgo: valor, momentum, calidad, tamaño)</li>
+        </ul>
+      </div>
+
+      <p class="muted" style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px;">
+        <strong>En resumen:</strong> trata este score como una orientación visual, no como un veredicto. Un 9/10 aquí no garantiza un portfolio bien diversificado en términos de riesgo real, y un 3/10 no siempre es malo si responde a una convicción específica del inversor.
+      </p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

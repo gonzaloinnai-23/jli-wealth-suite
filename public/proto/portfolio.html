@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JLI Portfolio — Marzo 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<!-- inline login removido — auth gestionada por el shell del proto -->
+<script>
+  // Si se abre fuera del shell (p.ej. dentro del iframe del shell, ya autenticado)
+  // no hacemos nada; si se abre directo sin auth, redirige al shell.
+  (function(){
+    try {
+      if (window.top === window.self && !sessionStorage.getItem('jli_auth')) {
+        window.location.replace('/proto/');
+      }
+    } catch(e) {}
+  })();
+</script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  :root{--bg:#f8f7f4;--surface:#ffffff;--surface2:#f1efe8;--border:rgba(0,0,0,0.1);--text:#1a1917;--text2:#6b6a65;--text3:#9b9a96;--blue:#378ADD;--green:#1D9E75;--amber:#BA7517;--gray:#888780;--red:#E24B4A;--coral:#D85A30;--radius:10px;--radius-lg:14px;}
+  body{font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;}
+  .serif{font-family:'Instrument Serif',Georgia,serif;font-weight:400;letter-spacing:-0.01em;}
+  header h1{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:22px;letter-spacing:-0.02em;}
+  header{background:var(--surface);border-bottom:0.5px solid var(--border);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .header-left{display:flex;align-items:baseline;gap:12px;}
+  header h1{font-size:17px;font-weight:600;letter-spacing:-0.02em;}
+  header .subtitle{font-size:13px;color:var(--text2);}
+  .header-right{display:flex;align-items:center;gap:10px;}
+  .upload-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--text);color:#fff;border:none;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;transition:opacity 0.15s;}
+  .upload-btn:hover{opacity:0.8;}
+  .data-source{font-size:12px;color:var(--text2);}
+  .nav{background:var(--surface);border-bottom:0.5px solid var(--border);padding:0 32px;display:flex;gap:0;overflow-x:auto;}
+  .nav button{padding:11px 16px;font-size:13px;font-weight:500;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:color 0.15s,border-color 0.15s;white-space:nowrap;}
+  .nav button.active{color:var(--text);border-bottom-color:var(--text);}
+  .nav button:hover:not(.active){color:var(--text);}
+  .main{padding:28px 32px;max-width:1100px;margin:0 auto;}
+  .view{display:none;} .view.active{display:block;}
+  .metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:24px;}
+  .metric{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+  .metric-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;}
+  .metric-value{font-size:24px;font-weight:600;letter-spacing:-0.02em;color:var(--text);}
+  .metric-sub{font-size:12px;color:var(--text2);margin-top:2px;}
+  .metric-value.pos{color:var(--green);} .metric-value.neg{color:var(--coral);}
+  .section-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin:24px 0 12px;}
+  .card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
+  .chart-wrap{position:relative;width:100%;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:700px){.grid2{grid-template-columns:1fr;}.main{padding:16px;}header{padding:12px 16px;}.nav{padding:0 12px;}}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px;}
+  .legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);}
+  .legend-sq{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+  table{width:100%;border-collapse:collapse;}
+  th{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;padding:8px 10px;text-align:left;border-bottom:0.5px solid var(--border);}
+  th.r{text-align:right;} td{padding:9px 10px;border-bottom:0.5px solid var(--border);color:var(--text);font-size:13px;}
+  td.r{text-align:right;} td.muted{color:var(--text2);font-size:12px;}
+  tr:last-child td{border-bottom:none;} tr:hover td{background:var(--bg);}
+  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;}
+  .badge-ETF{background:#deeef9;color:#185FA5;} .badge-FUND{background:#d4f0e5;color:#0F6E56;}
+  .badge-STOCK{background:#fdecd5;color:#854F0B;} .badge-CASH{background:#ececec;color:#5F5E5A;}
+  .badge-OTHER{background:#fde5e5;color:#A32D2D;}
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .bar-label{width:150px;font-size:13px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;}
+  .bar-track{flex:1;background:var(--surface2);border-radius:4px;height:10px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:4px;}
+  .bar-val{width:90px;text-align:right;font-weight:600;font-size:13px;color:var(--text);}
+  select{font-size:13px;padding:7px 12px;border-radius:var(--radius);border:0.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;}
+  .overlap-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:10px;}
+  .overlap-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;flex-wrap:wrap;gap:4px;}
+  .overlap-name{font-weight:600;font-size:14px;} .overlap-val{font-size:12px;color:var(--text2);}
+  .overlap-bar-wrap{background:var(--surface2);border-radius:4px;height:6px;margin-bottom:8px;overflow:hidden;}
+  .overlap-bar{height:100%;border-radius:4px;} .overlap-desc{font-size:12px;color:var(--text2);line-height:1.55;}
+  .tag-high{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700;background:#fde5e5;color:#A32D2D;margin-left:6px;text-transform:uppercase;letter-spacing:0.05em;}
+  .tag-med{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700;background:#fdecd5;color:#854F0B;margin-left:6px;text-transform:uppercase;letter-spacing:0.05em;}
+  .summary-note{background:#eef6ff;border:0.5px solid #b5d4f4;border-radius:var(--radius);padding:12px 16px;font-size:13px;color:#185FA5;margin-bottom:20px;line-height:1.55;}
+  .drop-zone{border:2px dashed var(--border);border-radius:var(--radius-lg);padding:60px 40px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;background:var(--surface);}
+  .drop-zone:hover,.drop-zone.drag-over{border-color:var(--blue);background:#eef6ff;}
+  .drop-icon{width:48px;height:48px;margin:0 auto 16px;opacity:0.3;}
+  .drop-title{font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px;}
+  .drop-sub{font-size:13px;color:var(--text2);margin-bottom:20px;}
+  .drop-btn{display:inline-block;padding:9px 20px;background:var(--text);color:#fff;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;}
+  #csv-file-input{display:none;}
+  .load-btn{padding:9px 20px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.15s;}
+  .load-btn:hover{opacity:0.85;}
+  .csv-table-wrap{overflow-x:auto;border:0.5px solid var(--border);border-radius:var(--radius-lg);}
+  .csv-table-wrap table td,.csv-table-wrap table th{white-space:nowrap;}
+  .field-map{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:16px 0;}
+  .field-row{display:flex;flex-direction:column;gap:4px;}
+  .field-row label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;}
+  .field-row select{font-size:12px;padding:5px 8px;}
+  .upload-success{background:#d4f0e5;border:0.5px solid #1D9E75;border-radius:var(--radius);padding:12px 16px;font-size:13px;color:#0F6E56;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left"><h1>JLI — Portfolio</h1><span class="subtitle" id="header-subtitle">Marzo 2026</span></div>
+  <div class="header-right">
+    <span class="data-source" id="data-source-label">Datos: CSV cargado</span>
+    <button class="upload-btn" onclick="showView('upload',document.querySelector('.nav button:last-child'))">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1v9M5 4l3-3 3 3M2 12v1.5A1.5 1.5 0 003.5 15h9a1.5 1.5 0 001.5-1.5V12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Cargar CSV
+    </button>
+  </div>
+</header>
+<nav class="nav">
+  <button class="active" onclick="showView('overview',this)">Vista general</button>
+  <button onclick="showView('sp500',this)">S&P 500</button>
+  <button onclick="showView('overlap',this)">Solapamiento</button>
+  <button onclick="showView('positions',this)">Posiciones detalle</button>
+  <button onclick="showView('ter',this)">Costos (TER)</button>
+  <button onclick="showView('upload',this)">&#8593; Cargar CSV</button>
+</nav>
+<main class="main">
+<section id="view-overview" class="view active">
+  <div class="metric-grid" id="overview-metrics"></div>
+  <div class="grid2">
+    <div class="card"><div class="section-label" style="margin-top:0">Distribución por tipo de activo</div><div class="legend" id="type-legend"></div><div class="chart-wrap" style="height:220px"><canvas id="typeChart"></canvas></div></div>
+    <div class="card"><div class="section-label" style="margin-top:0">Valor por custodio</div><div id="custodio-bars" style="padding-top:8px"></div></div>
+  </div>
+  <div class="card"><div class="section-label" style="margin-top:0">Top 10 posiciones</div><table><thead><tr><th>Activo</th><th>Tipo</th><th>Custodio</th><th class="r">Valor USD</th><th class="r">% cartera</th></tr></thead><tbody id="top10-body"></tbody></table></div>
+</section>
+<section id="view-sp500" class="view">
+  <div class="metric-grid" id="sp500-metrics"></div>
+  <div class="grid2">
+    <div class="card"><div class="section-label" style="margin-top:0">Desglose S&P por vehículo</div><div class="chart-wrap" style="height:220px"><canvas id="sp500Chart"></canvas></div></div>
+    <div class="card"><div class="section-label" style="margin-top:0">S&P por custodio</div><div class="chart-wrap" style="height:220px"><canvas id="sp500CustChart"></canvas></div></div>
+  </div>
+  <div class="card"><div class="section-label" style="margin-top:0">Detalle posiciones S&P 500</div><table><thead><tr><th>Instrumento</th><th>Custodio</th><th class="r">Qty</th><th class="r">Valor USD</th><th class="r">Principal</th><th class="r">P&L período</th></tr></thead><tbody id="sp500-body"></tbody></table></div>
+</section>
+<section id="view-overlap" class="view">
+  <div class="summary-note" id="overlap-note"></div>
+  <div class="metric-grid" id="overlap-metrics"></div>
+  <div class="grid2">
+    <div><div class="section-label">Fondos con solapamiento S&P / US large-cap</div><div id="overlap-cards"></div></div>
+    <div>
+      <div class="section-label">Distribución exposición estimada</div>
+      <div class="card" style="margin-bottom:16px"><div class="chart-wrap" style="height:220px"><canvas id="overlapChart"></canvas></div><div class="legend" style="margin-top:12px;margin-bottom:0" id="overlap-legend"></div></div>
+      <div class="card"><div class="section-label" style="margin-top:0">Fondos sin solapamiento significativo S&P</div><div id="no-overlap-list" style="font-size:13px;color:var(--text2);line-height:1.7"></div></div>
+    </div>
+  </div>
+</section>
+<section id="view-positions" class="view">
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+    <select id="filter-custodio" onchange="renderPositions()"><option value="">Todos los custodios</option></select>
+    <select id="filter-type" onchange="renderPositions()"><option value="">Todos los tipos</option><option value="ETF">ETF</option><option value="FUND">Fondo</option><option value="STOCK">Acción</option><option value="CASH">Cash</option></select>
+    <span id="positions-count" style="font-size:12px;color:var(--text2);margin-left:4px;"></span>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;"><table><thead><tr><th>Activo</th><th>Tipo</th><th>Custodio</th><th class="r">Valor USD</th><th class="r">Principal</th><th class="r">% cartera</th><th class="r">P&L período</th></tr></thead><tbody id="positions-body"></tbody></table></div>
+</section>
+<section id="view-ter" class="view">
+  <div class="metric-grid" id="ter-metrics"></div>
+  <div class="grid2">
+    <div>
+      <div class="section-label">TER por instrumento · ponderado por valor en cartera</div>
+      <div class="card" style="padding:0;overflow:hidden;"><table><thead><tr><th>Instrumento</th><th>Tipo</th><th class="r">TER</th><th class="r">Valor USD</th><th class="r">% cartera</th><th class="r">Costo anual</th></tr></thead><tbody id="ter-tbody"></tbody></table></div>
+    </div>
+    <div>
+      <div class="section-label">Proyección capitalización compuesta</div>
+      <div class="card">
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:10px;"><label style="font-size:12px;color:var(--text2);width:130px;flex-shrink:0">Valor de cartera</label><input type="range" id="ter-sl-val" min="20" max="80" value="46" step="1" style="flex:1"><span style="font-size:13px;font-weight:600;min-width:50px;text-align:right;" id="ter-out-val">$46M</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><label style="font-size:12px;color:var(--text2);width:130px;flex-shrink:0">Horizonte (años)</label><input type="range" id="ter-sl-yr" min="1" max="20" value="10" step="1" style="flex:1"><span style="font-size:13px;font-weight:600;min-width:50px;text-align:right;" id="ter-out-yr">10 años</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><label style="font-size:12px;color:var(--text2);width:130px;flex-shrink:0">Retorno bruto anual</label><input type="range" id="ter-sl-ret" min="3" max="15" value="8" step="0.5" style="flex:1"><span style="font-size:13px;font-weight:600;min-width:50px;text-align:right;" id="ter-out-ret">8.0%</span></div>
+        </div>
+        <div id="ter-result" style="background:var(--surface2);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;font-size:13px;"></div>
+        <div style="position:relative;width:100%;height:200px;margin-bottom:14px;"><canvas id="ter-comp-chart"></canvas></div>
+        <div style="background:#EAF3DE;border:0.5px solid #97C459;border-radius:var(--radius);padding:10px 14px;font-size:12px;color:#3B6D11;line-height:1.6;margin-bottom:14px;">El TER se descuenta continuamente del valor liquidativo. El impacto real es el costo de oportunidad: capital que habría crecido al retorno bruto pero se pagó en comisiones.</div>
+        <div class="section-label" style="margin-top:0">Distribución por bucket de TER</div>
+        <div style="position:relative;width:100%;height:180px;"><canvas id="ter-donut"></canvas></div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:12px;color:var(--text2);" id="ter-donut-legend"></div>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="view-upload" class="view">
+  <div id="upload-success" style="display:none" class="upload-success">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#0F6E56" stroke-width="1.5"/><path d="M5 8l2 2 4-4" stroke="#0F6E56" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span id="upload-success-msg"></span>
+  </div>
+  <div class="card">
+    <div class="section-label" style="margin-top:0">Cargar archivo de posiciones</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">Cargá un archivo CSV con las posiciones de cartera.</p>
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('csv-file-input').click()">
+      <svg class="drop-icon" viewBox="0 0 48 48" fill="none"><rect x="6" y="8" width="36" height="32" rx="4" stroke="#1a1917" stroke-width="2.5"/><path d="M16 20h16M16 26h10" stroke="#1a1917" stroke-width="2" stroke-linecap="round"/><path d="M30 32l4-4-4-4" stroke="#1a1917" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="drop-title">Arrastrá tu archivo CSV aquí</div>
+      <div class="drop-sub">o hacé click para seleccionar desde tu computadora</div>
+      <span class="drop-btn">Elegir archivo CSV</span>
+    </div>
+    <input type="file" id="csv-file-input" accept=".csv,text/csv" onchange="handleFileSelect(event)">
+    <div id="csv-preview-area" style="display:none">
+      <div class="section-label">Mapeo de columnas</div>
+      <div class="field-map" id="field-map"></div>
+      <div class="csv-preview">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div><div style="font-size:14px;font-weight:600;" id="csv-file-name"></div><div style="font-size:12px;color:var(--text2);" id="csv-file-meta"></div></div>
+          <button class="load-btn" onclick="applyCSV()">Cargar datos al dashboard</button>
+        </div>
+        <div class="csv-table-wrap"><table id="csv-preview-table"></table></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main><script>
+const defaultData=[
+{name:"MercadoLibre",symbol:"MELI",type:"STOCK",account:"Galicia Securities",value:2057095,principal:467916,returns:-7853.36,qty:1103},
+{name:"USD Cash",symbol:"USD",type:"CASH",account:"Galicia Securities",value:50000,principal:50000,returns:0,qty:50000},
+{name:"BlackRock USD Ultra Short Bond",symbol:"BKUU",type:"ETF",account:"JP.Morgan",value:5300968,principal:5232309,returns:0,qty:40759},
+{name:"iShares Core S&P 500 (CSSPX)",symbol:"CSSPX",type:"ETF",account:"JP.Morgan",value:421423,principal:399101,returns:0,qty:561},
+{name:"iShares Semiconductor (SOXX)",symbol:"SOXX",type:"ETF",account:"JP.Morgan",value:264891,principal:101277,returns:-336.6,qty:660},
+{name:"Janus Balanced Fund I2",symbol:"JANUS-BAL",type:"FUND",account:"JP.Morgan",value:7513166,principal:4457580,returns:0,qty:114880},
+{name:"JPM Nasdaq Premium Income (JEQA)",symbol:"JEQA",type:"ETF",account:"JP.Morgan",value:325185,principal:301525,returns:0,qty:10582},
+{name:"JPM US Select 130-30",symbol:"JPM130",type:"FUND",account:"JP.Morgan",value:546016,principal:450000,returns:0,qty:8046},
+{name:"JPM US Select C",symbol:"JPMSELC",type:"FUND",account:"JP.Morgan",value:3346906,principal:2827246,returns:0,qty:3501},
+{name:"JPM America Equity Fund C",symbol:"JPMAM",type:"FUND",account:"JP.Morgan",value:539228,principal:450000,returns:0,qty:5872},
+{name:"MFS European Value W1",symbol:"MFSE",type:"FUND",account:"JP.Morgan",value:144870,principal:66430,returns:-222.22,qty:3585},
+{name:"MS Global Brands I",symbol:"MSGB",type:"FUND",account:"JP.Morgan",value:298790,principal:252081,returns:0,qty:1225},
+{name:"Tesla Inc",symbol:"TSLA",type:"STOCK",account:"JP.Morgan",value:165795,principal:99115,returns:0,qty:423},
+{name:"USD Cash",symbol:"USD",type:"CASH",account:"JP.Morgan",value:6436,principal:6436,returns:0,qty:6436},
+{name:"AB Intl Health Care I$",symbol:"ABHLTH",type:"FUND",account:"Pershing",value:339084,principal:200001,returns:0,qty:475},
+{name:"Financial Select SPDR (XLF)",symbol:"XLF",type:"ETF",account:"Pershing",value:131368,principal:100120,returns:-100.8,qty:2520},
+{name:"Health Care Select SPDR (XLV)",symbol:"XLV",type:"ETF",account:"Pershing",value:360861,principal:299856,returns:-1176,qty:2450},
+{name:"Invesco EQQQ NASDAQ-100",symbol:"EQQQ",type:"ETF",account:"Pershing",value:1119184,principal:498590,returns:0,qty:1760},
+{name:"iShares Core S&P 500 (CSSPX)",symbol:"CSSPX",type:"ETF",account:"Pershing",value:1224456,principal:1203720,returns:0,qty:1630},
+{name:"Janus Global Tech I$",symbol:"JANGTECH",type:"FUND",account:"Pershing",value:1628963,principal:627087,returns:0,qty:30470},
+{name:"JPM US Select C",symbol:"JPMSELC",type:"FUND",account:"Pershing",value:2095627,principal:1877395,returns:0,qty:2192},
+{name:"Neuberger Berman US Multi Cap",symbol:"NBMC",type:"FUND",account:"Pershing",value:2524079,principal:1199957,returns:0,qty:46855},
+{name:"Pictet Robotics I USD",symbol:"PICTET-R",type:"FUND",account:"Pershing",value:147734,principal:90599,returns:0,qty:297},
+{name:"S&P 500 SPY5",symbol:"SPY5",type:"ETF",account:"Pershing",value:2888367,principal:1400039,returns:4614.4,qty:4120},
+{name:"USD Cash",symbol:"USD",type:"CASH",account:"Pershing",value:1553,principal:1553,returns:0,qty:1553},
+{name:"Allianz Europe Equity Growth",symbol:"ALGEU",type:"FUND",account:"Rothschild",value:84842,principal:48859,returns:0,qty:3130},
+{name:"Fidelity S&P 500 Index Fund",symbol:"FSPI",type:"FUND",account:"Rothschild",value:2336301,principal:1998792,returns:0,qty:165600},
+{name:"Hilton Worldwide (HLT)",symbol:"HLT",type:"STOCK",account:"Rothschild",value:132800,principal:49564,returns:1235.96,qty:400},
+{name:"Invesco EQQQ NASDAQ-100",symbol:"EQQQ",type:"ETF",account:"Rothschild",value:737644,principal:199520,returns:0,qty:1160},
+{name:"iShares Dow Jones (CSINDU)",symbol:"CSINDU",type:"ETF",account:"Rothschild",value:587400,principal:252480,returns:0,qty:1000},
+{name:"Norwegian Cruise Line (NCLH)",symbol:"NCLH",type:"STOCK",account:"Rothschild",value:40471,principal:50008,returns:343.14,qty:1900},
+{name:"S&P 500 SPY5",symbol:"SPY5",type:"ETF",account:"Rothschild",value:567859,principal:197267,returns:907.2,qty:810},
+{name:"Southwest Airlines (LUV)",symbol:"LUV",type:"STOCK",account:"Rothschild",value:39406,principal:49799,returns:-209,qty:950},
+{name:"SPDR S&P 500 UCITS (SPYL)",symbol:"SPYL",type:"ETF",account:"Rothschild",value:1242000,principal:1238313,returns:0,qty:72000},
+{name:"USD Cash",symbol:"USD",type:"CASH",account:"Rothschild",value:15149,principal:15149,returns:0,qty:15149},
+{name:"S&P 500 SPY5",symbol:"SPY5",type:"ETF",account:"Santander",value:6592768,principal:5497300,returns:10532.48,qty:9404},
+{name:"SPDR S&P 500 UCITS (SPYL)",symbol:"SPYL",type:"ETF",account:"Santander",value:101775,principal:99308,returns:0,qty:5900},
+{name:"USD Cash",symbol:"USD",type:"CASH",account:"Santander",value:143600,principal:143600,returns:0,qty:143600}
+];
+let DATA=defaultData.filter(d=>d.value>0);
+let chartInstances={};
+function fmt(n){return'$'+Math.abs(Math.round(n)).toLocaleString('en-US');}
+function pct(n,t){return((n/t)*100).toFixed(1)+'%';}
+function destroyChart(id){if(chartInstances[id]){chartInstances[id].destroy();delete chartInstances[id];}}
+const TYPE_COLORS={ETF:'#378ADD',FUND:'#1D9E75',STOCK:'#BA7517',CASH:'#888780',OTHER:'#E24B4A'};
+const CUST_COLORS={'Galicia Securities':'#378ADD','JP.Morgan':'#1D9E75','Pershing':'#D85A30','Rothschild':'#BA7517','Santander':'#888780'};
+const SP5_KW=['spy5','csspx','spyl','fidelity s&p','s&p 500'];
+const SP5_OV=['jpm us select','america equity','janus balanced','neuberger','eqqq','nasdaq-100','janus global tech'];
+function showView(id,btn){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');if(btn)btn.classList.add('active');}
+function renderAll(){const a=DATA.filter(d=>d.value>0);const t=a.reduce((s,d)=>s+d.value,0);renderOverview(a,t);renderSP500(a,t);renderOverlap(a,t);renderPositions();populateCustodioFilter(a);}
+function renderOverview(a,t){
+  const tp=a.reduce((s,d)=>s+(d.principal||0),0);const tr=t-tp;const rp=tp>0?((tr/tp)*100).toFixed(1):0;
+  const cs=new Set(a.map(d=>d.account));
+  document.getElementById('overview-metrics').innerHTML=`<div class="metric"><div class="metric-label">Valor total</div><div class="metric-value">${fmt(t)}</div><div class="metric-sub">USD</div></div><div class="metric"><div class="metric-label">Principal invertido</div><div class="metric-value">${fmt(tp)}</div><div class="metric-sub">costo histórico</div></div><div class="metric"><div class="metric-label">Retorno total</div><div class="metric-value ${tr>=0?'pos':'neg'}">${tr>=0?'+':''}${fmt(tr)}</div><div class="metric-sub">${tr>=0?'+':''}${rp}%</div></div><div class="metric"><div class="metric-label">Posiciones activas</div><div class="metric-value">${a.length}</div><div class="metric-sub">instrumentos</div></div><div class="metric"><div class="metric-label">Custodios</div><div class="metric-value">${cs.size}</div><div class="metric-sub">brokers</div></div>`;
+  const ca={};a.forEach(d=>{ca[d.account]=(ca[d.account]||0)+d.value;});
+  const cm=Math.max(...Object.values(ca));
+  const ce=document.getElementById('custodio-bars');ce.innerHTML='';
+  Object.entries(ca).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{const w=(v/cm*100).toFixed(1);const col=CUST_COLORS[k]||'#888';ce.innerHTML+=`<div class="bar-row"><div class="bar-label">${k}</div><div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${col}"></div></div><div class="bar-val">${fmt(v)}</div></div>`;});
+  const ta={};a.forEach(d=>{ta[d.type]=(ta[d.type]||0)+d.value;});
+  document.getElementById('type-legend').innerHTML=Object.entries(ta).map(([k,v])=>`<span class="legend-item"><span class="legend-sq" style="background:${TYPE_COLORS[k]||'#888'}"></span>${k} ${pct(v,t)}</span>`).join('');
+  destroyChart('typeChart');chartInstances['typeChart']=new Chart(document.getElementById('typeChart'),{type:'doughnut',data:{labels:Object.keys(ta),datasets:[{data:Object.values(ta),backgroundColor:Object.keys(ta).map(k=>TYPE_COLORS[k]||'#888'),borderWidth:2,borderColor:'#f8f7f4'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}}}});
+  const t10=[...a].sort((a,b)=>b.value-a.value).slice(0,10);
+  document.getElementById('top10-body').innerHTML=t10.map(d=>`<tr><td>${d.name}</td><td><span class="badge badge-${d.type}">${d.type}</span></td><td class="muted">${d.account}</td><td class="r">${fmt(d.value)}</td><td class="r">${pct(d.value,t)}</td></tr>`).join('');
+}
+function renderSP500(a,t){
+  const sp=a.filter(d=>SP5_KW.some(k=>d.name.toLowerCase().includes(k)||(d.symbol||'').toLowerCase().includes(k.replace('&',''))));
+  const st=sp.reduce((s,d)=>s+d.value,0);const spnl=sp.reduce((s,d)=>s+(d.returns||0),0);
+  document.getElementById('sp500-metrics').innerHTML=`<div class="metric"><div class="metric-label">Exposición S&P directa</div><div class="metric-value">${fmt(st)}</div><div class="metric-sub">ETFs S&P puros</div></div><div class="metric"><div class="metric-label">% cartera S&P</div><div class="metric-value">${pct(st,t)}</div><div class="metric-sub">del total</div></div><div class="metric"><div class="metric-label">P&L período S&P</div><div class="metric-value ${spnl>=0?'pos':'neg'}">${spnl>=0?'+':''}${fmt(spnl)}</div><div class="metric-sub">retorno neto</div></div><div class="metric"><div class="metric-label">Vehículos S&P</div><div class="metric-value">${[...new Set(sp.map(d=>d.symbol||d.name))].length}</div><div class="metric-sub">instrumentos</div></div>`;
+  const bv={};sp.forEach(d=>{bv[d.symbol||d.name]=(bv[d.symbol||d.name]||0)+d.value;});
+  const vc=['#378ADD','#1D9E75','#185FA5','#BA7517','#D85A30','#888780'];
+  destroyChart('sp500Chart');chartInstances['sp500Chart']=new Chart(document.getElementById('sp500Chart'),{type:'bar',data:{labels:Object.keys(bv),datasets:[{data:Object.values(bv),backgroundColor:Object.keys(bv).map((_,i)=>vc[i%vc.length]),borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{y:{ticks:{callback:v=>'$'+(v/1e6).toFixed(1)+'M',font:{size:11}},grid:{color:'rgba(0,0,0,0.05)'}},x:{ticks:{font:{size:11}},grid:{display:false}}}}});
+  const bc={};sp.forEach(d=>{bc[d.account]=(bc[d.account]||0)+d.value;});const bct=Object.values(bc).reduce((a,b)=>a+b,0);
+  destroyChart('sp500CustChart');chartInstances['sp500CustChart']=new Chart(document.getElementById('sp500CustChart'),{type:'doughnut',data:{labels:Object.keys(bc).map(k=>`${k} (${pct(bc[k],bct)})`),datasets:[{data:Object.values(bc),backgroundColor:Object.keys(bc).map(k=>CUST_COLORS[k]||'#888'),borderWidth:2,borderColor:'#f8f7f4'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10,padding:8}},tooltip:{callbacks:{label:c=>fmt(c.raw)}}}}});
+  document.getElementById('sp500-body').innerHTML=sp.sort((a,b)=>b.value-a.value).map(d=>`<tr><td>${d.name}</td><td class="muted">${d.account}</td><td class="r">${d.qty?Math.round(d.qty).toLocaleString():'—'}</td><td class="r">${fmt(d.value)}</td><td class="r">${d.principal?fmt(d.principal):'—'}</td><td class="r" style="color:${(d.returns||0)>0?'var(--green)':(d.returns||0)<0?'var(--coral)':'var(--text2)'}">${(d.returns||0)!==0?(d.returns>0?'+':'')+fmt(d.returns):'—'}</td></tr>`).join('');
+}
+function renderOverlap(a,t){
+  const sd=a.filter(d=>SP5_KW.some(k=>d.name.toLowerCase().includes(k))).reduce((s,d)=>s+d.value,0);
+  const of=a.filter(d=>SP5_OV.some(k=>d.name.toLowerCase().includes(k)));
+  const ot=of.reduce((s,d)=>s+d.value,0);const oe=ot*0.55;const to=sd+oe;
+  document.getElementById('overlap-note').innerHTML=`Además de los ETFs S&P directos (~${pct(sd,t)} de cartera), varios fondos tienen exposición estructural al mercado americano de large-caps. La exposición total estimada al S&P 500 es de <strong>~${pct(to,t)}</strong> de la cartera.`;
+  document.getElementById('overlap-metrics').innerHTML=`<div class="metric"><div class="metric-label">S&P directo</div><div class="metric-value">${fmt(sd)}</div><div class="metric-sub">${pct(sd,t)} cartera</div></div><div class="metric"><div class="metric-label">Fondos solapados (est.)</div><div class="metric-value">${fmt(oe)}</div><div class="metric-sub">exposición implícita</div></div><div class="metric"><div class="metric-label">Solapamiento total</div><div class="metric-value">~${pct(to,t)}</div><div class="metric-sub">estimado</div></div><div class="metric"><div class="metric-label">Fondos con overlap</div><div class="metric-value">${of.length}</div><div class="metric-sub">instrumentos</div></div>`;
+  const occ={'jpm us select':'#E24B4A','janus balanced':'#BA7517','neuberger':'#E24B4A','eqqq':'#E24B4A','janus global tech':'#BA7517','america equity':'#E24B4A'};
+  const ow={'jpm us select':100,'america equity':10,'neuberger':50,'janus balanced':65,'global tech':30,'eqqq':34};
+  document.getElementById('overlap-cards').innerHTML=of.sort((a,b)=>b.value-a.value).map(d=>{const nl=d.name.toLowerCase();const col=Object.entries(occ).find(([k])=>nl.includes(k))?.[1]||'#BA7517';const w=Object.entries(ow).find(([k])=>nl.includes(k))?.[1]||30;const tag=col==='#E24B4A'?`<span class="tag-high">Alto</span>`:`<span class="tag-med">Medio</span>`;return`<div class="overlap-card"><div class="overlap-header"><div class="overlap-name">${d.name}${tag}</div><div class="overlap-val">${fmt(d.value)}</div></div><div class="overlap-bar-wrap"><div class="overlap-bar" style="background:${col};width:${w}%"></div></div><div class="overlap-desc">${d.account} · ${pct(d.value,t)} de cartera</div></div>`;}).join('');
+  document.getElementById('overlap-legend').innerHTML=`<span class="legend-item"><span class="legend-sq" style="background:#378ADD"></span>S&P 500 directo (${pct(sd,t)})</span><span class="legend-item"><span class="legend-sq" style="background:#D85A30"></span>Fondos US overlap (est. ${pct(oe,t)})</span><span class="legend-item"><span class="legend-sq" style="background:#D3D1C7"></span>Resto cartera</span>`;
+  destroyChart('overlapChart');chartInstances['overlapChart']=new Chart(document.getElementById('overlapChart'),{type:'doughnut',data:{labels:['S&P 500 directo','Fondos US overlap','Resto cartera'],datasets:[{data:[sd,oe,t-sd-oe],backgroundColor:['#378ADD','#D85A30','#D3D1C7'],borderWidth:2,borderColor:'#ffffff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${fmt(c.raw)}`}}}}});
+  const no=a.filter(d=>!SP5_KW.some(k=>d.name.toLowerCase().includes(k))&&!SP5_OV.some(k=>d.name.toLowerCase().includes(k))&&d.type!=='CASH');
+  document.getElementById('no-overlap-list').innerHTML=no.map((d,i)=>`<div style="padding:5px 0;${i<no.length-1?'border-bottom:0.5px solid var(--border)':''}">${d.name} <span style="color:var(--text3)">· ${d.account}</span></div>`).join('');
+}
+function populateCustodioFilter(a){const s=document.getElementById('filter-custodio');const cs=[...new Set(a.map(d=>d.account))].sort();s.innerHTML='<option value="">Todos los custodios</option>'+cs.map(c=>`<option>${c}</option>`).join('');}
+function renderPositions(){const a=DATA.filter(d=>d.value>0);const t=a.reduce((s,d)=>s+d.value,0);const fc=document.getElementById('filter-custodio').value;const ft=document.getElementById('filter-type').value;const f=a.filter(d=>(fc?d.account===fc:true)&&(ft?d.type===ft:true)).sort((a,b)=>b.value-a.value);document.getElementById('positions-count').textContent=f.length+' posiciones';document.getElementById('positions-body').innerHTML=f.map(d=>{const r=d.returns||0;const rs=r!==0?`<span style="color:${r>0?'var(--green)':'var(--coral)'}">${r>0?'+':''}${fmt(r)}</span>`:`<span style="color:var(--text2)">—</span>`;return`<tr><td>${d.name}</td><td><span class="badge badge-${d.type}">${d.type}</span></td><td class="muted">${d.account}</td><td class="r">${fmt(d.value)}</td><td class="r">${d.principal?fmt(d.principal):'—'}</td><td class="r">${pct(d.value,t)}</td><td class="r">${rs}</td></tr>`;}).join('');}
+let parsedCSV=null,csvHeaders=[];
+const dz=document.getElementById('drop-zone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)processFile(f);});
+function handleFileSelect(e){const f=e.target.files[0];if(f)processFile(f);}
+function processFile(file){const r=new FileReader();r.onload=e=>{const text=e.target.result;const fl=text.split('\n')[0];const sep=fl.includes('\t')?'\t':',';const rows=text.trim().split('\n').map(r=>r.split(sep).map(c=>c.trim().replace(/^"|"$/g,'')));if(rows.length<2)return;csvHeaders=rows[0];parsedCSV=rows.slice(1).map(r=>{const o={};csvHeaders.forEach((h,i)=>o[h]=r[i]||'');return o;});showCSVPreview(file,rows);};r.readAsText(file);}
+function showCSVPreview(file,rows){document.getElementById('csv-file-name').textContent=file.name;document.getElementById('csv-file-meta').textContent=`${(file.size/1024).toFixed(1)} KB · ${rows.length-1} filas · ${rows[0].length} columnas`;const fields=[{key:'name',label:'Nombre activo',guesses:['asset.name','name','nombre','activo']},{key:'type',label:'Tipo',guesses:['asset.type','type','tipo']},{key:'account',label:'Custodio',guesses:['account.name','custodio','broker','account']},{key:'value',label:'Valor USD',guesses:['value','valor','mktvalue']},{key:'principal',label:'Principal',guesses:['principal','cost','costo']},{key:'returns',label:'Retorno período',guesses:['returns.period','returns','retorno','pnl']},{key:'qty',label:'Cantidad',guesses:['qty','quantity','cantidad']}];const headers=rows[0];document.getElementById('field-map').innerHTML=fields.map(f=>{const m=headers.find(h=>f.guesses.some(g=>h.toLowerCase().includes(g)))||'';return`<div class="field-row"><label>${f.label}</label><select id="map-${f.key}">${headers.map(h=>`<option ${h===m?'selected':''} value="${h}">${h}</option>`).join('')}<option value="">— no mapear —</option></select></div>`;}).join('');const preview=rows.slice(0,9);document.getElementById('csv-preview-table').innerHTML=`<thead><tr>${preview[0].map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${preview.slice(1).map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;document.getElementById('csv-preview-area').style.display='block';}
+function applyCSV(){if(!parsedCSV)return;const gm=key=>document.getElementById('map-'+key)?.value||'';const mapped=parsedCSV.map(row=>({name:row[gm('name')]||'Sin nombre',type:(row[gm('type')]||'OTHER').toUpperCase(),account:row[gm('account')]||'Desconocido',value:parseFloat(row[gm('value')])||0,principal:parseFloat(row[gm('principal')])||0,returns:parseFloat(row[gm('returns')])||0,qty:parseFloat(row[gm('qty')])||0,symbol:row['asset.symbol']||row['symbol']||''})).filter(d=>!isNaN(d.value));DATA=mapped;document.getElementById('upload-success').style.display='flex';document.getElementById('upload-success-msg').textContent=`${mapped.length} posiciones cargadas correctamente.`;document.getElementById('data-source-label').textContent='Datos: archivo cargado';renderAll();renderTER();setTimeout(()=>showView('overview',document.querySelector('.nav button')),1200);}
+renderAll();
+</script>
+<script>
+const TER_DB={'MELI':0,'HLT':0,'NCLH':0,'LUV':0,'TSLA':0,'BKUU':0.10,'CSSPX':0.07,'SOXX':0.34,'JANUS-BAL':0.88,'JEQA':0.35,'JPM130':0.80,'JPMSELC':0.70,'JPMAM':0.85,'MFSE':1.25,'MSGB':0.94,'ABHLTH':1.14,'XLF':0.08,'XLV':0.08,'EQQQ':0.30,'JANGTECH':1.61,'NBMC':1.06,'PICTET-R':1.09,'SPY5':0.03,'FSPI':0.06,'CSINDU':0.33,'SPYL':0.03,'ALGEU':1.85};
+function getTER(d){const s=(d.symbol||'').toUpperCase();const n=(d.name||'').toLowerCase();if(TER_DB[s]!==undefined)return TER_DB[s];if(n.includes('blackrock')&&n.includes('ultra short'))return 0.10;if(n.includes('janus balanced'))return 0.88;if(n.includes('janus global tech')||n.includes('jangtech'))return 1.61;if(n.includes('neuberger'))return 1.06;if(n.includes('pictet'))return 1.09;if(n.includes('jpm us select c')||n.includes('jpmselc'))return 0.70;if(n.includes('jpm us select 130'))return 0.80;if(n.includes('america equity'))return 0.85;if(n.includes('mfs european'))return 1.25;if(n.includes('ms global brands'))return 0.94;if(n.includes('ab intl health'))return 1.14;if(n.includes('allianz'))return 1.85;if(n.includes('fidelity'))return 0.06;if(n.includes('spy5')||n.includes('spyl'))return 0.03;if(n.includes('csspx')||n.includes('ishares core s&p'))return 0.07;if(n.includes('soxx'))return 0.34;if(n.includes('eqqq'))return 0.30;if(n.includes('jeqa'))return 0.35;if(n.includes('xlf')||n.includes('financial select'))return 0.08;if(n.includes('xlv')||n.includes('health care select'))return 0.08;if(n.includes('csindu')||n.includes('dow jones'))return 0.33;if(d.type==='STOCK'||d.type==='CASH')return 0;return null;}
+function fmtTER(n){return n===0?'—':n.toFixed(2)+'%';}
+function fmtM(n){return'$'+(Math.abs(n)/1e6).toFixed(2)+'M';}
+let terCC=null,terDC=null;
+function renderTER(){
+  const a=DATA.filter(d=>d.value>0);const tv=a.reduce((s,d)=>s+d.value,0);
+  const en=a.map(d=>({...d,ter:getTER(d)??0}));
+  let wt=0;en.forEach(d=>{wt+=(d.value/tv)*(d.ter/100);});
+  const ac=tv*wt;
+  const ei=en.filter(d=>d.type==='ETF'&&d.ter>0);const fi=en.filter(d=>d.type==='FUND'&&d.ter>0);
+  const etv=ei.reduce((s,d)=>s+d.value,0);const ftv=fi.reduce((s,d)=>s+d.value,0);
+  const ew=etv>0?ei.reduce((s,d)=>s+(d.value/etv)*(d.ter/100),0)*100:0;
+  const fw=ftv>0?fi.reduce((s,d)=>s+(d.value/ftv)*(d.ter/100),0)*100:0;
+  document.getElementById('ter-metrics').innerHTML=`<div class="metric"><div class="metric-label">TER ponderado total</div><div class="metric-value" style="color:var(--amber)">${(wt*100).toFixed(3)}%</div><div class="metric-sub">anual sobre cartera</div></div><div class="metric"><div class="metric-label">Costo anual estimado</div><div class="metric-value" style="color:var(--coral)">${fmtM(ac)}</div><div class="metric-sub">comisiones totales</div></div><div class="metric"><div class="metric-label">TER ponderado ETFs</div><div class="metric-value" style="color:var(--green)">${ew.toFixed(3)}%</div><div class="metric-sub">promedio ponderado</div></div><div class="metric"><div class="metric-label">TER ponderado fondos activos</div><div class="metric-value" style="color:var(--coral)">${fw.toFixed(3)}%</div><div class="metric-sub">promedio ponderado</div></div>`;
+  const tc=t=>({FUND:'#378ADD',ETF:'#1D9E75',STOCK:'#BA7517',CASH:'#888780'}[t]||'#888');
+  const trc=t=>t===0?'var(--text2)':t<0.20?'#3B6D11':t<0.80?'#854F0B':'#A32D2D';
+  const trb=t=>t===0?'var(--surface2)':t<0.20?'#EAF3DE':t<0.80?'#FAEEDA':'#FCEBEB';
+  let rows='';
+  [...en].sort((a,b)=>b.value-a.value).forEach(d=>{const w=d.value/tv;const an=d.value*(d.ter/100);rows+=`<tr><td style="max-width:155px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${d.name}</td><td><span style="font-size:10px;color:${tc(d.type)};font-weight:600">${d.type}</span></td><td class="r"><span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;background:${trb(d.ter)};color:${trc(d.ter)}">${fmtTER(d.ter)}</span></td><td class="r muted" style="font-size:11px">${fmtM(d.value)}</td><td class="r muted" style="font-size:11px">${(w*100).toFixed(1)}%</td><td class="r" style="font-size:12px;color:${d.ter>0.8?'#A32D2D':d.ter>0.2?'#854F0B':'var(--text2)'}">${d.ter>0?'$'+Math.round(an).toLocaleString('en-US'):'—'}</td></tr>`;});
+  rows+=`<tr style="background:var(--surface2)"><td colspan="2" style="font-size:11px;font-weight:600">TER ponderado total</td><td class="r"><span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;background:#FAEEDA;color:#854F0B">${(wt*100).toFixed(3)}%</span></td><td class="r" style="font-size:11px;font-weight:600">${fmtM(tv)}</td><td class="r" style="font-size:11px;font-weight:600">100%</td><td class="r" style="font-size:12px;font-weight:600;color:#854F0B">$${Math.round(ac).toLocaleString('en-US')}</td></tr>`;
+  document.getElementById('ter-tbody').innerHTML=rows;
+  window._tw=wt;
+  ['ter-sl-val','ter-sl-yr','ter-sl-ret'].forEach(id=>{const el=document.getElementById(id);if(el){el.removeEventListener('input',updateTERCompound);el.addEventListener('input',updateTERCompound);}});
+  updateTERCompound();
+  const bk={bajo:0,medio:0,alto:0};en.forEach(d=>{if(d.ter===0||d.type==='CASH')return;if(d.ter<0.20)bk.bajo+=d.value;else if(d.ter<0.80)bk.medio+=d.value;else bk.alto+=d.value;});
+  const bt=(bk.bajo+bk.medio+bk.alto)/1e6;
+  document.getElementById('ter-donut-legend').innerHTML=`<span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75;flex-shrink:0"></span>Bajo &lt;0.20% — ${fmtM(bk.bajo)} (${bt>0?((bk.bajo/1e6/bt)*100).toFixed(0):0}%)</span><span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#BA7517;flex-shrink:0"></span>Medio 0.20-0.80% — ${fmtM(bk.medio)} (${bt>0?((bk.medio/1e6/bt)*100).toFixed(0):0}%)</span><span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#E24B4A;flex-shrink:0"></span>Alto &gt;0.80% — ${fmtM(bk.alto)} (${bt>0?((bk.alto/1e6/bt)*100).toFixed(0):0}%)</span>`;
+  if(terDC)terDC.destroy();
+  terDC=new Chart(document.getElementById('ter-donut'),{type:'doughnut',data:{labels:['TER bajo (<0.20%)','TER medio (0.20-0.80%)','TER alto (>0.80%)'],datasets:[{data:[bk.bajo/1e6,bk.medio/1e6,bk.alto/1e6],backgroundColor:['#1D9E75','#BA7517','#E24B4A'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' $'+c.raw.toFixed(1)+'M'}}}}});
+}
+function updateTERCompound(){
+  const sv=document.getElementById('ter-sl-val');if(!sv)return;
+  const pm=parseFloat(sv.value),yr=parseInt(document.getElementById('ter-sl-yr').value),rp=parseFloat(document.getElementById('ter-sl-ret').value)/100;
+  const ter=window._tw||0.0043;
+  document.getElementById('ter-out-val').textContent='$'+pm+'M';
+  document.getElementById('ter-out-yr').textContent=yr+' años';
+  document.getElementById('ter-out-ret').textContent=(rp*100).toFixed(1)+'%';
+  const P=pm*1e6,nr=rp-ter,lb=[],wt=[],nt=[];
+  for(let y=0;y<=yr;y++){lb.push('Año '+y);wt.push(+(P*Math.pow(1+rp,y)/1e6).toFixed(2));nt.push(+(P*Math.pow(1+nr,y)/1e6).toFixed(2));}
+  const fw=nt[yr],fwo=wt[yr],imp=fwo-fw;
+  document.getElementById('ter-result').innerHTML=`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--border)"><span style="color:var(--text2)">Cartera inicial</span><span style="font-weight:600">$${pm}M</span></div><div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--border)"><span style="color:var(--text2)">TER ponderado</span><span style="font-weight:600;color:var(--amber)">${(ter*100).toFixed(3)}%/año</span></div><div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--border)"><span style="color:var(--text2)">Costo año 1</span><span style="font-weight:600;color:var(--coral)">-$${Math.round(P*ter).toLocaleString('en-US')}</span></div><div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--border)"><span style="color:var(--text2)">Cartera bruta a ${yr} años</span><span style="font-weight:600">${fmtM(fwo*1e6)}</span></div><div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--border)"><span style="color:var(--text2)">Cartera neta de TER</span><span style="font-weight:600;color:var(--amber)">${fmtM(fw*1e6)}</span></div><div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--border)"><span style="color:var(--text2)">Costo acumulado</span><span style="font-weight:600;color:var(--coral)">-${fmtM(imp*1e6)}</span></div><div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text2)">% del valor final perdido</span><span style="font-weight:600;color:var(--coral)">-${((imp/fwo)*100).toFixed(1)}%</span></div>`;
+  if(terCC)terCC.destroy();
+  terCC=new Chart(document.getElementById('ter-comp-chart'),{type:'line',data:{labels:lb,datasets:[{label:'Sin TER (bruto)',data:wt,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.08)',borderWidth:2,pointRadius:0,fill:true,tension:0.3},{label:'Con TER ponderado',data:nt,borderColor:'#D85A30',backgroundColor:'rgba(216,90,48,0.08)',borderWidth:2,pointRadius:0,fill:true,tension:0.3,borderDash:[4,3]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' $'+c.raw.toFixed(2)+'M'}}},scales:{y:{ticks:{callback:v=>'$'+v+'M',font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}},x:{ticks:{font:{size:10},maxTicksLimit:6},grid:{display:false}}}}});
+}
+renderTER();
+</script>
+</body></html>

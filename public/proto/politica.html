@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Política de Inversión · JLI</title>
+<script>
+  // Auth guard — redirect to shell if opened directly without session
+  (function () {
+    try {
+      if (window.top === window.self && !sessionStorage.getItem('jli_auth')) {
+        window.location.replace('/proto/');
+      }
+    } catch (e) {}
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<!-- Universo de ETFs y evaluador IPS compartido -->
+<script src="cartera/etf_data.js"></script>
+<style>
+  :root {
+    --bg: #f8f7f4;
+    --bg-2: #fafaf7;
+    --surface: #ffffff;
+    --surface-2: #f1efe8;
+    --border: #ebebe4;
+    --border-strong: rgba(0,0,0,0.12);
+    --text: #1a1917;
+    --text-2: #6b6a65;
+    --text-3: #9b9a96;
+    --accent: #378ADD;
+    --green: #1D9E75;
+    --amber: #BA7517;
+    --error: #D85A30;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); }
+  body {
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    padding: 32px 24px 80px;
+  }
+  .serif { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; letter-spacing: -0.01em; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; }
+
+  /* Header */
+  .header { margin-bottom: 28px; display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+  .header h1 { font-family: 'Instrument Serif', serif; font-size: 44px; line-height: 1.05; letter-spacing: -0.02em; margin-bottom: 6px; }
+  .header h1 em { font-style: italic; color: var(--text-2); }
+  .header .sub { font-size: 14px; color: var(--text-2); max-width: 560px; }
+
+  .summary {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  }
+  .stat {
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    min-width: 130px;
+    min-height: 70px;
+  }
+  .stat .lbl { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); margin-bottom: 4px; font-weight: 600; }
+  .stat .val { font-family: 'Instrument Serif', serif; font-size: 22px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat .val .of { color: var(--text-3); font-size: 16px; }
+
+  .actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 10px 18px; border-radius: 999px;
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s; border: 1px solid transparent;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .btn-primary:hover { transform: translateY(-1px); }
+  .btn-ghost { background: transparent; color: var(--text-2); border-color: var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text); }
+
+  /* Sections */
+  section.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+  }
+  section.card h2 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 26px; letter-spacing: -0.015em;
+    margin-bottom: 4px;
+  }
+  section.card .lead { font-size: 13px; color: var(--text-2); margin-bottom: 20px; }
+
+  /* Filter rows */
+  .row {
+    display: grid;
+    grid-template-columns: 56px 180px 1fr 56px;
+    gap: 16px;
+    align-items: center;
+    padding: 16px 0;
+    border-top: 1px solid var(--border);
+    transition: opacity 0.15s;
+  }
+  .row.disabled { opacity: 0.45; }
+  .row .num {
+    font-family: 'Instrument Serif', serif; font-size: 22px; color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+  .row .cat {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--text-2);
+  }
+  .row .crit {
+    font-size: 14px; font-weight: 500; color: var(--text);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+
+  /* Tooltip (info icon) */
+  .help {
+    position: relative;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px;
+    color: var(--text-3); cursor: help;
+    background: transparent; border: none; padding: 0;
+    border-radius: 50%;
+    transition: color 0.15s, background 0.15s;
+  }
+  .help:hover, .help:focus-visible { color: var(--text); background: var(--surface-2); outline: none; }
+  .help svg { width: 14px; height: 14px; }
+  .tip {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translate(-50%, 4px);
+    background: var(--text);
+    color: var(--bg);
+    padding: 10px 14px;
+    border-radius: 10px;
+    width: 280px;
+    font-size: 12px; font-weight: 400;
+    line-height: 1.5;
+    text-align: left;
+    box-shadow: 0 12px 32px rgba(10,10,10,0.18);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s, transform 0.18s;
+    z-index: 50;
+    white-space: normal;
+  }
+  .tip::after {
+    content: "";
+    position: absolute;
+    top: 100%; left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--text);
+  }
+  .help:hover .tip, .help:focus .tip, .help:focus-visible .tip {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    pointer-events: auto;
+  }
+  /* Right-edge guard: shift tooltips on the rightmost rows to avoid clipping */
+  .row .help .tip, .kpi .help .tip { left: auto; right: -8px; transform: translate(0, 4px); }
+  .row .help .tip::after, .kpi .help .tip::after { left: auto; right: 14px; transform: none; }
+  .row .help:hover .tip, .row .help:focus .tip,
+  .kpi .help:hover .tip, .kpi .help:focus .tip {
+    transform: translate(0, 0);
+  }
+
+  /* Toggle (iOS-style) */
+  .toggle {
+    position: relative;
+    width: 44px; height: 24px;
+    border-radius: 999px;
+    background: var(--border);
+    cursor: pointer;
+    transition: background 0.18s;
+    border: none; padding: 0;
+    flex-shrink: 0;
+    justify-self: end;
+  }
+  .toggle::after {
+    content: "";
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.18s;
+  }
+  .toggle[aria-checked="true"] { background: var(--text); }
+  .toggle[aria-checked="true"]::after { transform: translateX(20px); }
+
+  /* KPI rows (with editable threshold) */
+  .kpi {
+    display: grid;
+    grid-template-columns: 56px 1.4fr 1.6fr 56px;
+    gap: 16px;
+    align-items: center;
+    padding: 18px 0;
+    border-top: 1px solid var(--border);
+    transition: opacity 0.15s;
+  }
+  .kpi.disabled { opacity: 0.45; }
+  .kpi .num {
+    font-family: 'Instrument Serif', serif; font-size: 22px; color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+  .kpi .name {
+    font-size: 14px; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .kpi .threshold {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--surface-2);
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi .threshold .op { color: var(--text-3); font-size: 12px; }
+  .kpi .threshold input,
+  .kpi .threshold select {
+    border: none; background: transparent;
+    font-family: inherit; font-size: 14px; font-weight: 500; color: var(--text);
+    width: 80px; outline: none;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi .threshold select { width: auto; padding-right: 4px; cursor: pointer; }
+  .kpi .threshold .unit { font-size: 12px; color: var(--text-2); }
+
+  @media (max-width: 760px) {
+    .row { grid-template-columns: 40px 1fr 56px; }
+    .row .num { font-size: 18px; }
+    .row .cat { display: none; }
+    .kpi { grid-template-columns: 40px 1fr 56px; }
+    .kpi .threshold { grid-column: 2; }
+    .header h1 { font-size: 32px; }
+    .tip { width: 220px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Cards de navegación en el flujo: Mapa de objetivos (izq) ↔ A invertir en largo plazo (der) -->
+  <div id="cta-row" style="display:flex;justify-content:space-between;align-items:stretch;gap:12px;margin:4px 0 16px"></div>
+
+  <section class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:6px">
+      <div>
+        <div class="lead">Activos que <strong style="color:var(--text)">no se considerarán bajo ninguna circunstancia</strong> si cumplen estos criterios.</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="setAllFilters(true)">Activar todos</button>
+        <button class="btn btn-ghost" onclick="setAllFilters(false)">Desactivar todos</button>
+      </div>
+    </div>
+
+    <div id="filters-list"></div>
+  </section>
+
+  <section class="card">
+    <div style="margin-bottom:6px">
+      <div class="lead">Para que un fondo sea elegible debe cumplir <strong style="color:var(--text)">simultáneamente</strong> con todos los criterios activos.</div>
+    </div>
+    <div id="kpis-list"></div>
+  </section>
+</div>
+
+<script>
+  const STORAGE_KEY = 'jli_ips';
+
+  // Filter definitions
+  const FILTERS = [
+    { id: 'mixtos',       cat: 'Tipo de Activo',     crit: 'Sin fondos mixtos o híbridos',                 just: 'Se requiere exposición pura a un único tipo de activo para control total del riesgo. Por ejemplo: Renta Fija 40% o Renta Variable 60%.' },
+    { id: 'derivados',    cat: 'Complejidad',        crit: 'Sin instrumentos estructurados / derivados',   just: 'Solo se permiten productos de replicación física. Prohibida la replicación sintética.' },
+    { id: 'sectorial',    cat: 'Concentración',      crit: 'Sin fondos sectoriales > 10% de la cartera',   just: 'No se permite una exposición concentrada en una sola industria superior al 10% del total de la cartera.' },
+    { id: 'banca',        cat: 'Gestión',            crit: 'Sin banca comercial',                          just: 'Exclusión de fondos gestionados por bancos comerciales. Prioridad a gestoras independientes.' },
+    { id: 'retros',       cat: 'Costes',             crit: 'Sin retrocesiones',                            just: 'Solo se aceptan Clean Share Classes (sin comisiones ocultas).' },
+    { id: 'liquidez',     cat: 'Liquidez',           crit: 'Sin liquidez > T+10',                          just: 'Garantía de convertibilidad a efectivo en un plazo máximo de 10 días.' },
+    { id: 'activa',       cat: 'Metodología',        crit: 'Sin gestión activa',                           just: 'Exclusivamente fondos indexados y pasivos.' },
+    { id: 'usDomicile',   cat: 'Jurisdicción',       crit: 'Sin domicilio en EE. UU.',                     just: 'Optimización fiscal para inversores no residentes (evitar Estate Tax y retenciones IRS).' },
+    { id: 'concentracion',cat: 'Gestora de activos', crit: 'Sin exposición > 30% en una sola gestora',     just: 'La cartera no podrá tener una exposición superior al 30% del patrimonio total gestionado con una misma gestora (BlackRock, Amundi, Vanguard, etc.).' },
+  ];
+
+  // KPI definitions
+  const KPI_DEFAULTS = {
+    trackYears: { active: true, value: 5 },
+    aumMillUSD: { active: true, value: 1000 },
+    terMaxPct:  { active: true, value: 0.30 },
+    accumulation:{ active: true, value: 'acumulacion' },
+  };
+
+  const KPIS = [
+    {
+      id: 'trackYears',
+      name: 'Antigüedad mínima (track record)',
+      desc: 'Historial auditable mínimo del fondo.',
+      render: (s) => `
+        <div class="threshold">
+          <span class="op">≥</span>
+          <input type="number" min="0" step="1" id="kpi-trackYears-val" value="${s.value}">
+          <span class="unit">años</span>
+        </div>`,
+      readVal: () => parseFloat(document.getElementById('kpi-trackYears-val').value) || 0,
+    },
+    {
+      id: 'aumMillUSD',
+      name: 'Tamaño mínimo (AUM)',
+      desc: 'Patrimonio del fondo bajo gestión.',
+      render: (s) => `
+        <div class="threshold">
+          <span class="op">≥</span>
+          <span class="unit">USD</span>
+          <input type="number" min="0" step="100" id="kpi-aumMillUSD-val" value="${s.value}">
+          <span class="unit">millones</span>
+        </div>`,
+      readVal: () => parseFloat(document.getElementById('kpi-aumMillUSD-val').value) || 0,
+    },
+    {
+      id: 'terMaxPct',
+      name: 'Coste máximo (TER)',
+      desc: 'Ratio de gastos totales anuales.',
+      render: (s) => `
+        <div class="threshold">
+          <span class="op">≤</span>
+          <input type="number" min="0" step="0.01" id="kpi-terMaxPct-val" value="${s.value}">
+          <span class="unit">% anual</span>
+        </div>`,
+      readVal: () => parseFloat(document.getElementById('kpi-terMaxPct-val').value) || 0,
+    },
+    {
+      id: 'accumulation',
+      name: 'Política de dividendos',
+      desc: 'Reinversión vs. distribución de cupones/dividendos.',
+      render: (s) => `
+        <div class="threshold">
+          <select id="kpi-accumulation-val">
+            <option value="acumulacion" ${s.value==='acumulacion'?'selected':''}>Acumulación (reinversión)</option>
+            <option value="distribucion" ${s.value==='distribucion'?'selected':''}>Distribución</option>
+            <option value="cualquiera" ${s.value==='cualquiera'?'selected':''}>Cualquiera</option>
+          </select>
+        </div>`,
+      readVal: () => document.getElementById('kpi-accumulation-val').value,
+    },
+  ];
+
+  // ====== State ======
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    // Default: all filters ON, all KPIs ON with default values
+    const exclusions = {};
+    FILTERS.forEach(f => exclusions[f.id] = true);
+    return { exclusions, kpis: structuredClone(KPI_DEFAULTS) };
+  }
+  let state = loadState();
+
+  function persist() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  // ====== Render ======
+  const HELP_ICON = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6.5"/><line x1="8" y1="11.2" x2="8" y2="7"/><circle cx="8" cy="5" r="0.6" fill="currentColor" stroke="none"/></svg>';
+
+  function escAttr(s) { return String(s).replace(/"/g, '&quot;'); }
+
+  function helpButton(text) {
+    return `<button class="help" type="button" tabindex="0" aria-label="${escAttr(text)}">${HELP_ICON}<span class="tip" role="tooltip">${text}</span></button>`;
+  }
+
+  function renderFilters() {
+    const list = document.getElementById('filters-list');
+    list.innerHTML = FILTERS.map((f, i) => {
+      const active = state.exclusions[f.id] !== false;
+      return `
+        <div class="row ${active ? '' : 'disabled'}" id="row-${f.id}">
+          <div class="num">${String(i+1).padStart(2,'0')}</div>
+          <div class="cat">${f.cat}</div>
+          <div class="crit">${f.crit}${helpButton(f.just)}</div>
+          <button class="toggle" role="switch" aria-checked="${active}" aria-label="Activar filtro ${f.crit}" data-filter="${f.id}"></button>
+        </div>`;
+    }).join('');
+
+    list.querySelectorAll('.toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.filter;
+        state.exclusions[id] = !(state.exclusions[id] !== false);
+        persist();
+        renderFilters(); // re-render to update visual states
+        updateSummary();
+      });
+    });
+  }
+
+  function renderKPIs() {
+    const list = document.getElementById('kpis-list');
+    list.innerHTML = KPIS.map((k, i) => {
+      const s = state.kpis[k.id] || KPI_DEFAULTS[k.id];
+      const active = s.active !== false;
+      return `
+        <div class="kpi ${active ? '' : 'disabled'}" id="kpi-${k.id}">
+          <div class="num">${String(i+1).padStart(2,'0')}</div>
+          <div class="name">${k.name}${helpButton(k.desc)}</div>
+          ${k.render(s)}
+          <button class="toggle" role="switch" aria-checked="${active}" aria-label="Activar KPI ${k.name}" data-kpi="${k.id}"></button>
+        </div>`;
+    }).join('');
+
+    list.querySelectorAll('.toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.kpi;
+        const cur = state.kpis[id] || { ...KPI_DEFAULTS[id] };
+        cur.active = !(cur.active !== false);
+        state.kpis[id] = cur;
+        persist();
+        renderKPIs();
+        updateSummary();
+      });
+    });
+
+    // Wire input/select changes
+    KPIS.forEach(k => {
+      const el = document.getElementById(`kpi-${k.id}-val`);
+      if (!el) return;
+      const handler = () => {
+        const cur = state.kpis[k.id] || { ...KPI_DEFAULTS[k.id] };
+        cur.value = k.readVal();
+        state.kpis[k.id] = cur;
+        persist();
+      };
+      el.addEventListener('change', handler);
+      el.addEventListener('blur', handler);
+    });
+  }
+
+  function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+  function updateSummary() {
+    setText('filt-active', FILTERS.filter(f => state.exclusions[f.id] !== false).length);
+    setText('filt-total', FILTERS.length);
+    setText('kpi-active', KPIS.filter(k => (state.kpis[k.id]?.active ?? true) !== false).length);
+    setText('kpi-total', KPIS.length);
+    if (typeof ETF_DB === 'object' && typeof evaluateAgainstIPS === 'function') {
+      const tickers = Object.keys(ETF_DB);
+      setText('etfs-total', tickers.length);
+      setText('etfs-eligible', tickers.filter(t => evaluateAgainstIPS(ETF_DB[t], state).eligible).length);
+    }
+  }
+
+  // ====== Bulk actions ======
+  window.setAllFilters = function (val) {
+    FILTERS.forEach(f => state.exclusions[f.id] = !!val);
+    persist();
+    renderFilters();
+    updateSummary();
+  };
+
+  // ====== Cards de navegación en el flujo del onboarding ======
+  function fmtMoney(n) {
+    if (n == null) return '—';
+    if (n >= 1_000_000) return '$' + (n/1_000_000).toFixed(n>=10_000_000 ? 0 : 1) + 'M';
+    if (n >= 1000)      return '$' + (n/1000).toFixed(0) + 'K';
+    return '$' + Math.round(n);
+  }
+  function renderCtaRow() {
+    const host = document.getElementById('cta-row');
+    if (!host) return;
+    let snap = null;
+    try { snap = JSON.parse(localStorage.getItem('jli_objetivos') || 'null'); } catch (e) {}
+
+    if (!snap) { host.innerHTML = ''; return; }
+
+    const objLeft = snap.objetivosTotalUSD || 0;
+    const lpRight = snap.largoPlazoUSD || 0;
+
+    const cardStyle = `
+      display:flex; flex-direction:column;
+      justify-content:space-between;
+      padding:10px 16px; border-radius:12px;
+      background:#0a0a0a; color:#fafaf7;
+      border:1px solid #0a0a0a;
+      min-width:170px;
+      min-height:70px;
+      cursor:pointer;
+      font-family:inherit;
+      text-align:left;
+      transition: transform 0.18s cubic-bezier(0.22,1,0.36,1), box-shadow 0.18s, background 0.18s;
+    `;
+    const labelStyle = 'font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(250,250,247,0.55);font-weight:600;margin-bottom:4px';
+    const valStyle   = "font-family:'Instrument Serif',Georgia,serif;font-size:22px;line-height:1;letter-spacing:-0.02em;font-variant-numeric:tabular-nums";
+
+    host.innerHTML = `
+      <button id="mapa-btn" type="button" style="${cardStyle}" title="Volver al mapa de objetivos">
+        <span style="${labelStyle}">← Mapa de objetivos</span>
+        <span style="${valStyle}">${fmtMoney(objLeft)}</span>
+      </button>
+      <button id="invertir-btn" type="button" style="${cardStyle}" title="Pasar a Cartera objetivo →">
+        <span style="${labelStyle}">A invertir en largo plazo →</span>
+        <span style="${valStyle}">${fmtMoney(lpRight)}</span>
+      </button>`;
+
+    const mapaBtn = document.getElementById('mapa-btn');
+    mapaBtn.addEventListener('mouseenter', () => { mapaBtn.style.transform = 'translateY(-1px) translateX(-4px)'; mapaBtn.style.boxShadow = '0 6px 18px rgba(10,10,10,0.18)'; });
+    mapaBtn.addEventListener('mouseleave', () => { mapaBtn.style.transform = 'translateX(0)'; mapaBtn.style.boxShadow = 'none'; });
+    mapaBtn.addEventListener('click', () => {
+      try { window.parent.location.hash = '#objetivos'; } catch (e) {}
+    });
+
+    const btn = document.getElementById('invertir-btn');
+    btn.addEventListener('mouseenter', () => { btn.style.transform = 'translateY(-1px) translateX(4px)'; btn.style.boxShadow = '0 6px 18px rgba(10,10,10,0.18)'; });
+    btn.addEventListener('mouseleave', () => { btn.style.transform = 'translateX(0)'; btn.style.boxShadow = 'none'; });
+    btn.addEventListener('click', () => {
+      try { window.parent.location.hash = '#cartera'; } catch (e) {}
+    });
+  }
+  renderCtaRow();
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'jli_objetivos') renderCtaRow();
+  });
+
+  // ====== Init ======
+  renderFilters();
+  renderKPIs();
+  updateSummary();
+</script>
+
+</body>
+</html>

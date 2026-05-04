@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Volatilidad · JLI</title>
+<script>
+  (function () {
+    try {
+      if (window.top === window.self && !sessionStorage.getItem('jli_auth')) {
+        window.location.replace('/proto/');
+      }
+    } catch (e) {}
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8f7f4;
+    --bg-2: #fafaf7;
+    --surface: #ffffff;
+    --surface-2: #f1efe8;
+    --border: #ebebe4;
+    --text: #1a1917;
+    --text-2: #6b6a65;
+    --text-3: #9b9a96;
+    --blue: #378ADD;
+    --green: #1D9E75;
+    --red: #D85A30;
+    --amber: #BA7517;
+    --purple: #7a4a9a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); }
+  body {
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    padding: 32px 24px 80px;
+  }
+  .serif { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; letter-spacing: -0.01em; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  .header { margin-bottom: 28px; display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+  .header h1 { font-family: 'Instrument Serif', serif; font-size: 44px; line-height: 1.05; letter-spacing: -0.02em; }
+  .header h1 em { font-style: italic; color: var(--text-2); }
+  .header .sub { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+
+  .btn {
+    padding: 10px 18px; border-radius: 999px;
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s; border: 1px solid transparent;
+    display: inline-flex; align-items: center; gap: 6px; background: transparent;
+  }
+  .btn-primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .btn-primary:hover { transform: translateY(-1px); }
+  .btn-ghost { color: var(--text-2); border-color: var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text); }
+
+  .grid-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 920px) { .grid-stats { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .grid-stats { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 22px;
+  }
+  .card h3 { font-size: 18px; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 14px; }
+
+  .stat .label {
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-3); font-weight: 600; margin-bottom: 8px;
+  }
+  .stat .value {
+    font-family: 'Instrument Serif', serif;
+    font-size: 38px; line-height: 1; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 6px;
+  }
+  .stat .value.blue { color: var(--blue); }
+  .stat .value.purple { color: var(--purple); }
+  .stat .delta {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Clickable KPI cards (VIX/SPY) toggle the chart symbol */
+  .stat.selectable { cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; position: relative; }
+  .stat.selectable:hover { border-color: var(--text-3); }
+  .stat.selectable.active { border-color: var(--text); box-shadow: 0 0 0 3px rgba(10,10,10,0.04); }
+  .stat.selectable.active::after {
+    content: ""; position: absolute;
+    top: 12px; right: 12px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: currentColor; opacity: 0.6;
+  }
+  #vix-card.active::after { background: var(--blue); opacity: 1; }
+  #spy-card.active::after { background: var(--purple); opacity: 1; }
+  .delta.up { color: var(--green); }
+  .delta.down { color: var(--red); }
+  .delta.up-bad { color: var(--red); }   /* VIX up = bad */
+  .delta.down-good { color: var(--green); } /* VIX down = good */
+
+  .signal-card { display: flex; flex-direction: column; justify-content: center; }
+  .signal-card .label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); font-weight: 600; margin-bottom: 8px; }
+  .signal-card .signal {
+    font-family: 'Instrument Serif', serif;
+    font-size: 22px; line-height: 1.05;
+    font-weight: 400; letter-spacing: -0.01em;
+  }
+  .signal-card.buy { border-color: rgba(29,158,117,0.35); background: rgba(29,158,117,0.06); }
+  .signal-card.buy .signal { color: var(--green); }
+  .signal-card.sell { border-color: rgba(216,90,48,0.35); background: rgba(216,90,48,0.06); }
+  .signal-card.sell .signal { color: var(--red); }
+
+  .refresh-card { display: flex; flex-direction: column; justify-content: space-between; }
+  .refresh-card .updated {
+    font-size: 11px; color: var(--text-3); margin-bottom: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .timeframes {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    margin-bottom: 18px;
+    align-items: center;
+  }
+  .timeframes .tf-label {
+    font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--text-3); font-weight: 600; margin-right: 6px;
+  }
+  .tf-btn {
+    padding: 7px 14px; border-radius: 999px;
+    background: transparent; color: var(--text-2);
+    border: 1px solid var(--border);
+    font-family: inherit; font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tf-btn:hover { color: var(--text); border-color: var(--text); }
+  .tf-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  .chart-wrap {
+    width: 100%; height: 320px;
+    position: relative;
+  }
+  .chart-wrap svg { width: 100%; height: 100%; display: block; }
+  .chart-empty {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; color: var(--text-3); font-size: 13px;
+  }
+  .axis-line { stroke: var(--border); stroke-dasharray: 3 3; }
+  .axis-tick { fill: var(--text-3); font-size: 11px; font-family: inherit; }
+  .area-fill { fill: rgba(55, 138, 221, 0.12); }
+  .area-line { fill: none; stroke: var(--blue); stroke-width: 1.6; }
+
+  .threshold-line {
+    stroke: var(--text-3); stroke-dasharray: 4 4; stroke-width: 1;
+  }
+  .threshold-label {
+    fill: var(--text-3); font-size: 10px; font-family: inherit;
+  }
+
+  .opp-list { display: flex; flex-direction: column; gap: 10px; }
+  .opp {
+    display: grid;
+    grid-template-columns: 100px 1fr auto;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    align-items: center;
+  }
+  .opp .badge {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 4px 10px; border-radius: 999px;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .opp .badge.buy { background: rgba(29,158,117,0.15); color: var(--green); }
+  .opp .badge.sell { background: rgba(216,90,48,0.15); color: var(--red); }
+  .opp .badge.neutral { background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border); }
+  .opp .name { font-weight: 500; }
+  .opp .why { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+  .opp .conf {
+    font-family: 'Instrument Serif', serif; font-size: 22px;
+    color: var(--text); font-variant-numeric: tabular-nums;
+  }
+  .opp .conf small { font-size: 11px; color: var(--text-3); font-family: 'Geist', sans-serif; display: block; margin-top: 2px; }
+
+  .empty-opps {
+    padding: 24px; text-align: center; font-size: 13px; color: var(--text-3);
+    font-style: italic; font-family: 'Instrument Serif', serif;
+  }
+
+  .data-source {
+    margin-top: 14px;
+    font-size: 11px; color: var(--text-3);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .data-source.live { color: var(--green); }
+  .data-source.mock { color: var(--amber); }
+
+  .icon { width: 16px; height: 16px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="header">
+    <div>
+      <h1><em>Volatilidad</em> y señales de mercado</h1>
+      <div class="sub">VIX · S&amp;P 500 — datos en tiempo real desde Yahoo Finance, actualización cada hora.</div>
+    </div>
+    <div>
+      <button class="btn btn-primary" id="refresh-btn">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Actualizar
+      </button>
+    </div>
+  </header>
+
+  <div class="grid-stats">
+    <div class="card stat selectable active" id="vix-card" data-symbol="vix" role="button" tabindex="0" aria-pressed="true" title="Ver gráfico VIX">
+      <div class="label">VIX Índice</div>
+      <div class="value blue" id="vix-value">—</div>
+      <div class="delta" id="vix-delta"></div>
+    </div>
+    <div class="card stat selectable" id="spy-card" data-symbol="spy" role="button" tabindex="0" aria-pressed="false" title="Ver gráfico S&P 500">
+      <div class="label">S&amp;P 500 (SPY)</div>
+      <div class="value purple" id="spy-value">—</div>
+      <div class="delta" id="spy-delta"></div>
+    </div>
+    <div class="card signal-card" id="signal-card">
+      <div class="label">Señal</div>
+      <div class="signal" id="signal-text">—</div>
+    </div>
+    <div class="card refresh-card">
+      <div>
+        <div class="label">Última actualización</div>
+        <div class="updated" id="last-update">—</div>
+      </div>
+      <div class="data-source" id="data-source">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span id="data-source-text">cargando…</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeframes">
+    <span class="tf-label">Período</span>
+    <button class="tf-btn" data-tf="1m">1 mes</button>
+    <button class="tf-btn active" data-tf="3m">3 meses</button>
+    <button class="tf-btn" data-tf="1y">1 año</button>
+    <button class="tf-btn" data-tf="10y">10 años</button>
+  </div>
+
+  <div class="card" style="margin-bottom: 18px;">
+    <h3 id="chart-title">Índice VIX</h3>
+    <div class="chart-wrap" id="chart-wrap">
+      <div class="chart-empty">Cargando datos…</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Oportunidades de trading</h3>
+    <div id="opps">
+      <div class="empty-opps">— sin señales activas en este momento —</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ============ STATE ============
+  // Estrategia contrarian: comprar cuando hay miedo (VIX alto), vender cuando hay complacencia (VIX bajo)
+  const THRESHOLD_BUY = 20;   // VIX >= 20 → señal de compra
+  const THRESHOLD_SELL = 10;  // VIX <= 10 → señal de venta
+  let timeframe = '3m';
+  let chartSymbol = 'vix'; // 'vix' | 'spy'
+  let history = []; // [{ date, ts, vix, spy }]
+  let current = { vix: null, vixChange: 0, vixPct: 0, spy: null, spyChange: 0, spyPct: 0, signal: null };
+  let dataSource = 'pending'; // 'live' | 'mock' | 'error'
+
+  // ============ MOCK DATA (fallback if CORS blocks Yahoo) ============
+  // 10 años de VIX + SPY diarios. Mean-reverting con shocks de pánico ocasionales
+  // para simular eventos de volatilidad (COVID, taper-tantrum, etc.).
+  const MOCK_HISTORY = (() => {
+    const TOTAL_DAYS = 365 * 10;
+    const points = [];
+    const start = new Date(); start.setDate(start.getDate() - TOTAL_DAYS);
+    let vix = 14, spy = 200; // valores típicos de hace ~10 años
+    for (let i = 0; i < TOTAL_DAYS; i++) {
+      const date = new Date(start.getTime() + i * 86400000);
+      // VIX mean-reverts a ~16 con ruido
+      const drift = (16 - vix) * 0.04;
+      vix = Math.max(9, Math.min(60, vix + drift + (Math.random() - 0.5) * 1.6));
+      // shocks ocasionales de pánico (1% prob)
+      if (Math.random() < 0.01) vix = Math.min(70, vix + 8 + Math.random() * 15);
+      // SPY drifts up ~0.04% daily, volatilidad escala con VIX
+      const ret = 0.00045 + (Math.random() - 0.5) * (vix / 1300);
+      spy = Math.max(10, spy * (1 + ret));
+      points.push({
+        date: date.toISOString().slice(0,10),
+        ts: date.getTime(),
+        vix: parseFloat(vix.toFixed(2)),
+        spy: parseFloat(spy.toFixed(2)),
+      });
+    }
+    return points;
+  })();
+
+  // ============ DATA FETCHING ============
+  async function fetchYahoo(symbol, range) {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=${range === '10y' ? '1wk' : '1d'}&range=${range}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    const r = json.chart.result[0];
+    const ts = r.timestamp;
+    const closes = r.indicators.quote[0].close;
+    const meta = r.meta;
+    return {
+      meta,
+      points: ts.map((t, i) => ({
+        ts: t * 1000,
+        date: new Date(t * 1000).toISOString().slice(0,10),
+        close: closes[i],
+      })).filter(p => p.close != null),
+    };
+  }
+
+  async function loadData() {
+    document.getElementById('data-source-text').textContent = 'cargando…';
+    document.getElementById('data-source').className = 'data-source';
+
+    try {
+      // 10y is the broadest range — derive smaller ones from it client-side
+      const [vixR, spyR] = await Promise.all([
+        fetchYahoo('^VIX', '10y'),
+        fetchYahoo('SPY', '10y'),
+      ]);
+      // align by date
+      const spyByTs = new Map(spyR.points.map(p => [p.date, p.close]));
+      history = vixR.points.map(p => ({
+        ts: p.ts,
+        date: p.date,
+        vix: parseFloat(p.close.toFixed(2)),
+        spy: spyByTs.has(p.date) ? parseFloat(spyByTs.get(p.date).toFixed(2)) : null,
+      }));
+      // current values from meta (same-day)
+      const vixCur = vixR.meta.regularMarketPrice;
+      const vixPrev = vixR.meta.chartPreviousClose ?? vixR.meta.previousClose ?? vixCur;
+      const spyCur = spyR.meta.regularMarketPrice;
+      const spyPrev = spyR.meta.chartPreviousClose ?? spyR.meta.previousClose ?? spyCur;
+      current = {
+        vix: parseFloat(vixCur.toFixed(2)),
+        vixChange: parseFloat((vixCur - vixPrev).toFixed(2)),
+        vixPct: parseFloat((((vixCur - vixPrev) / vixPrev) * 100).toFixed(2)),
+        spy: parseFloat(spyCur.toFixed(2)),
+        spyChange: parseFloat((spyCur - spyPrev).toFixed(2)),
+        spyPct: parseFloat((((spyCur - spyPrev) / spyPrev) * 100).toFixed(2)),
+        signal: signalFor(vixCur),
+      };
+      dataSource = 'live';
+      document.getElementById('data-source-text').textContent = 'datos en vivo · Yahoo Finance';
+      document.getElementById('data-source').className = 'data-source live';
+    } catch (err) {
+      console.warn('Yahoo fetch failed (CORS?), using mock data', err);
+      history = MOCK_HISTORY.slice();
+      const last = history[history.length - 1];
+      const prev = history[history.length - 2] || last;
+      current = {
+        vix: last.vix,
+        vixChange: parseFloat((last.vix - prev.vix).toFixed(2)),
+        vixPct: parseFloat((((last.vix - prev.vix) / prev.vix) * 100).toFixed(2)),
+        spy: last.spy,
+        spyChange: parseFloat((last.spy - prev.spy).toFixed(2)),
+        spyPct: parseFloat((((last.spy - prev.spy) / prev.spy) * 100).toFixed(2)),
+        signal: signalFor(last.vix),
+      };
+      dataSource = 'mock';
+      document.getElementById('data-source-text').textContent = 'modo demo (Yahoo bloqueado por CORS)';
+      document.getElementById('data-source').className = 'data-source mock';
+    }
+    render();
+  }
+
+  // ============ SIGNAL + OPPS (estrategia contrarian) ============
+  // VIX alto → miedo en el mercado → oportunidad de compra
+  // VIX bajo → complacencia → señal de venta
+  function signalFor(v) {
+    if (v >= 25) return 'COMPRA FUERTE';
+    if (v >= THRESHOLD_BUY) return 'COMPRA MODERADA';
+    if (v <= THRESHOLD_SELL) return 'VENTA FUERTE';
+    if (v <= 12) return 'VENTA MODERADA';
+    return 'NEUTRAL';
+  }
+
+  function opportunitiesFor(v) {
+    const opps = [];
+    if (v >= 25) {
+      opps.push({ type: 'COMPRA', name: 'SPY (S&P 500)', why: `VIX ${v.toFixed(2)} — alto miedo en el mercado, entrada óptima (contrarian)`, conf: Math.min(95, 60 + (v - 25) * 4) });
+    } else if (v >= THRESHOLD_BUY) {
+      opps.push({ type: 'COMPRA', name: 'SPY (S&P 500)', why: `VIX ${v.toFixed(2)} — volatilidad sobre umbral, abrir posiciones largas`, conf: Math.min(85, 50 + (v - THRESHOLD_BUY) * 4) });
+    }
+    if (v <= THRESHOLD_SELL) {
+      opps.push({ type: 'VENTA', name: 'Reducir exposición SPY', why: `VIX ${v.toFixed(2)} — extrema complacencia del mercado, riesgo asimétrico`, conf: Math.min(95, 70 + (THRESHOLD_SELL - v) * 6) });
+    } else if (v <= 12) {
+      opps.push({ type: 'VENTA', name: 'Tomar parciales', why: `VIX ${v.toFixed(2)} — volatilidad muy baja, considerar realizar`, conf: Math.min(80, 45 + (12 - v) * 8) });
+    }
+    if (v > THRESHOLD_SELL && v < THRESHOLD_BUY) {
+      opps.push({ type: 'NEUTRAL', name: 'Mantener', why: `VIX ${v.toFixed(2)} — rango neutro, sin señal contrarian`, conf: 60 });
+    }
+    return opps;
+  }
+
+  // ============ RENDER ============
+  function fmtNum(n, d=2) { return new Intl.NumberFormat('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }).format(n); }
+
+  function getFiltered() {
+    let daysBack = 90;
+    if (timeframe === '1m') daysBack = 30;
+    else if (timeframe === '1y') daysBack = 365;
+    else if (timeframe === '10y') daysBack = 365 * 10;
+    const cutoff = Date.now() - daysBack * 86400000;
+    return history.filter(p => p.ts >= cutoff);
+  }
+
+  function persistSignal() {
+    try {
+      if (current.vix == null || !current.signal) return;
+      const raw = current.signal;
+      const kind = raw.includes('COMPRA') ? 'buy' : raw.includes('VENTA') ? 'sell' : 'neutral';
+      localStorage.setItem('jli_volatilidad_signal', JSON.stringify({
+        signal: raw,
+        kind,
+        vix: current.vix,
+        updatedAt: new Date().toISOString(),
+      }));
+    } catch (e) {}
+  }
+
+  function render() {
+    // VIX card
+    document.getElementById('vix-value').textContent = current.vix !== null ? fmtNum(current.vix, 2) : '—';
+    const vd = document.getElementById('vix-delta');
+    if (current.vix !== null) {
+      const up = current.vixChange >= 0;
+      vd.className = 'delta ' + (up ? 'up-bad' : 'down-good');
+      vd.innerHTML = `${up ? '▲' : '▼'} ${up ? '+' : ''}${fmtNum(current.vixChange, 2)} (${up ? '+' : ''}${fmtNum(current.vixPct, 2)}%)`;
+    } else { vd.textContent = ''; }
+
+    // SPY card
+    document.getElementById('spy-value').textContent = current.spy !== null ? '$' + fmtNum(current.spy, 2) : '—';
+    const sd = document.getElementById('spy-delta');
+    if (current.spy !== null) {
+      const up = current.spyChange >= 0;
+      sd.className = 'delta ' + (up ? 'up' : 'down');
+      sd.innerHTML = `${up ? '▲' : '▼'} ${up ? '+' : ''}${fmtNum(current.spyChange, 2)} (${up ? '+' : ''}${fmtNum(current.spyPct, 2)}%)`;
+    } else { sd.textContent = ''; }
+
+    // Signal card
+    const sigCard = document.getElementById('signal-card');
+    const sigText = document.getElementById('signal-text');
+    sigText.textContent = current.signal || '—';
+    sigCard.className = 'card signal-card';
+    if (current.signal?.includes('COMPRA')) sigCard.className += ' buy';
+    else if (current.signal?.includes('VENTA')) sigCard.className += ' sell';
+
+    document.getElementById('last-update').textContent =
+      new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date());
+
+    renderChart();
+    renderOpps();
+    persistSignal();
+  }
+
+  function renderChart() {
+    const data = getFiltered().filter(d => d[chartSymbol] != null);
+    const wrap = document.getElementById('chart-wrap');
+    document.getElementById('chart-title').textContent =
+      chartSymbol === 'vix' ? 'Índice VIX' : 'S&P 500 (SPY)';
+    if (data.length === 0) {
+      wrap.innerHTML = '<div class="chart-empty">Sin datos para este período.</div>';
+      return;
+    }
+
+    const W = wrap.clientWidth || 1000;
+    const H = 320;
+    const PAD = { top: 20, right: 20, bottom: 32, left: 56 };
+    const innerW = W - PAD.left - PAD.right;
+    const innerH = H - PAD.top - PAD.bottom;
+
+    const xs = data.map((_, i) => PAD.left + (i / (data.length - 1)) * innerW);
+    const vals = data.map(d => d[chartSymbol]);
+    const rawMin = Math.min(...vals);
+    const rawMax = Math.max(...vals);
+    const isVix = chartSymbol === 'vix';
+    // For VIX, force the y-axis to include both thresholds so they're always visible.
+    const minV = isVix ? Math.min(rawMin, THRESHOLD_SELL - 1) : rawMin * 0.98;
+    const maxV = isVix ? Math.max(rawMax, THRESHOLD_BUY + 5) : rawMax * 1.02;
+    const yScale = v => PAD.top + innerH - ((v - minV) / (maxV - minV)) * innerH;
+
+    const lineColor = isVix ? '#378ADD' : '#7a4a9a';
+    const fillColor = isVix ? 'rgba(55, 138, 221, 0.12)' : 'rgba(122, 74, 154, 0.12)';
+
+    let pathD = '';
+    data.forEach((d, i) => {
+      const x = xs[i];
+      const y = yScale(d[chartSymbol]);
+      pathD += (i === 0 ? 'M' : 'L') + x + ',' + y;
+    });
+    const areaD = pathD + ' L' + xs[xs.length-1] + ',' + (PAD.top + innerH) + ' L' + xs[0] + ',' + (PAD.top + innerH) + ' Z';
+
+    // Y ticks (4)
+    let yTicks = '';
+    const fmtY = v => isVix ? v.toFixed(0) : '$' + v.toFixed(0);
+    for (let i = 0; i <= 4; i++) {
+      const v = minV + ((maxV - minV) * i / 4);
+      const y = yScale(v);
+      yTicks += `<line class="axis-line" x1="${PAD.left}" y1="${y}" x2="${PAD.left + innerW}" y2="${y}"/>`;
+      yTicks += `<text class="axis-tick" x="${PAD.left - 8}" y="${y + 4}" text-anchor="end">${fmtY(v)}</text>`;
+    }
+    // Threshold lines (solo VIX, contrarian: compra cuando VIX alto, venta cuando bajo)
+    if (isVix) {
+      if (minV <= THRESHOLD_BUY && maxV >= THRESHOLD_BUY) {
+        const y = yScale(THRESHOLD_BUY);
+        yTicks += `<line class="threshold-line" x1="${PAD.left}" y1="${y}" x2="${PAD.left + innerW}" y2="${y}" stroke="#1D9E75"/>`;
+        yTicks += `<text class="threshold-label" x="${PAD.left + innerW - 4}" y="${y - 4}" text-anchor="end" fill="#1D9E75">compra ≥ ${THRESHOLD_BUY}</text>`;
+      }
+      if (minV <= THRESHOLD_SELL && maxV >= THRESHOLD_SELL) {
+        const y = yScale(THRESHOLD_SELL);
+        yTicks += `<line class="threshold-line" x1="${PAD.left}" y1="${y}" x2="${PAD.left + innerW}" y2="${y}" stroke="#D85A30"/>`;
+        yTicks += `<text class="threshold-label" x="${PAD.left + innerW - 4}" y="${y - 4}" text-anchor="end" fill="#D85A30">venta ≤ ${THRESHOLD_SELL}</text>`;
+      }
+    }
+    // X ticks (5)
+    let xTicks = '';
+    const xtCount = Math.min(5, data.length);
+    for (let i = 0; i < xtCount; i++) {
+      const idx = Math.floor((data.length - 1) * (i / (xtCount - 1 || 1)));
+      const x = xs[idx];
+      xTicks += `<text class="axis-tick" x="${x}" y="${H - 10}" text-anchor="middle">${data[idx].date.slice(0, 7)}</text>`;
+    }
+
+    wrap.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        ${yTicks}
+        ${xTicks}
+        <path d="${areaD}" fill="${fillColor}"/>
+        <path d="${pathD}" fill="none" stroke="${lineColor}" stroke-width="1.6"/>
+      </svg>`;
+  }
+
+  function renderOpps() {
+    const opps = current.vix !== null ? opportunitiesFor(current.vix) : [];
+    const list = document.getElementById('opps');
+    if (opps.length === 0) {
+      list.innerHTML = '<div class="empty-opps">— sin señales activas en este momento —</div>';
+      return;
+    }
+    list.innerHTML = '<div class="opp-list">' + opps.map(o => `
+      <div class="opp">
+        <div><span class="badge ${o.type === 'COMPRA' ? 'buy' : o.type === 'VENTA' ? 'sell' : 'neutral'}">${o.type}</span></div>
+        <div>
+          <div class="name">${o.name}</div>
+          <div class="why">${o.why}</div>
+        </div>
+        <div class="conf" style="text-align:right">${Math.round(o.conf)}%<small>confianza</small></div>
+      </div>`).join('') + '</div>';
+  }
+
+  // ============ EVENTS ============
+  document.querySelectorAll('.tf-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      timeframe = b.dataset.tf;
+      document.querySelectorAll('.tf-btn').forEach(x => x.classList.toggle('active', x.dataset.tf === timeframe));
+      renderChart();
+    });
+  });
+  document.getElementById('refresh-btn').addEventListener('click', loadData);
+  window.addEventListener('resize', () => renderChart());
+
+  function selectSymbol(sym) {
+    if (sym !== 'vix' && sym !== 'spy') return;
+    chartSymbol = sym;
+    document.querySelectorAll('.stat.selectable').forEach(c => {
+      const isActive = c.dataset.symbol === sym;
+      c.classList.toggle('active', isActive);
+      c.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+    renderChart();
+  }
+  document.querySelectorAll('.stat.selectable').forEach(c => {
+    c.addEventListener('click', () => selectSymbol(c.dataset.symbol));
+    c.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectSymbol(c.dataset.symbol);
+      }
+    });
+  });
+
+  loadData();
+</script>
+
+</body>
+</html>

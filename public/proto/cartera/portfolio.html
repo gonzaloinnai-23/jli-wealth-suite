@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Portfolio | Vista Agregada</title>
+<style>
+  :root {
+    --bg: #0a1929;
+    --panel: #0f2744;
+    --panel-2: #14324f;
+    --border: #1e3a5f;
+    --text: #e6edf3;
+    --text-dim: #8b9cb3;
+    --accent: #4fc3f7;
+    --us: #1e88e5;
+    --eu: #fbc02d;
+    --jp: #e53935;
+    --cn: #43a047;
+    --em: #ab47bc;
+    --world: #4fc3f7;
+    --other: #78909c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', Roboto, sans-serif;
+    background: linear-gradient(135deg, #061324 0%, #0a1929 50%, #0d1f3a 100%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container { max-width: 1400px; margin: 0 auto; }
+
+  .nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    transition: all 0.2s;
+  }
+  .back-link:hover { background: var(--panel-2); border-color: var(--accent); }
+
+  header.page-header {
+    text-align: center;
+    padding: 10px 0 25px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 25px;
+  }
+  h1 {
+    font-size: 2.3rem;
+    font-weight: 300;
+    letter-spacing: -0.5px;
+    margin-bottom: 10px;
+    background: linear-gradient(90deg, #4fc3f7, #fbc02d);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle { color: var(--text-dim); font-size: 0.95rem; font-weight: 300; }
+
+  /* Big KPIs */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+  }
+  .kpi-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--kpi-color, var(--accent));
+  }
+  .kpi-label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+  }
+  .kpi-value {
+    font-size: 2.5rem;
+    font-weight: 200;
+    color: var(--text);
+    line-height: 1;
+  }
+  .kpi-value.score { color: var(--accent); font-weight: 300; }
+  .kpi-sub {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 20px;
+  }
+  .panel-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+
+  .grid-two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 900px) { .grid-two { grid-template-columns: 1fr; } }
+
+  /* Donut chart */
+  .donut-wrap {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .donut-chart { width: 220px; height: 220px; flex-shrink: 0; }
+  .donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 150px;
+  }
+  .donut-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+  }
+  .donut-swatch {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .donut-name { color: var(--text); flex: 1; }
+  .donut-pct { color: var(--text-dim); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* Comparación con mercado */
+  .compare-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 1fr;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    background: var(--panel-2);
+    border-radius: 6px;
+  }
+  .compare-row.header {
+    background: transparent;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 4px 12px;
+  }
+  .compare-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .compare-bar-wrap {
+    position: relative;
+    height: 22px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .compare-bar {
+    height: 100%;
+    background: var(--bar-color);
+    transition: width 0.5s;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+    min-width: 28px;
+  }
+  .delta {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    display: inline-block;
+    margin-left: 6px;
+  }
+  .delta.over { background: rgba(244,67,54,0.2); color: #ef5350; }
+  .delta.under { background: rgba(102,187,106,0.2); color: #66bb6a; }
+  .delta.neutral { background: rgba(255,255,255,0.1); color: var(--text-dim); }
+
+  /* Lista de ETFs */
+  .etf-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .etf-row {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--region-color);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto auto;
+    gap: 14px;
+    align-items: center;
+  }
+  @media (max-width: 700px) {
+    .etf-row { grid-template-columns: auto 1fr; }
+    .etf-row .cell-num { grid-column: 1/3; }
+  }
+  .etf-row .ticker {
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: monospace;
+    letter-spacing: 1px;
+    color: var(--region-color);
+  }
+  .etf-row .name {
+    font-size: 0.85rem;
+    color: var(--text);
+  }
+  .etf-row .region {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+  .cell-num {
+    text-align: center;
+    min-width: 70px;
+  }
+  .cell-num .val {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .cell-num .lab {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .remove-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+  .remove-btn:hover { background: rgba(239, 83, 80, 0.2); color: #ef5350; border-color: #ef5350; }
+
+  /* Gauge diversificación */
+  .gauge-container {
+    text-align: center;
+  }
+  .gauge-svg { width: 260px; height: 150px; }
+  .gauge-score {
+    font-size: 3rem;
+    font-weight: 200;
+    color: var(--accent);
+    margin-top: -25px;
+  }
+  .gauge-score small { font-size: 1.2rem; color: var(--text-dim); }
+  .gauge-label {
+    font-size: 0.85rem;
+    color: var(--text);
+    margin-top: 4px;
+    font-weight: 500;
+  }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 80px 20px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .empty-icon { font-size: 4rem; margin-bottom: 16px; }
+  .empty h2 { font-weight: 300; margin-bottom: 8px; }
+  .empty p { color: var(--text-dim); margin-bottom: 20px; }
+  .empty a {
+    background: linear-gradient(135deg, #4fc3f7, #1e88e5);
+    color: #0a1929;
+    padding: 12px 24px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 700;
+    display: inline-block;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 25px;
+  }
+  .action-btn {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-family: inherit;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+  .action-btn:hover { background: var(--panel-2); border-color: var(--accent); }
+  .action-btn.primary {
+    background: linear-gradient(135deg, #4fc3f7, #1e88e5);
+    color: #0a1929;
+    font-weight: 700;
+    border: none;
+  }
+  .action-btn.primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(79,195,247,0.4); }
+
+  .footnote {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    line-height: 1.7;
+  }
+
+  /* ===== MODAL DE INFO DIVERSIFICACIÓN ===== */
+  .info-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--accent);
+    font-size: 0.72rem;
+    cursor: pointer;
+    text-decoration: none;
+    padding: 2px 6px;
+    border-radius: 10px;
+    border: 1px solid rgba(79,195,247,0.3);
+    background: rgba(79,195,247,0.08);
+    transition: all 0.2s;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .info-link:hover {
+    background: rgba(79,195,247,0.18);
+    border-color: var(--accent);
+  }
+  .info-link-big {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent);
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+  }
+  .info-link-big:hover { color: #81d4fa; }
+
+  .modal-backdrop {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(6, 19, 36, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 3000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.25s;
+  }
+  .modal-backdrop.open { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal-content {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    max-width: 760px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  @keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal-header {
+    padding: 22px 28px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    background: var(--panel);
+    border-radius: 14px 14px 0 0;
+    z-index: 10;
+  }
+  .modal-title {
+    font-size: 1.3rem;
+    font-weight: 500;
+    background: linear-gradient(90deg, #4fc3f7, #fbc02d);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .modal-close {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .modal-close:hover { background: rgba(239, 83, 80, 0.15); color: #ef5350; border-color: #ef5350; }
+
+  .modal-body { padding: 22px 28px 28px; }
+  .modal-body h3 {
+    font-size: 1rem;
+    color: var(--accent);
+    margin: 20px 0 10px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .modal-body h3:first-child { margin-top: 0; }
+  .modal-body p {
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  .modal-body p.muted {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+  }
+  .modal-formula {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: #e6edf3;
+    margin: 10px 0 14px;
+    overflow-x: auto;
+  }
+  .modal-formula .comment { color: var(--text-dim); }
+  .modal-formula .hl { color: #fbc02d; }
+
+  .modal-body ul {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 14px;
+  }
+  .modal-body li {
+    padding: 6px 0 6px 22px;
+    position: relative;
+    font-size: 0.88rem;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .modal-body li::before {
+    content: '▸';
+    position: absolute;
+    left: 6px;
+    color: var(--accent);
+  }
+  .modal-body li strong { color: #fbc02d; }
+
+  .modal-example-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 14px;
+    font-size: 0.82rem;
+  }
+  .modal-example-table th, .modal-example-table td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-example-table th {
+    color: var(--text-dim);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+  }
+  .modal-example-table td {
+    color: var(--text);
+  }
+  .modal-example-table .score-cell {
+    font-weight: 700;
+    color: var(--accent);
+    font-family: monospace;
+  }
+
+  .modal-warning {
+    background: rgba(251, 192, 45, 0.08);
+    border: 1px solid rgba(251, 192, 45, 0.3);
+    border-left: 3px solid #fbc02d;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 0.85rem;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .modal-warning strong { color: #fbc02d; }
+
+  .modal-pro-list {
+    background: rgba(102, 187, 106, 0.08);
+    border: 1px solid rgba(102, 187, 106, 0.3);
+    border-left: 3px solid #66bb6a;
+    border-radius: 6px;
+    padding: 12px 16px 12px 16px;
+    margin: 10px 0 14px;
+    font-size: 0.85rem;
+  }
+  .modal-pro-list strong { color: #66bb6a; }
+  .modal-pro-list ul { margin: 6px 0 0; }
+  .modal-pro-list li { padding: 3px 0 3px 18px; font-size: 0.82rem; }
+  .modal-pro-list li::before { content: '✓'; color: #66bb6a; }
+
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  /* === Light theme override (JLI Wealth shell) === */
+  :root {
+    --bg: #f8f7f4 !important;
+    --panel: #ffffff !important;
+    --panel-2: #fafaf7 !important;
+    --border: #ebebe4 !important;
+    --text: #1a1917 !important;
+    --text-dim: #6b6a65 !important;
+    --accent: #378ADD !important;
+  }
+  body {
+    background: #f8f7f4 !important;
+    color: #1a1917 !important;
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  }
+  h1 {
+    background: linear-gradient(90deg, #378ADD, #BA7517) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+  }
+  /* Sticky header on light bg */
+  .sticky-header { background: rgba(248, 247, 244, 0.92) !important; }
+  /* Active accent button: dark text was for dark bg; on white accent text should be white */
+  .btn.active { color: #ffffff !important; }
+  /* Launch button gradient stays vibrant; force dark text for legibility */
+  .launch-btn { color: #1a1917 !important; }
+  /* Soft borders for panels/cards */
+  table, th, td, .panel, .card { border-color: var(--border) !important; }
+  /* Inputs */
+  input, select, textarea {
+    background: var(--panel) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="nav-bar">
+    <a href="etfs.html" class="back-link">← Editar selección</a>
+    <a href="index.html" class="back-link">🗺️ Ir al mapa mundial</a>
+  </div>
+
+  <header class="page-header">
+    <h1>💼 Mi Portfolio Agregado</h1>
+    <div class="subtitle" id="subtitle">Visualización combinada de los ETFs seleccionados</div>
+  </header>
+
+  <div id="content"></div>
+
+  <div class="footnote">
+    Métricas calculadas asumiendo peso igual entre los ETFs seleccionados (1/N). La diversificación real
+    dependerá del capital que asignes a cada uno.<br>
+    Esta herramienta es educativa y no constituye asesoramiento financiero.
+  </div>
+</div>
+
+<script src="etf_data.js"></script>
+<script>
+// ============================================================
+// CARGAR SELECCIÓN
+// ============================================================
+const tickers = loadSelection();
+const content = document.getElementById('content');
+const subtitle = document.getElementById('subtitle');
+
+if (tickers.length === 0) {
+  content.innerHTML = `
+    <div class="empty">
+      <div class="empty-icon">📭</div>
+      <h2>Tu selección está vacía</h2>
+      <p>Primero elige uno o varios ETFs en la página de inversiones para ver tu portfolio agregado aquí.</p>
+      <a href="etfs.html">🚀 Ir a seleccionar ETFs</a>
+    </div>
+  `;
+} else {
+  renderPortfolio();
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderPortfolio() {
+  const funds = tickers.length;
+  const companies = computeTotalHoldings(tickers);
+  const score = computeDiversificationScore(tickers);
+  const ter = computeAvgTER(tickers);
+  const mix = computeRegionalMix(tickers);
+
+  subtitle.textContent = `${funds} ETF${funds>1?'s':''} seleccionado${funds>1?'s':''} · Análisis combinado del portfolio`;
+
+  // KPIs principales
+  const kpisHTML = `
+    <div class="kpi-grid">
+      <div class="kpi-card" style="--kpi-color:#4fc3f7">
+        <div class="kpi-label">Fondos</div>
+        <div class="kpi-value">${funds}</div>
+        <div class="kpi-sub">ETFs en tu portfolio</div>
+      </div>
+      <div class="kpi-card" style="--kpi-color:#fbc02d">
+        <div class="kpi-label">Empresas</div>
+        <div class="kpi-value">${companies >= 1000 ? (companies/1000).toFixed(1)+'K' : companies.toLocaleString('es')}</div>
+        <div class="kpi-sub">aprox. cubiertas</div>
+      </div>
+      <div class="kpi-card" style="--kpi-color:#43a047">
+        <div class="kpi-label">Diversificación <a class="info-link" onclick="openDiversModal()" title="¿Cómo se calcula?" style="margin-left:4px;">ⓘ cómo se calcula</a></div>
+        <div class="kpi-value score">${score.toFixed(1)}<small style="font-size:1.3rem;color:var(--text-dim)">/10</small></div>
+        <div class="kpi-sub">${diversLabel(score)}</div>
+      </div>
+      <div class="kpi-card" style="--kpi-color:#ab47bc">
+        <div class="kpi-label">TER medio</div>
+        <div class="kpi-value">${ter.toFixed(2)}%</div>
+        <div class="kpi-sub">coste anual estimado</div>
+      </div>
+    </div>
+  `;
+
+  // Distribución geográfica + comparación con mercado
+  const mixHTML = `
+    <div class="grid-two">
+      <div class="panel">
+        <div class="panel-title">🌍 Distribución geográfica de tu portfolio</div>
+        <div class="donut-wrap">
+          <svg class="donut-chart" viewBox="0 0 100 100" id="donut"></svg>
+          <div class="donut-legend" id="donut-legend"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">📊 Diversificación lograda <a class="info-link" onclick="openDiversModal()" style="margin-left:8px;" title="¿Cómo se calcula?">ⓘ metodología</a></div>
+        ${renderGauge(score)}
+        <div style="margin-top:15px;font-size:0.85rem;color:var(--text-dim);line-height:1.6;text-align:center;">
+          ${diversExplain(score)}
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">⚖️ Tu portfolio vs. el mercado mundial</div>
+      <div class="compare-row header">
+        <div>Región</div>
+        <div>Tu portfolio</div>
+        <div>Mercado global</div>
+      </div>
+      ${renderCompareBars(mix)}
+    </div>
+  `;
+
+  // Lista detallada de ETFs
+  const etfsHTML = `
+    <div class="panel">
+      <div class="panel-title">📋 Detalle de tus ${funds} ETFs</div>
+      <div class="etf-list">
+        ${tickers.map(t => renderETFRow(t)).join('')}
+      </div>
+    </div>
+  `;
+
+  // Botones de acción
+  const actionsHTML = `
+    <div class="action-buttons">
+      <a href="etfs.html" class="action-btn">✏️ Editar selección</a>
+      <button class="action-btn" onclick="copyPortfolio()">📋 Copiar tickers</button>
+      <button class="action-btn primary" onclick="downloadCSV()">💾 Descargar CSV</button>
+    </div>
+  `;
+
+  content.innerHTML = kpisHTML + mixHTML + etfsHTML + actionsHTML;
+
+  // Dibujar donut
+  drawDonut(mix);
+}
+
+function diversLabel(score) {
+  if (score >= 8.5) return 'Excelente';
+  if (score >= 7) return 'Muy buena';
+  if (score >= 5.5) return 'Buena';
+  if (score >= 4) return 'Moderada';
+  if (score >= 2.5) return 'Baja';
+  return 'Muy concentrada';
+}
+
+function diversExplain(score) {
+  if (score >= 8.5) return 'Portfolio muy diversificado entre regiones, sectores y cantidad de empresas. Buena protección ante eventos locales.';
+  if (score >= 7) return 'Portfolio bien repartido. Cubre varias regiones y muchas empresas. Diversificación adecuada para el largo plazo.';
+  if (score >= 5.5) return 'Diversificación decente, pero con cierto sesgo regional. Considera añadir exposición a regiones sub-representadas.';
+  if (score >= 4) return 'Portfolio moderadamente concentrado. Añade ETFs de otras regiones para reducir el riesgo geográfico.';
+  if (score >= 2.5) return 'Baja diversificación. Tu portfolio tiene fuerte sesgo hacia una región o tipo de activo. Considera diversificar.';
+  return 'Portfolio muy concentrado. Estás expuesto al riesgo de una sola región. Se recomienda diversificar geográficamente.';
+}
+
+function drawDonut(mix) {
+  const svg = document.getElementById('donut');
+  const legend = document.getElementById('donut-legend');
+  const total = Object.values(mix).reduce((a,b)=>a+b, 0);
+  if (total === 0) return;
+
+  const cx = 50, cy = 50, r = 35, strokeW = 18;
+  const circumference = 2 * Math.PI * r;
+  let offset = 0;
+
+  // Fondo
+  svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="${strokeW}"/>`;
+  let legendHTML = '';
+
+  Object.entries(mix).forEach(([region, pct]) => {
+    if (pct <= 0) return;
+    const meta = REGION_META[region];
+    const fraction = pct / total;
+    const dash = fraction * circumference;
+
+    const arc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    arc.setAttribute('cx', cx);
+    arc.setAttribute('cy', cy);
+    arc.setAttribute('r', r);
+    arc.setAttribute('fill', 'none');
+    arc.setAttribute('stroke', meta.hex);
+    arc.setAttribute('stroke-width', strokeW);
+    arc.setAttribute('stroke-dasharray', `${dash} ${circumference - dash}`);
+    arc.setAttribute('stroke-dashoffset', -offset);
+    arc.setAttribute('transform', `rotate(-90 ${cx} ${cy})`);
+    svg.appendChild(arc);
+
+    offset += dash;
+
+    legendHTML += `
+      <div class="donut-legend-item">
+        <div class="donut-swatch" style="background:${meta.hex}"></div>
+        <div class="donut-name">${meta.emoji} ${meta.name}</div>
+        <div class="donut-pct">${pct.toFixed(1)}%</div>
+      </div>
+    `;
+  });
+
+  // Texto central
+  const centerText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  centerText.setAttribute('x', cx);
+  centerText.setAttribute('y', cy + 2);
+  centerText.setAttribute('text-anchor', 'middle');
+  centerText.setAttribute('fill', '#e6edf3');
+  centerText.setAttribute('font-size', '6');
+  centerText.setAttribute('font-weight', '600');
+  centerText.textContent = '100%';
+  svg.appendChild(centerText);
+
+  const centerLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  centerLabel.setAttribute('x', cx);
+  centerLabel.setAttribute('y', cy + 10);
+  centerLabel.setAttribute('text-anchor', 'middle');
+  centerLabel.setAttribute('fill', '#8b9cb3');
+  centerLabel.setAttribute('font-size', '3.5');
+  centerLabel.textContent = 'Portfolio';
+  svg.appendChild(centerLabel);
+
+  legend.innerHTML = legendHTML;
+}
+
+function renderGauge(score) {
+  // Semi-círculo de 0 a 10
+  const radius = 80;
+  const cx = 130, cy = 110;
+  const startAngle = Math.PI; // 180°
+  const endAngle = 0; // 0°
+  const progress = score / 10;
+  const angle = startAngle - (startAngle - endAngle) * progress;
+
+  // Generar path de fondo (semicírculo completo)
+  const bgPath = `M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`;
+
+  // Generar path del progreso
+  const px = cx + radius * Math.cos(angle);
+  const py = cy - radius * Math.sin(angle);
+  const largeArc = progress > 0.5 ? 1 : 0;
+  const progPath = `M ${cx - radius} ${cy} A ${radius} ${radius} 0 ${largeArc} 1 ${px} ${py}`;
+
+  // Colores según score
+  let color = '#ef5350';
+  if (score >= 7) color = '#66bb6a';
+  else if (score >= 5) color = '#fbc02d';
+  else if (score >= 3) color = '#ff9800';
+
+  return `
+    <div class="gauge-container">
+      <svg class="gauge-svg" viewBox="0 0 260 140">
+        <path d="${bgPath}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="18" stroke-linecap="round"/>
+        <path d="${progPath}" fill="none" stroke="${color}" stroke-width="18" stroke-linecap="round"/>
+        <text x="30" y="130" fill="#8b9cb3" font-size="10" text-anchor="middle">0</text>
+        <text x="130" y="15" fill="#8b9cb3" font-size="10" text-anchor="middle">5</text>
+        <text x="230" y="130" fill="#8b9cb3" font-size="10" text-anchor="middle">10</text>
+      </svg>
+      <div class="gauge-score">${score.toFixed(1)}<small>/10</small></div>
+      <div class="gauge-label" style="color:${color}">${diversLabel(score)}</div>
+    </div>
+  `;
+}
+
+function renderCompareBars(mix) {
+  const marketRef = { us: 62, eu: 14, cn: 9, jp: 5.5, em: 5, other: 4.5 };
+  const regions = ['us', 'eu', 'cn', 'jp', 'em', 'other'];
+
+  return regions.map(r => {
+    const meta = REGION_META[r];
+    const myPct = mix[r] || 0;
+    const marketPct = marketRef[r];
+    const maxPct = Math.max(myPct, marketPct, 1);
+    const delta = myPct - marketPct;
+    let deltaClass = 'neutral';
+    let deltaSym = '≈';
+    if (delta > 2) { deltaClass = 'over'; deltaSym = '▲'; }
+    else if (delta < -2) { deltaClass = 'under'; deltaSym = '▼'; }
+
+    return `
+      <div class="compare-row">
+        <div class="compare-label">${meta.emoji} ${meta.name}</div>
+        <div class="compare-bar-wrap">
+          <div class="compare-bar" style="--bar-color:${meta.hex}; width:${(myPct/100)*100}%; background:${meta.hex}">
+            ${myPct >= 4 ? myPct.toFixed(1)+'%' : ''}
+          </div>
+        </div>
+        <div class="compare-bar-wrap">
+          <div class="compare-bar" style="--bar-color:${meta.hex}; width:${(marketPct/100)*100}%; background:${meta.hex}; opacity:0.5">
+            ${marketPct >= 4 ? marketPct.toFixed(1)+'%' : ''}
+          </div>
+          <div style="position:absolute;right:6px;top:50%;transform:translateY(-50%);">
+            <span class="delta ${deltaClass}">${deltaSym} ${Math.abs(delta).toFixed(1)}%</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderETFRow(ticker) {
+  const etf = ETF_DB[ticker];
+  if (!etf) return '';
+  const meta = REGION_META[etf.region];
+  return `
+    <div class="etf-row" style="--region-color:${meta.hex}">
+      <div>
+        <div class="ticker">${ticker}</div>
+        <div class="region">${meta.emoji} ${meta.name}</div>
+      </div>
+      <div>
+        <div class="name">${etf.name}</div>
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-top:2px;">${etf.focus}</div>
+      </div>
+      <div class="cell-num">
+        <div class="val">${etf.ter.toFixed(2)}%</div>
+        <div class="lab">TER</div>
+      </div>
+      <div class="cell-num">
+        <div class="val">${etf.holdings >= 1000 ? (etf.holdings/1000).toFixed(1)+'K' : etf.holdings}</div>
+        <div class="lab">Empresas</div>
+      </div>
+      <button class="remove-btn" onclick="removeTicker('${ticker}')" title="Quitar ${ticker}">✕</button>
+    </div>
+  `;
+}
+
+function removeTicker(ticker) {
+  const idx = tickers.indexOf(ticker);
+  if (idx >= 0) {
+    tickers.splice(idx, 1);
+    saveSelection(tickers);
+    if (tickers.length === 0) {
+      location.reload();
+    } else {
+      renderPortfolio();
+    }
+  }
+}
+
+function copyPortfolio() {
+  const text = tickers.join(', ');
+  navigator.clipboard.writeText(text).then(() => {
+    alert('✓ Tickers copiados al portapapeles:\n' + text);
+  }).catch(() => {
+    prompt('Copia estos tickers:', text);
+  });
+}
+
+function downloadCSV() {
+  let csv = 'Ticker,Nombre,Region,TER(%),Empresas,AUM(B USD),Foco\n';
+  tickers.forEach(t => {
+    const etf = ETF_DB[t];
+    const meta = REGION_META[etf.region];
+    csv += `${t},"${etf.name}",${meta.name},${etf.ter},${etf.holdings},${etf.aum},"${etf.focus}"\n`;
+  });
+  const mix = computeRegionalMix(tickers);
+  csv += '\n\nDistribucion Geografica\n';
+  Object.entries(mix).forEach(([r, p]) => {
+    if (p > 0) csv += `${REGION_META[r].name},${p.toFixed(2)}%\n`;
+  });
+  csv += `\nMetricas\n`;
+  csv += `Fondos,${tickers.length}\n`;
+  csv += `Empresas aprox,${computeTotalHoldings(tickers)}\n`;
+  csv += `Indice diversificacion,${computeDiversificationScore(tickers)}/10\n`;
+  csv += `TER medio,${computeAvgTER(tickers).toFixed(2)}%\n`;
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'mi_portfolio_' + new Date().toISOString().slice(0,10) + '.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+// ===== MODAL DIVERSIFICACIÓN =====
+function openDiversModal() {
+  document.getElementById('diversificationModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDiversModal() {
+  document.getElementById('diversificationModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDiversModal();
+});
+
+</script>
+
+<!-- ========== MODAL: Cómo se calcula la diversificación ========== -->
+<div class="modal-backdrop" id="diversificationModal" onclick="if(event.target===this) closeDiversModal()">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">📊 ¿Cómo se calcula el índice de diversificación?</div>
+      <button class="modal-close" onclick="closeDiversModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Es una <strong>heurística orientativa</strong> con escala 0-10 construida a partir de tres componentes ponderados:</p>
+
+      <div class="modal-formula">
+Score = <span class="hl">40%</span> × Geografía + <span class="hl">40%</span> × Empresas + <span class="hl">20%</span> × Nº de ETFs
+      </div>
+
+      <h3>1. Diversificación geográfica (40%)</h3>
+      <p>Mide qué tan <strong>uniformemente repartido</strong> está el portfolio entre las 6 regiones (EEUU, Europa, China, Japón, Emergentes, Resto) usando la <strong>entropía de Shannon</strong>, la misma fórmula que se usa en ecología para medir biodiversidad.</p>
+      <div class="modal-formula">
+entropy = -Σ (p × log₂(p))  <span class="comment">// para cada región con peso p</span>
+geoScore = (entropy / log₂(6)) × 10
+      </div>
+      <ul>
+        <li>100% en una sola región → <strong>0/10</strong></li>
+        <li>50%-50% entre dos regiones → <strong>3.9/10</strong></li>
+        <li>16.7% en cada una de las 6 regiones → <strong>10/10</strong></li>
+      </ul>
+
+      <h3>2. Empresas cubiertas (40%)</h3>
+      <p>La intuición: pasar de 50 a 500 empresas mejora mucho la diversificación, pero pasar de 2.000 a 3.000 apenas aporta. Por eso usamos una <strong>escala logarítmica</strong>:</p>
+      <div class="modal-formula">
+holdingsScore = log₁₀(empresas) / log₁₀(3000) × 10
+      </div>
+      <ul>
+        <li>100 empresas → <strong>5.8/10</strong></li>
+        <li>500 empresas → <strong>7.7/10</strong></li>
+        <li>3.000 o más → <strong>10/10</strong></li>
+      </ul>
+      <p class="muted">Ajuste por solapamiento: si hay varios ETFs en la misma región, solo el mayor cuenta completo; los demás aportan un 25% extra. VOO + SPY no cuenta como 1.000 empresas (serían las mismas 500), sino como 625.</p>
+
+      <h3>3. Número de ETFs (20%)</h3>
+      <p>Más ETFs = diversificación operativa (distintos emisores, metodologías, riesgo de tracking). Lineal capado en 6:</p>
+      <div class="modal-formula">
+etfScore = min(10, nº_ETFs × 10/6)
+      </div>
+
+      <h3>Ejemplos reales</h3>
+      <table class="modal-example-table">
+        <thead>
+          <tr><th>Portfolio</th><th>Geo</th><th>Empresas</th><th>Nº ETFs</th><th>Total</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Solo VOO (S&P 500)</td><td>0</td><td>7.7</td><td>1.7</td><td class="score-cell">3.4</td></tr>
+          <tr><td>Solo VT (todo el mundo)</td><td>7.1</td><td>10</td><td>1.7</td><td class="score-cell">7.1</td></tr>
+          <tr><td>VOO + VXUS + VWO</td><td>6.2</td><td>10</td><td>5.0</td><td class="score-cell">8.0</td></tr>
+          <tr><td>5 ETFs regiones iguales</td><td>9.3</td><td>10</td><td>8.3</td><td class="score-cell">9.3</td></tr>
+        </tbody>
+      </table>
+
+      <h3>⚠️ Limitaciones importantes</h3>
+      <div class="modal-warning">
+        <strong>Esta fórmula NO mide:</strong>
+        <ul style="margin-top:8px;">
+          <li><strong>Correlación real</strong> entre activos. Dos ETFs de regiones diferentes pueden moverse juntos en crisis globales (2008, 2020).</li>
+          <li><strong>Concentración sectorial</strong>. VOO+QQQ+MCHI puede ser 40% tecnología aunque esté diversificado geográficamente.</li>
+          <li><strong>Peso real</strong>. Se asume 1/N (igual reparto). Si pones 90% en VOO y 10% en VWO, tu diversificación real es mucho peor de lo que dice el score.</li>
+          <li><strong>Solapamiento entre índices distintos</strong>. VTI y VOO solapan casi totalmente en las 500 grandes americanas, pero la fórmula los trata como diferentes.</li>
+          <li><strong>Calidad vs cantidad</strong>. Una small-cap brasileña ilíquida cuenta igual que Apple.</li>
+          <li><strong>Riesgos no diversificables</strong>: divisa, geopolítico, regulatorio.</li>
+        </ul>
+      </div>
+
+      <h3>¿Es útil entonces?</h3>
+      <p>Como <strong>heurística rápida y orientativa</strong>: sí. Te indica a grandes rasgos si estás muy concentrado o bien repartido. Pero no es una medida rigurosa de gestión profesional de riesgos.</p>
+
+      <div class="modal-pro-list">
+        <strong>Métricas profesionales más rigurosas que NO usa esta herramienta:</strong>
+        <ul>
+          <li>Ratio de Sharpe (retorno ajustado al riesgo)</li>
+          <li>Max drawdown histórico</li>
+          <li>Correlaciones móviles entre componentes</li>
+          <li>VaR / CVaR (Value at Risk)</li>
+          <li>Índice Herfindahl-Hirschman aplicado a concentración sectorial</li>
+          <li>Análisis factorial (exposición a factores de riesgo: valor, momentum, calidad, tamaño)</li>
+        </ul>
+      </div>
+
+      <p class="muted" style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px;">
+        <strong>En resumen:</strong> trata este score como una orientación visual, no como un veredicto. Un 9/10 aquí no garantiza un portfolio bien diversificado en términos de riesgo real, y un 3/10 no siempre es malo si responde a una convicción específica del inversor.
+      </p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

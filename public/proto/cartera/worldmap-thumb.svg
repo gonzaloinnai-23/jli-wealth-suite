@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 110" preserveAspectRatio="xMidYMid meet">
+  <rect width="220" height="110" fill="#e8eef5"/>
+  <!-- North America -->
+  <path d="M22,22 L62,18 L70,42 L58,58 L26,52 Z" fill="#6b8caf"/>
+  <!-- South America -->
+  <path d="M58,58 L72,58 L75,86 L64,96 L52,80 Z" fill="#6b8caf"/>
+  <!-- Europe -->
+  <path d="M88,18 L108,14 L113,30 L98,40 L82,34 Z" fill="#6b8caf"/>
+  <!-- Africa -->
+  <path d="M98,40 L122,40 L127,72 L104,90 L92,62 Z" fill="#6b8caf"/>
+  <!-- Asia -->
+  <path d="M114,12 L176,8 L188,32 L152,46 L122,38 Z" fill="#6b8caf"/>
+  <!-- Australia -->
+  <path d="M170,70 L194,64 L198,82 L178,88 L162,80 Z" fill="#6b8caf"/>
+</svg>

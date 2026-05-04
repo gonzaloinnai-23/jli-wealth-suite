@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JLI · Wealth Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8f7f4;
+    --bg-2: #fafaf7;
+    --surface: #ffffff;
+    --surface-2: #f1efe8;
+    --border: #ebebe4;
+    --border-strong: rgba(0,0,0,0.12);
+    --text: #1a1917;
+    --text-2: #6b6a65;
+    --text-3: #9b9a96;
+    --accent: #378ADD;
+    --error: #D85A30;
+    --success: #1D9E75;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .serif { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; letter-spacing: -0.01em; }
+
+  /* ============ LOGIN ============ */
+  #login-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+  }
+  .login-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.04);
+  }
+  .login-brand {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 28px;
+  }
+  .login-mark {
+    width: 32px; height: 32px; border-radius: 9px;
+    background: var(--text); color: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600;
+  }
+  .login-name { font-size: 13px; font-weight: 600; color: var(--text-2); letter-spacing: 0.06em; text-transform: uppercase; }
+  .login-title { font-family: 'Instrument Serif', serif; font-size: 30px; line-height: 1.05; letter-spacing: -0.02em; margin-bottom: 6px; }
+  .login-sub { font-size: 13px; color: var(--text-2); margin-bottom: 24px; }
+  .login-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+  .login-field label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; }
+  .login-field input {
+    padding: 11px 14px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--surface);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .login-field input:focus { border-color: var(--text); box-shadow: 0 0 0 3px rgba(10,10,10,0.06); }
+  .login-btn {
+    width: 100%; padding: 12px;
+    background: var(--text); color: var(--bg); border: none;
+    border-radius: 9px;
+    font-family: inherit; font-size: 14px; font-weight: 500;
+    cursor: pointer; margin-top: 6px;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+  .login-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .login-error { font-size: 12px; color: var(--error); margin-top: 10px; text-align: center; min-height: 18px; }
+  .login-hint { font-size: 11px; color: var(--text-3); margin-top: 16px; text-align: center; }
+
+  /* ============ SHELL ============ */
+  #app { display: none; min-height: 100vh; flex-direction: column; }
+  body.authed #app { display: flex; }
+  body.authed #login-overlay { display: none; }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(248, 247, 244, 0.92);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-inner {
+    max-width: 1400px; margin: 0 auto;
+    padding: 12px 24px 0;
+  }
+  .topbar-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding-bottom: 12px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .brand-mark {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: var(--text); color: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600;
+  }
+  .brand-name {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 22px; letter-spacing: -0.01em;
+  }
+
+  .tabs {
+    display: flex; gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 2px;
+    border-top: 1px solid var(--border);
+    margin: 0 -24px;
+    padding: 0 24px;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    padding: 12px 16px; border-radius: 0;
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    color: var(--text-2); background: transparent; border: none;
+    cursor: pointer; white-space: nowrap;
+    position: relative;
+    transition: color 0.15s;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: var(--text); font-weight: 600;
+    border-bottom-color: var(--text);
+  }
+  .tab .ext { font-size: 10px; opacity: 0.5; margin-left: 4px; }
+  .vol-pill {
+    display: inline-flex; align-items: center;
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.4;
+  }
+  .vol-pill[hidden] { display: none; }
+  .vol-pill.buy     { background: rgba(29,158,117,0.15); color: #1D9E75; }
+  .vol-pill.sell    { background: rgba(216,90,48,0.15);  color: #D85A30; }
+  .vol-pill.neutral { background: var(--surface-2);      color: var(--text-2); }
+
+  .topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .icon-btn {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text-2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; font-family: inherit;
+  }
+  .icon-btn:hover { color: var(--text); border-color: var(--text); background: var(--surface); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* ============ TAB CONTENT ============ */
+  main#panes { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .tab-pane { display: none; flex: 1; min-height: 0; }
+  .tab-pane.active { display: flex; flex-direction: column; }
+  .iframe-host { flex: 1; width: 100%; border: none; background: var(--bg); min-height: 600px; }
+
+  .placeholder {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 80px 24px; text-align: center;
+  }
+  .placeholder h1 { font-family: 'Instrument Serif', serif; font-size: 56px; line-height: 1.05; letter-spacing: -0.02em; margin-bottom: 14px; max-width: 720px; }
+  .placeholder h1 em { font-style: italic; color: var(--text-2); }
+  .placeholder p { font-size: 15px; color: var(--text-2); max-width: 540px; margin-bottom: 28px; }
+  .placeholder .actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .btn-primary {
+    padding: 12px 22px; border-radius: 999px;
+    background: var(--text); color: var(--bg); border: none;
+    font-family: inherit; font-size: 14px; font-weight: 500;
+    cursor: pointer; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: transform 0.15s, opacity 0.15s;
+  }
+  .btn-primary:hover { transform: translateY(-1px); opacity: 0.92; }
+  .btn-primary.disabled { opacity: 0.4; pointer-events: none; }
+  .btn-ghost {
+    padding: 12px 22px; border-radius: 999px;
+    background: transparent; color: var(--text); border: 1px solid var(--border);
+    font-family: inherit; font-size: 14px; font-weight: 500;
+    cursor: pointer; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: all 0.15s;
+  }
+  .btn-ghost:hover { border-color: var(--text); }
+
+  /* ============ MODAL ============ */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(10,10,10,0.42);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 24px;
+    animation: fadeIn 0.18s ease;
+  }
+  .modal-backdrop.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .modal {
+    background: var(--bg); border-radius: 16px; padding: 28px;
+    max-width: 460px; width: 100%;
+    box-shadow: 0 20px 60px rgba(10,10,10,0.22);
+    animation: modalIn 0.24s cubic-bezier(0.22,1,0.36,1);
+  }
+  .modal h3 { font-family: 'Instrument Serif', serif; font-size: 26px; letter-spacing: -0.02em; margin-bottom: 6px; }
+  .modal .sub { font-size: 13px; color: var(--text-2); margin-bottom: 20px; }
+  .modal-row { margin-bottom: 14px; }
+  .modal-row label { display: block; font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .modal-row input {
+    width: 100%; padding: 11px 14px;
+    border: 1px solid var(--border); border-radius: 10px;
+    font-family: inherit; font-size: 14px; color: var(--text);
+    background: var(--surface); outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .modal-row input:focus { border-color: var(--text); box-shadow: 0 0 0 3px rgba(10,10,10,0.06); }
+  .modal-help { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+  .modal-actions .btn-primary, .modal-actions .btn-ghost { padding: 10px 18px; font-size: 13px; }
+
+  .saved-flash {
+    display: inline-block; margin-left: 10px;
+    font-size: 12px; color: var(--success);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .saved-flash.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- Login removido para la demo pública; auth se autoresuelve en el init -->
+
+
+<!-- ============ APP SHELL ============ -->
+<div id="app">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-row">
+        <div class="brand">
+          <div class="brand-mark">⌘</div>
+          <div class="brand-name">JLI Wealth</div>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-btn" title="Perfil" onclick="openProfile()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <nav class="tabs" id="tabs">
+        <button class="tab active" data-tab="objetivos">Objetivos</button>
+        <button class="tab" data-tab="politica">Política de inversión</button>
+        <button class="tab" data-tab="cartera">Cartera objetivo</button>
+        <button class="tab" data-tab="portfolio">Cartera actual</button>
+        <button class="tab" data-tab="volatilidad">Volatilidad <span class="vol-pill" id="vol-pill" hidden></span></button>
+        <button class="tab" data-tab="capitally">Capitally <span class="ext">↗</span></button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="panes">
+    <section class="tab-pane active" data-pane="objetivos">
+      <iframe class="iframe-host" data-src="/proto/objetivos.html" title="Objetivos"></iframe>
+    </section>
+
+    <section class="tab-pane" data-pane="politica">
+      <iframe class="iframe-host" data-src="/proto/politica.html" title="Política de inversión"></iframe>
+    </section>
+
+    <section class="tab-pane" data-pane="cartera">
+      <iframe class="iframe-host" data-src="/proto/cartera/index.html" title="Selección de cartera"></iframe>
+    </section>
+
+    <section class="tab-pane" data-pane="portfolio">
+      <iframe class="iframe-host" data-src="/proto/portfolio.html" title="Portfolio"></iframe>
+    </section>
+
+    <section class="tab-pane" data-pane="capitally">
+      <div class="placeholder">
+        <h1>Tu cuenta en <em>Capitally</em>.</h1>
+        <p>Capitally se abre en una pestaña externa. Podés configurar tu URL personal en <strong>Perfil</strong>.</p>
+        <div class="actions">
+          <a id="capitally-link" class="btn-primary" href="#" target="_blank" rel="noopener">Abrir Capitally ↗</a>
+          <button class="btn-ghost" onclick="openProfile()">Editar URL</button>
+        </div>
+        <p style="margin-top:24px; font-size:12px; color:var(--text-3);">URL actual: <span id="capitally-url-display" style="font-family: ui-monospace, monospace;">—</span></p>
+      </div>
+    </section>
+
+    <section class="tab-pane" data-pane="volatilidad">
+      <iframe class="iframe-host" data-src="/proto/volatilidad.html" title="Volatilidad"></iframe>
+    </section>
+  </main>
+</div>
+
+<!-- ============ PROFILE MODAL ============ -->
+<div class="modal-backdrop" id="profile-modal" onclick="if(event.target===this) closeProfile()">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>Perfil</h3>
+    <div class="sub">Configurá los enlaces externos de tu suite.</div>
+
+    <div class="modal-row">
+      <label>URL de Capitally</label>
+      <input type="url" id="capitally-url-input" placeholder="https://app.mycapitally.com/project/..." spellcheck="false">
+      <div class="modal-help">URL de tu proyecto en Capitally. Se guarda solo en este navegador.</div>
+    </div>
+
+    <div class="modal-row">
+      <label>Usuario</label>
+      <input type="text" id="profile-user-display" disabled>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeProfile()">Cerrar</button>
+      <button class="btn-primary" onclick="saveProfile()">Guardar</button>
+      <span class="saved-flash" id="saved-flash">guardado ✓</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============ AUTH ============
+  const USERS = { jli: 'portfolio2026', admin: 'JLI@2026!' };
+  const AUTH_KEY = 'jli_auth';
+  const USER_KEY = 'jli_user';
+
+  function doLogin() {
+    const u = document.getElementById('login-user').value.trim().toLowerCase();
+    const p = document.getElementById('login-pass').value;
+    const err = document.getElementById('login-error');
+    if (USERS[u] && USERS[u] === p) {
+      sessionStorage.setItem(AUTH_KEY, '1');
+      sessionStorage.setItem(USER_KEY, u);
+      err.textContent = '';
+      enterApp();
+    } else {
+      err.textContent = 'Usuario o contraseña incorrectos.';
+      document.getElementById('login-pass').value = '';
+    }
+  }
+
+  function doLogout() {
+    sessionStorage.removeItem(AUTH_KEY);
+    sessionStorage.removeItem(USER_KEY);
+    document.body.classList.remove('authed');
+    document.getElementById('login-user').value = '';
+    document.getElementById('login-pass').value = '';
+    document.getElementById('login-user').focus();
+  }
+
+  function enterApp() {
+    document.body.classList.add('authed');
+    document.getElementById('profile-user-display').value =
+      sessionStorage.getItem(USER_KEY) || '—';
+    activateTabFromHash();
+  }
+
+  // ============ TABS ============
+  function activateTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.dataset.pane === name));
+    // Lazy-load iframes the first time the tab opens
+    const pane = document.querySelector(`.tab-pane[data-pane="${name}"]`);
+    if (pane) {
+      const f = pane.querySelector('iframe.iframe-host');
+      if (f && !f.src && f.dataset.src) f.src = f.dataset.src;
+    }
+    if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
+  }
+
+  function activateTabFromHash() {
+    const h = (location.hash || '#objetivos').slice(1);
+    const valid = ['objetivos','politica','cartera','portfolio','capitally','volatilidad'];
+    activateTab(valid.includes(h) ? h : 'objetivos');
+  }
+
+  document.getElementById('tabs').addEventListener('click', (e) => {
+    const btn = e.target.closest('.tab');
+    if (!btn) return;
+    const name = btn.dataset.tab;
+    if (name === 'capitally') {
+      const url = getCapitallyUrl();
+      if (url) window.open(url, '_blank', 'noopener');
+    }
+    activateTab(name);
+  });
+
+  window.addEventListener('hashchange', activateTabFromHash);
+
+  // ============ PROFILE / EXTERNAL LINKS ============
+  const CAPITALLY_KEY = 'jli_capitally_url';
+  const CAPITALLY_DEFAULT = 'https://app.mycapitally.com/project/u-kSTBHkKERclE8Nb/';
+
+  function getCapitallyUrl() {
+    return localStorage.getItem(CAPITALLY_KEY) || CAPITALLY_DEFAULT;
+  }
+  function refreshExternalUI() {
+    const cap = getCapitallyUrl();
+    document.getElementById('capitally-link').href = cap;
+    document.getElementById('capitally-url-display').textContent = cap;
+    document.getElementById('capitally-url-input').value = cap;
+  }
+
+  // Pill de Volatilidad — lee la última señal guardada por /proto/volatilidad.html
+  const VOL_KEY = 'jli_volatilidad_signal';
+  function refreshVolPill() {
+    const pill = document.getElementById('vol-pill');
+    if (!pill) return;
+    let snap = null;
+    try { snap = JSON.parse(localStorage.getItem(VOL_KEY) || 'null'); } catch (e) {}
+    if (!snap || !snap.signal) {
+      pill.hidden = true;
+      pill.className = 'vol-pill';
+      pill.textContent = '';
+      return;
+    }
+    pill.hidden = false;
+    pill.className = 'vol-pill ' + (snap.kind || 'neutral');
+    // Etiqueta corta legible
+    const short = snap.kind === 'buy' ? 'Comprar'
+                : snap.kind === 'sell' ? 'Vender'
+                : 'Neutral';
+    pill.textContent = short;
+    pill.title = `${snap.signal} · VIX ${snap.vix}`;
+  }
+  window.addEventListener('storage', (e) => {
+    if (e.key === VOL_KEY) refreshVolPill();
+  });
+
+  function openProfile() {
+    refreshExternalUI();
+    document.getElementById('profile-modal').classList.add('show');
+    setTimeout(() => document.getElementById('capitally-url-input').focus(), 60);
+  }
+  function closeProfile() {
+    document.getElementById('profile-modal').classList.remove('show');
+  }
+  function saveProfile() {
+    const raw = document.getElementById('capitally-url-input').value.trim();
+    if (raw) {
+      try { localStorage.setItem(CAPITALLY_KEY, new URL(raw).href); }
+      catch(e) { alert('La URL no es válida.'); return; }
+    } else {
+      localStorage.removeItem(CAPITALLY_KEY);
+    }
+    refreshExternalUI();
+    const flash = document.getElementById('saved-flash');
+    flash.classList.add('show');
+    setTimeout(() => flash.classList.remove('show'), 1200);
+  }
+
+  // ============ INIT ============
+  window.addEventListener('DOMContentLoaded', () => {
+    // Demo pública: auto-auth para que las páginas iframe (portfolio.html, etfs.html, etc.)
+    // que chequean sessionStorage 'jli_auth' lo encuentren seteado.
+    sessionStorage.setItem(AUTH_KEY, '1');
+    sessionStorage.setItem(USER_KEY, 'demo');
+    refreshExternalUI();
+    refreshVolPill();
+    enterApp();
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeProfile();
+    });
+    setInterval(refreshVolPill, 4000);
+  });
+</script>
+
+</body>
+</html>
