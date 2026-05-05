@@ -117,18 +117,18 @@
     color: var(--text-dim);
     margin-top: 3px;
   }
-  /* Card "A invertir en largo plazo →" — fondo negro, mismo lenguaje que Política/Objetivos */
+  /* Card "A invertir en largo plazo →" — color marrón consistente con el largo plazo del donut */
   .mini-stat.invertir-card {
-    background: #0a0a0a !important;
-    border-color: #0a0a0a !important;
+    background: #4a3f2a !important;
+    border-color: #4a3f2a !important;
     color: #fafaf7;
   }
-  .mini-stat.invertir-card .mini-stat-label { color: rgba(250,250,247,0.55); }
+  .mini-stat.invertir-card .mini-stat-label { color: rgba(250,250,247,0.6); }
   .mini-stat.invertir-card .mini-stat-value { color: #fafaf7; }
   .mini-stat.invertir-card .mini-stat-subvalue { color: rgba(250,250,247,0.45); }
   .mini-stat.invertir-card.clickable:hover {
-    background: #1a1a1a !important;
-    border-color: #1a1a1a !important;
+    background: #5d4f36 !important;
+    border-color: #5d4f36 !important;
     transform: translateY(-1px) translateX(2px);
   }
   .sticky-cta {
@@ -403,8 +403,241 @@
   .etf-name {
     color: var(--text-dim);
     font-size: 0.78rem;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     line-height: 1.3;
+  }
+  .etf-tags {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    margin-bottom: 10px;
+  }
+  .etf-tag {
+    display: inline-flex; align-items: center;
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.04);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1.4;
+  }
+  .etf-tag.region { background: rgba(55,138,221,0.10); color: #2c6cad; border-color: rgba(55,138,221,0.25); }
+  .etf-tag.caps { background: rgba(74,63,42,0.08); color: #4a3f2a; border-color: rgba(74,63,42,0.25); }
+
+  /* === Dropdown custom con preview de cards + cards alargadas === */
+  .region-select-wrap {
+    margin: 6px 0 14px;
+    position: relative;
+  }
+  .region-add-btn {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+    color: var(--text-dim);
+    font-family: 'Geist', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.15s;
+    text-align: left;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .region-add-btn:hover { border-color: var(--text); color: var(--text); border-style: solid; }
+  .region-add-btn[aria-expanded="true"] { border-style: solid; border-color: var(--text); color: var(--text); }
+  .region-add-btn .chevron { transition: transform 0.18s; }
+  .region-add-btn[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+
+  .region-options {
+    margin-top: 6px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+    box-shadow: 0 8px 28px rgba(10,10,10,0.08);
+    overflow: hidden;
+    max-height: 420px;
+    overflow-y: auto;
+  }
+  .region-options[hidden] { display: none; }
+  .region-option {
+    display: grid;
+    grid-template-columns: 90px 1fr auto auto auto;
+    gap: 14px;
+    align-items: center;
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+  }
+  .region-option:last-child { border-bottom: none; }
+  .region-option:hover { background: var(--panel-2); }
+  .region-option .ticker {
+    font-size: 1.05rem; font-weight: 700;
+    color: var(--text); letter-spacing: 0.04em;
+  }
+  .region-option .meta { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .region-option .name {
+    font-size: 12px; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .region-option .tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .region-option .stat {
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 1px; min-width: 50px;
+  }
+  .region-option .stat .lbl {
+    font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 600;
+  }
+  .region-option .stat .val {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 14px; line-height: 1; font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+  .region-option .badge-ips {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .region-option .badge-ips.ok {
+    background: rgba(29,158,117,0.12);
+    color: #1D9E75;
+    border: 1px solid rgba(29,158,117,0.3);
+  }
+  .region-option .badge-ips.warn {
+    background: rgba(186,117,23,0.12);
+    color: #BA7517;
+    border: 1px solid rgba(186,117,23,0.3);
+  }
+  .region-option-empty {
+    padding: 18px;
+    text-align: center;
+    color: var(--text-dim);
+    font-style: italic;
+    font-family: 'Instrument Serif', serif;
+    font-size: 14px;
+  }
+
+  .etf-rows { display: flex; flex-direction: column; gap: 6px; }
+  .etf-row {
+    display: grid;
+    grid-template-columns: 90px 1fr auto auto auto 28px;
+    gap: 14px;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+    position: relative;
+  }
+  .etf-row:hover { border-color: var(--text-dim); }
+  .etf-row.ineligible { border-color: rgba(186,117,23,0.45); }
+  /* ⚠ warning button al lado del ticker (solo visible en rows ineligible) */
+  .etf-row .row-warn {
+    display: none;
+    background: transparent;
+    border: 1px solid rgba(186,117,23,0.4);
+    color: #BA7517;
+    font-size: 13px; line-height: 1;
+    padding: 0; margin-top: 4px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .etf-row .row-warn:hover { background: rgba(186,117,23,0.12); transform: scale(1.05); }
+  .etf-row.ineligible .row-warn { display: inline-flex; }
+  /* Detalle de razones (expandible al click) */
+  .etf-row .row-reasons {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: rgba(186,117,23,0.06);
+    border: 1px solid rgba(186,117,23,0.25);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .etf-row .row-reasons[hidden] { display: none; }
+  .etf-row .row-reasons strong { color: #BA7517; display: block; margin-bottom: 4px; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .etf-row .row-reasons ul { margin: 0; padding-left: 16px; }
+  .etf-row .row-reasons li { margin: 2px 0; }
+  .etf-row-ticker {
+    font-size: 1.1rem; font-weight: 700;
+    color: var(--text); letter-spacing: 0.04em;
+  }
+  .etf-row-meta { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .etf-row-name {
+    font-size: 13px; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .etf-row-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .etf-row-stat {
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 1px; min-width: 60px;
+  }
+  .etf-row-stat .lbl {
+    font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 600;
+  }
+  .etf-row-stat .val {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 16px; line-height: 1; font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+  .etf-row-amount-wrap {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  .etf-row-amount-wrap .currency { color: var(--text-dim); font-size: 12px; }
+  .etf-row-amount-wrap input {
+    border: none; background: transparent; outline: none;
+    font-family: inherit; font-size: 14px; font-weight: 500;
+    color: var(--text); width: 100px; text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .etf-row-amount-wrap .pct {
+    font-size: 11px; color: var(--text-dim);
+    margin-left: 4px;
+    min-width: 38px; text-align: right;
+  }
+  .etf-row-remove {
+    background: transparent; border: none; cursor: pointer;
+    color: var(--text-dim); width: 24px; height: 24px;
+    border-radius: 50%; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .etf-row-remove:hover { color: #D85A30; background: rgba(216,90,48,0.08); }
+
+  .etf-rows-empty {
+    padding: 18px;
+    color: var(--text-dim);
+    font-style: italic;
+    font-family: 'Instrument Serif', serif;
+    font-size: 14px;
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+  }
+
+  @media (max-width: 760px) {
+    .etf-row { grid-template-columns: 60px 1fr auto 24px; gap: 8px; }
+    .etf-row .etf-row-stat { display: none; }
+    .etf-row-name { font-size: 12px; }
   }
   .etf-stats {
     display: grid;
@@ -1035,6 +1268,22 @@
 
     <!-- Las secciones de ETFs las rellenamos dinámicamente desde JS -->
     <div id="etf-sections"></div>
+
+    <!-- CTA: ir a vista Diversificación -->
+    <div style="display:flex;justify-content:flex-end;margin:18px 0 4px">
+      <button id="cta-asignacion" type="button" onclick="setView('diversif')" style="
+        display:inline-flex;align-items:center;gap:8px;
+        padding:12px 20px;border-radius:12px;
+        background:#4a3f2a;color:#fafaf7;
+        border:1px solid #4a3f2a;
+        font-family:'Geist',sans-serif;font-size:13px;font-weight:600;
+        letter-spacing:0.04em;cursor:pointer;
+        transition: transform 0.18s, box-shadow 0.18s, background 0.18s;
+      "
+      onmouseenter="this.style.background='#5d4f36';this.style.transform='translateY(-1px) translateX(2px)';this.style.boxShadow='0 6px 18px rgba(74,63,42,0.28)'"
+      onmouseleave="this.style.background='#4a3f2a';this.style.transform='';this.style.boxShadow=''"
+      >VER ASIGNACIÓN POR ACTIVO →</button>
+    </div>
   </section>
 
   <!-- ============ VISTA: DIVERSIFICACIÓN (editor de montos) ============ -->
@@ -1113,9 +1362,181 @@ const REGION_INFO = {
   }
 };
 
+// Helper: deriva la etiqueta "caps" desde etf.focus
+function inferCaps(focus) {
+  const f = (focus || '').toLowerCase();
+  if (/small|russell 2000/.test(f)) return 'Small Cap';
+  if (/mid|s&p 400/.test(f)) return 'Mid Cap';
+  if (/dividend/.test(f)) return 'Large Cap · Dividendos';
+  if (/tech/.test(f)) return 'Large Cap · Tech';
+  if (/total market|todo el mundo|all-world|broad|s&p 500|nasdaq|msci world|ftse|large/.test(f)) return 'Large Cap';
+  return 'Mixto';
+}
+
+const REGION_LABEL = { us: 'EE. UU.', eu: 'Europa', cn: 'China', jp: 'Japón', em: 'Emergentes', world: 'Global' };
+const DOMICILE_FLAG = { US: '🇺🇸', IRL: '🇮🇪', LU: '🇱🇺' };
+
+function fmtUSDshort(n) {
+  if (n == null) return '—';
+  if (n >= 1_000_000) return '$' + (n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1) + 'M';
+  if (n >= 1000) return '$' + (n / 1000).toFixed(0) + 'K';
+  return '$' + Math.round(n);
+}
+
+// Render row alargado para un ETF seleccionado
+function renderEtfRow(ticker, totalAssigned, amount) {
+  const etf = ETF_DB[ticker]; if (!etf) return '';
+  const ipsCheck = evaluateAgainstIPS(etf, currentIPS);
+  const ineligibleCls = ipsCheck.eligible ? '' : 'ineligible';
+  const dom = DOMICILE_FLAG[etf.domicile] || '🌐';
+  const regionLabel = REGION_LABEL[etf.region] || etf.region || '—';
+  const capsLabel = inferCaps(etf.focus);
+  const pct = totalAssigned > 0 ? (amount / totalAssigned * 100) : 0;
+  const fmtNum = n => new Intl.NumberFormat('en-US').format(n);
+  const warnBtn = ipsCheck.eligible
+    ? ''
+    : `<button class="row-warn" type="button" data-warn="${ticker}" title="No cumple Política de inversión — click para ver razones">⚠</button>`;
+  const reasonsHTML = ipsCheck.eligible
+    ? ''
+    : `<div class="row-reasons" hidden data-reasons="${ticker}">
+         <strong>No cumple Política de inversión</strong>
+         <ul>${ipsCheck.reasons.map(r => `<li>${r}</li>`).join('')}</ul>
+       </div>`;
+  return `
+    <div class="etf-row ${ineligibleCls}" data-row-ticker="${ticker}">
+      <div class="etf-row-ticker">${ticker} <span style="font-size:11px;color:var(--text-dim)">${dom}</span>${warnBtn}</div>
+      <div class="etf-row-meta">
+        <div class="etf-row-name">${etf.name}</div>
+        <div class="etf-row-tags">
+          <span class="etf-tag region">${regionLabel}</span>
+          <span class="etf-tag caps">${capsLabel}</span>
+          <span class="etf-tag">${etf.holdings >= 1000 ? (etf.holdings/1000).toFixed(1)+'K' : etf.holdings} empresas</span>
+          <span class="etf-tag" title="Gestora">${etf.provider || ''}</span>
+        </div>
+      </div>
+      <div class="etf-row-stat"><span class="lbl">TER</span><span class="val">${etf.ter.toFixed(2)}%</span></div>
+      <div class="etf-row-stat"><span class="lbl">AUM</span><span class="val">${etf.aum >= 1000 ? '$'+(etf.aum/1000).toFixed(1)+'T' : '$'+etf.aum+'B'}</span></div>
+      <div class="etf-row-amount-wrap">
+        <span class="currency">$</span>
+        <input type="text" inputmode="numeric" class="d-amount-input"
+               data-ticker="${ticker}"
+               value="${fmtNum(Math.round(amount))}">
+        <span class="pct">${pct.toFixed(1)}%</span>
+      </div>
+      <button class="etf-row-remove d-remove" data-ticker="${ticker}" title="Quitar de la cartera">✕</button>
+      ${reasonsHTML}
+    </div>
+  `;
+}
+
+// Wire de inputs y remove buttons en cualquier section que use .d-amount-input / .d-remove
+// (compartido entre fondos rows y diversif rows)
+function wireAmountInputs(container) {
+  container.querySelectorAll('.d-amount-input').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const t = inp.dataset.ticker;
+      const raw = parseInt(inp.value.replace(/[^0-9]/g, ''), 10);
+      if (isNaN(raw)) return;
+      const targetT = getTargetTotal();
+      if (!targetT || selectedTickers.length === 0) {
+        const stored = loadAmounts();
+        stored[t] = raw;
+        saveAmounts(stored);
+        renderETFSections();
+        renderDiversif();
+        updateUI();
+        return;
+      }
+      const newValue = Math.max(0, Math.min(raw, targetT));
+      const others = selectedTickers.filter(x => x !== t);
+      const remainingForOthers = targetT - newValue;
+      const cur = getEffectiveAmounts();
+      const otherSum = others.reduce((s, x) => s + (cur[x] || 0), 0);
+      const newAmounts = { [t]: newValue };
+      if (others.length > 0) {
+        if (otherSum > 0) {
+          let allocated = 0;
+          others.forEach((x, i) => {
+            const ratio = (cur[x] || 0) / otherSum;
+            const v = i === others.length - 1
+              ? Math.max(0, remainingForOthers - allocated)
+              : Math.max(0, Math.round(remainingForOthers * ratio));
+            newAmounts[x] = v;
+            allocated += v;
+          });
+        } else {
+          const each = Math.floor(remainingForOthers / others.length);
+          let allocated = 0;
+          others.forEach((x, i) => {
+            const v = i === others.length - 1 ? remainingForOthers - allocated : each;
+            newAmounts[x] = Math.max(0, v);
+            allocated += v;
+          });
+        }
+      }
+      saveAmounts(newAmounts);
+      renderETFSections();
+      renderDiversif();
+      updateUI();
+    });
+    inp.addEventListener('input', () => {
+      const r = inp.value.replace(/[^0-9]/g, '');
+      inp.value = r === '' ? '' : new Intl.NumberFormat('en-US').format(parseInt(r, 10));
+    });
+  });
+  container.querySelectorAll('.d-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = btn.dataset.ticker;
+      const idx = selectedTickers.indexOf(t);
+      if (idx >= 0) selectedTickers.splice(idx, 1);
+      saveSelection(selectedTickers);
+      const stored = loadAmounts();
+      delete stored[t];
+      saveAmounts(stored);
+      renderETFSections();
+      renderDiversif();
+      updateUI();
+    });
+  });
+}
+
+// Render una opción dentro del dropdown custom (mini-card con preview)
+function renderRegionOption(ticker) {
+  const etf = ETF_DB[ticker]; if (!etf) return '';
+  const ipsCheck = evaluateAgainstIPS(etf, currentIPS);
+  const dom = DOMICILE_FLAG[etf.domicile] || '🌐';
+  const regionLabel = REGION_LABEL[etf.region] || etf.region || '—';
+  const capsLabel = inferCaps(etf.focus);
+  const aumLabel = etf.aum >= 1000 ? '$'+(etf.aum/1000).toFixed(1)+'T' : '$'+etf.aum+'B';
+  const badgeHTML = ipsCheck.eligible
+    ? `<span class="badge-ips ok">✓ IPS</span>`
+    : `<span class="badge-ips warn" title="${ipsCheck.reasons.join(' · ')}">⚠ No cumple Política</span>`;
+  return `
+    <div class="region-option" data-add-ticker="${ticker}">
+      <div class="ticker">${ticker} <span style="font-size:11px;color:var(--text-dim)">${dom}</span></div>
+      <div class="meta">
+        <div class="name">${etf.name}</div>
+        <div class="tags">
+          <span class="etf-tag region">${regionLabel}</span>
+          <span class="etf-tag caps">${capsLabel}</span>
+          <span class="etf-tag">${etf.holdings >= 1000 ? (etf.holdings/1000).toFixed(1)+'K' : etf.holdings} empresas</span>
+          <span class="etf-tag">${etf.provider || ''}</span>
+        </div>
+      </div>
+      <div class="stat"><span class="lbl">TER</span><span class="val">${etf.ter.toFixed(2)}%</span></div>
+      <div class="stat"><span class="lbl">AUM</span><span class="val">${aumLabel}</span></div>
+      ${badgeHTML}
+    </div>
+  `;
+}
+
 function renderETFSections() {
   const container = document.getElementById('etf-sections');
+  if (!container) return;
   container.innerHTML = '';
+
+  const amounts = getEffectiveAmounts();
+  const totalAssigned = Object.values(amounts).reduce((s, v) => s + (v || 0), 0);
 
   Object.entries(REGION_INFO).forEach(([regionKey, info]) => {
     const meta = REGION_META[regionKey];
@@ -1123,93 +1544,127 @@ function renderETFSections() {
     section.className = 'region-section';
     section.style.setProperty('--region-color', meta.hex);
 
-    let cardsHTML = '';
-    info.tickers.forEach(ticker => {
-      const etf = ETF_DB[ticker];
-      if (!etf) return;
-      const isSelected = selectedTickers.includes(ticker);
-      const badgeHTML = etf.tag ? `<span class="etf-badge">${etf.tag}</span>` : '';
-      const terClass = etf.ter <= 0.10 ? 'good' : '';
+    // Disponibles: los que NO están aún seleccionados
+    const available = info.tickers.filter(t => ETF_DB[t] && !selectedTickers.includes(t));
+    const optionsHTML = available.length === 0
+      ? '<div class="region-option-empty">— todos los ETFs de esta región ya están en tu cartera —</div>'
+      : available.map(t => renderRegionOption(t)).join('');
 
-      const ipsCheck = evaluateAgainstIPS(etf, currentIPS);
-      const ineligibleCls = ipsCheck.eligible ? '' : 'ineligible';
-      const ineligibleFlag = ipsCheck.eligible ? '' : '<span class="etf-noips-flag">✗ no cumple IPS</span>';
-      const tipHTML = ipsCheck.eligible ? '' : `
-        <div class="ineligible-tip">
-          <strong>No cumple la política:</strong>
-          <ul>${ipsCheck.reasons.map(r => `<li>${r}</li>`).join('')}</ul>
-        </div>`;
-
-      const domicileMap = { US: { flag: '🇺🇸', label: 'US' }, IRL: { flag: '🇮🇪', label: 'IRL' }, LU: { flag: '🇱🇺', label: 'LU' } };
-      const dom = domicileMap[etf.domicile] || { flag: '🌐', label: etf.domicile || '—' };
-      const domHTML = `<span class="etf-domicile" title="Domicilio: ${etf.domicile || 'sin definir'}"><span class="flag">${dom.flag}</span>${dom.label}</span>`;
-
-      cardsHTML += `
-        <div class="etf-card ${isSelected ? 'selected' : ''} ${ineligibleCls}" data-ticker="${ticker}" onclick="toggleSelection('${ticker}')">
-          ${badgeHTML}
-          ${ineligibleFlag}
-          <div class="etf-header-row">
-            <div class="etf-ticker">${ticker}</div>
-            ${domHTML}
-          </div>
-          <div class="etf-name">${etf.name}</div>
-          <div class="etf-stats">
-            <div class="stat">
-              <div class="stat-label">TER</div>
-              <div class="stat-value ${terClass}">${etf.ter.toFixed(2)}%</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Empresas</div>
-              <div class="stat-value">${etf.holdings >= 1000 ? (etf.holdings/1000).toFixed(1)+'K' : etf.holdings}</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">AUM</div>
-              <div class="stat-value">$${etf.aum >= 1000 ? (etf.aum/1000).toFixed(1)+'T' : etf.aum+'B'}</div>
-            </div>
-          </div>
-          ${tipHTML}
-        </div>
-      `;
-    });
+    // Rows ya seleccionadas
+    const selectedInRegion = selectedTickers.filter(t => ETF_DB[t]?.region === regionKey);
+    const rowsHTML = selectedInRegion.length === 0
+      ? '<div class="etf-rows-empty">— ningún ETF de esta región seleccionado —</div>'
+      : selectedInRegion.map(t => renderEtfRow(t, totalAssigned, amounts[t] || 0)).join('');
 
     section.innerHTML = `
       <div class="region-header-sec">
         <div class="region-title">${info.title}</div>
         <div class="region-weight">${info.weight}</div>
       </div>
-      <div class="etf-grid">${cardsHTML}</div>
+      <div class="region-select-wrap">
+        <button class="region-add-btn" type="button" data-region-toggle="${regionKey}" aria-expanded="false">
+          <span>+ Agregar ETF de ${(meta.name || regionKey).toLowerCase()}…</span>
+          <span class="chevron">▾</span>
+        </button>
+        <div class="region-options" data-region-options="${regionKey}" hidden>${optionsHTML}</div>
+      </div>
+      <div class="etf-rows" data-region-rows="${regionKey}">${rowsHTML}</div>
     `;
     container.appendChild(section);
   });
+
+  // Wire toggles del dropdown
+  container.querySelectorAll('.region-add-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const region = btn.dataset.regionToggle;
+      const popover = container.querySelector(`.region-options[data-region-options="${region}"]`);
+      const wasOpen = btn.getAttribute('aria-expanded') === 'true';
+      // Cerrar otros popovers abiertos
+      container.querySelectorAll('.region-add-btn[aria-expanded="true"]').forEach(b => {
+        b.setAttribute('aria-expanded', 'false');
+        const r = b.dataset.regionToggle;
+        const p = container.querySelector(`.region-options[data-region-options="${r}"]`);
+        if (p) p.hidden = true;
+      });
+      if (!wasOpen) {
+        btn.setAttribute('aria-expanded', 'true');
+        if (popover) popover.hidden = false;
+      }
+    });
+  });
+
+  // Wire click en opción → agregar ETF
+  container.querySelectorAll('.region-option').forEach(opt => {
+    if (!opt.dataset.addTicker) return;
+    opt.addEventListener('click', () => {
+      const ticker = opt.dataset.addTicker;
+      if (!selectedTickers.includes(ticker)) {
+        selectedTickers.push(ticker);
+        saveSelection(selectedTickers);
+        renderETFSections();
+        renderDiversif();
+        updateUI();
+      }
+    });
+  });
+
+  // Wire warning click → toggle reasons
+  container.querySelectorAll('.row-warn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const ticker = btn.dataset.warn;
+      const reasons = container.querySelector(`.row-reasons[data-reasons="${ticker}"]`);
+      if (reasons) reasons.hidden = !reasons.hidden;
+    });
+  });
+
+  // Wire amount inputs y remove buttons en las rows
+  wireAmountInputs(container);
 }
+
+// Cerrar dropdowns al click outside
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.region-select-wrap')) return;
+  document.querySelectorAll('.region-add-btn[aria-expanded="true"]').forEach(b => {
+    b.setAttribute('aria-expanded', 'false');
+    const r = b.dataset.regionToggle;
+    const p = document.querySelector(`.region-options[data-region-options="${r}"]`);
+    if (p) p.hidden = true;
+  });
+});
 
 // ============================================================
 // PORTFOLIOS SUGERIDOS
 // ============================================================
+// Carteras modelo — todas en UCITS Acc compliant con la IPS estándar
+// (domicilio Irlanda, acumulación, TER ≤ 0.30%, AUM > 1B, antigüedad > 5 años).
+// La regla de concentración del 30% por gestora se respeta sólo en la #4
+// (las primeras dispararán la alerta a propósito como feedback educativo).
 const SUGGESTED = [
   {
     id: 'passive',
     title: '🌍 PASIVO GLOBAL',
-    desc: '1 sólo ETF — Replica todo el mundo. Ideal si no quieres pensar.',
-    tickers: ['VT']
+    desc: '1 ETF UCITS Acc — Replica todo el mundo (Vanguard FTSE All-World).',
+    tickers: ['VWCE']
   },
   {
-    id: 'classic',
-    title: '⚖️ CLÁSICO BOGLEHEADS',
-    desc: '3 ETFs — La asignación de libro: USA, Desarrollado ex-USA, Emergentes.',
-    tickers: ['VOO', 'VXUS', 'VWO']
+    id: 'developed-em',
+    title: '⚖️ DESARROLLADO + EM',
+    desc: '2 ETFs UCITS — Mundo desarrollado (MSCI World) + emergentes (MSCI EM IMI).',
+    tickers: ['SWRD', 'EIMI']
   },
   {
     id: 'mirror',
-    title: '🎯 ESPEJO DEL MERCADO',
-    desc: '5 ETFs — Cada región con peso similar al del mapa mundial actual.',
-    tickers: ['VOO', 'VGK', 'MCHI', 'EWJ', 'EMXC']
+    title: '🎯 ESPEJO 3 REGIONES',
+    desc: '3 ETFs UCITS — S&P 500 + Europa + Emergentes (cobertura ~95% del mapa actual).',
+    tickers: ['CSPX', 'IMEU', 'EIMI']
   },
   {
-    id: 'contrarian',
-    title: '🚀 CONTRARIAN 2050',
-    desc: '4 ETFs — Sobrepondera India y emergentes según proyección 2050.',
-    tickers: ['VOO', 'INDA', 'EMXC', 'VGK']
+    id: 'multi-gestora',
+    title: '🚀 MULTI-GESTORA UCITS',
+    desc: '4 ETFs · 4 gestoras (Vanguard, SPDR, DWS, BlackRock). Cumple regla 30% por gestora.',
+    tickers: ['VUAA', 'SWRD', 'XDWD', 'EIMI']
   }
 ];
 
@@ -1248,7 +1703,7 @@ function toggleSelection(ticker) {
   if (!etf) return;
   const card = document.querySelector(`.etf-card[data-ticker="${ticker}"]`);
 
-  // Si la card no cumple IPS: alternar la explicación (no seleccionar)
+  // Si la card no cumple Política de inversión: alternar la explicación (no seleccionar)
   if (card && card.classList.contains('ineligible')) {
     const willOpen = !card.classList.contains('expanded');
     document.querySelectorAll('.etf-card.expanded').forEach(c => c.classList.remove('expanded'));
@@ -1348,19 +1803,93 @@ function getTargetTotal() {
   const snap = loadObjetivosSnapshot();
   return snap?.largoPlazoUSD || 0;
 }
-// Devuelve el monto vigente por ticker (o split equitativo si no hay override)
+// Reparte target según el breakdown regional mundial guardado.
+// Por cada región: target * pct% repartido entre ETFs de esa región.
+// World ETFs absorben el remanente (regiones sin ETFs específicos).
+function computeWorldAlignedAmounts(world, target) {
+  const byRegion = { us: [], eu: [], cn: [], jp: [], em: [], other: [], world: [] };
+  selectedTickers.forEach(t => {
+    const etf = ETF_DB[t];
+    if (etf && byRegion[etf.region]) byRegion[etf.region].push(t);
+  });
+  const out = {};
+  let allocated = 0;
+  Object.keys(world.regions).forEach(region => {
+    const pct = (world.regions[region] || 0) / 100;
+    const regionTotal = target * pct;
+    const tickers = byRegion[region] || [];
+    if (tickers.length === 0) return;
+    const each = Math.round(regionTotal / tickers.length);
+    tickers.forEach(t => { out[t] = each; allocated += each; });
+  });
+  if (byRegion.world.length > 0) {
+    const remaining = Math.max(0, target - allocated);
+    const each = remaining > 0 ? Math.round(remaining / byRegion.world.length) : 0;
+    byRegion.world.forEach(t => { out[t] = each; });
+  }
+  selectedTickers.forEach(t => { if (!(t in out)) out[t] = 0; });
+  return out;
+}
+
+// Devuelve el monto vigente por ticker.
+// Default cuando no hay overrides: asignación según objetivo mundial (si hay breakdown
+// guardado), o split equitativo como fallback.
 function getEffectiveAmounts() {
   const stored = loadAmounts();
   const target = getTargetTotal();
+  const out = {};
+
+  // Si el usuario ya editó montos manualmente, usar overrides + even-split para los
+  // tickers nuevos que no estaban en stored.
+  if (Object.keys(stored).length > 0) {
+    const evenSplit = selectedTickers.length > 0
+      ? Math.round(target / selectedTickers.length)
+      : 0;
+    selectedTickers.forEach(t => {
+      out[t] = stored[t] != null ? stored[t] : evenSplit;
+    });
+    return out;
+  }
+
+  // Sin overrides: default = breakdown mundial si está disponible
+  const world = loadWorldBreakdown();
+  if (world && world.regions && target > 0 && selectedTickers.length > 0) {
+    return computeWorldAlignedAmounts(world, target);
+  }
+
+  // Fallback final: split equitativo
   const evenSplit = selectedTickers.length > 0
     ? Math.round(target / selectedTickers.length)
     : 0;
-  const out = {};
-  selectedTickers.forEach(t => {
-    out[t] = stored[t] != null ? stored[t] : evenSplit;
-  });
+  selectedTickers.forEach(t => { out[t] = evenSplit; });
   return out;
 }
+function loadWorldBreakdown() {
+  try {
+    const raw = localStorage.getItem('jli_world_breakdown');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+// Calcula breakdown regional ponderado por monto $ (no por equal weight)
+function computeRegionalMixByAmount(tickersAmounts) {
+  const mix = { us:0, eu:0, cn:0, jp:0, em:0, other:0 };
+  const totalUSD = Object.values(tickersAmounts).reduce((s, v) => s + (v || 0), 0);
+  if (totalUSD <= 0) return mix;
+  Object.entries(tickersAmounts).forEach(([t, a]) => {
+    const etf = ETF_DB[t];
+    if (!etf || !a) return;
+    const w = a / totalUSD * 100;
+    if (etf.region === 'world') {
+      const br = (typeof GLOBAL_BREAKDOWN !== 'undefined' && GLOBAL_BREAKDOWN[t]) || REGION_WEIGHTS;
+      Object.keys(mix).forEach(r => { mix[r] += (br[r] || 0) * w / 100; });
+    } else {
+      mix[etf.region] = (mix[etf.region] || 0) + w;
+    }
+  });
+  return mix;
+}
+
 function renderDiversif() {
   const host = document.getElementById('diversif-host');
   if (selectedTickers.length === 0) {
@@ -1375,7 +1904,8 @@ function renderDiversif() {
   const target = getTargetTotal();
   const diff = target - totalAssigned;
   const pctOk = target > 0 ? Math.abs(diff) / target < 0.005 : true; // tolerance 0.5%
-  const mix = computeRegionalMix(selectedTickers); // even-weighted; informativo
+  const world = loadWorldBreakdown();
+  const actualMix = computeRegionalMixByAmount(amounts);
 
   // Stack bar de % por ticker
   const stackHTML = '<div class="stack-bar">' + selectedTickers.map(t => {
@@ -1390,6 +1920,76 @@ function renderDiversif() {
   const fmtNum = n => new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n);
 
   const targetCellClass = !target ? '' : (pctOk ? 'ok' : 'warn');
+
+  // === Comparativa regional: capitalización mundial vs asignado actual ===
+  let regionCompareHTML = '';
+  if (world && world.regions) {
+    const REGS = [
+      { id: 'us',    name: 'EE.UU.',          hex: '#1e88e5' },
+      { id: 'eu',    name: 'Europa',          hex: '#fbc02d' },
+      { id: 'cn',    name: 'China',           hex: '#43a047' },
+      { id: 'jp',    name: 'Japón',           hex: '#e53935' },
+      { id: 'em',    name: 'Emergentes',      hex: '#ab47bc' },
+      { id: 'other', name: 'Resto del Mundo', hex: '#78909c' },
+    ];
+    const stackTarget = '<div class="stack-bar" style="margin:6px 0">' + REGS.map(r => {
+      const pct = world.regions[r.id] || 0;
+      return pct > 0 ? `<span style="width:${pct}%;background:${r.hex}" title="${r.name} ${pct.toFixed(1)}%"></span>` : '';
+    }).join('') + '</div>';
+    const stackActual = '<div class="stack-bar" style="margin:6px 0">' + REGS.map(r => {
+      const pct = actualMix[r.id] || 0;
+      return pct > 0 ? `<span style="width:${pct}%;background:${r.hex}" title="${r.name} ${pct.toFixed(1)}%"></span>` : '';
+    }).join('') + '</div>';
+    const legendHTML = '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;font-size:11px">' +
+      REGS.map(r => `<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:${r.hex}"></span>${r.name}</span>`).join('') +
+    '</div>';
+    const rowsCompare = REGS.map(r => {
+      const tgt = world.regions[r.id] || 0;
+      const act = actualMix[r.id] || 0;
+      const delta = act - tgt;
+      const sign = delta > 0 ? '+' : '';
+      const cls = Math.abs(delta) < 0.5 ? '' : (delta > 0 ? 'warn' : 'warn');
+      return `
+        <div style="display:grid;grid-template-columns:16px 1fr 70px 70px 70px;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--border);font-size:12px">
+          <span style="width:10px;height:10px;border-radius:2px;background:${r.hex};display:inline-block"></span>
+          <span>${r.name}</span>
+          <span style="text-align:right;font-variant-numeric:tabular-nums;color:var(--text-dim)">${tgt.toFixed(1)}%</span>
+          <span style="text-align:right;font-variant-numeric:tabular-nums">${act.toFixed(1)}%</span>
+          <span style="text-align:right;font-variant-numeric:tabular-nums;color:${Math.abs(delta) < 0.5 ? 'var(--text-dim)' : (delta > 0 ? '#1D9E75' : '#D85A30')}">${sign}${delta.toFixed(1)}%</span>
+        </div>`;
+    }).join('');
+    regionCompareHTML = `
+      <div style="margin:18px 0;padding:16px 18px;background:var(--panel-2);border:1px solid var(--border);border-radius:12px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+          <div style="font-family:'Instrument Serif',Georgia,serif;font-size:18px;letter-spacing:-0.01em">Comparativa regional · ${world.year}${world.projected ? ' (proyección)' : ''}</div>
+          <div style="font-size:11px;color:var(--text-dim);letter-spacing:0.05em;text-transform:uppercase">Capitalización mundial vs asignado</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+          <div>
+            <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);font-weight:600">Capitalización mundial (${world.year})</div>
+            ${stackTarget}
+          </div>
+          <div>
+            <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);font-weight:600">Asignado actual</div>
+            ${stackActual}
+          </div>
+        </div>
+        ${legendHTML}
+        <div style="display:grid;grid-template-columns:16px 1fr 70px 70px 70px;gap:10px;align-items:center;padding:8px 0 4px;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);font-weight:600;margin-top:10px">
+          <span></span><span>Región</span>
+          <span style="text-align:right">Mundial</span>
+          <span style="text-align:right">Cartera</span>
+          <span style="text-align:right">Δ</span>
+        </div>
+        ${rowsCompare}
+      </div>`;
+  } else {
+    regionCompareHTML = `
+      <div style="margin:18px 0;padding:14px 18px;background:var(--panel-2);border:1px dashed var(--border);border-radius:12px;font-size:13px;color:var(--text-dim)">
+        Para comparar contra la capitalización mundial, elegí un año en
+        <a href="index.html" style="color:var(--accent)">Capitalización mundial</a>.
+      </div>`;
+  }
 
   const rows = selectedTickers.map(t => {
     const etf = ETF_DB[t]; if (!etf) return '';
@@ -1436,22 +2036,66 @@ function renderDiversif() {
       </div>
     </div>
     ${stackHTML}
+    ${regionCompareHTML}
     <div class="diversif-list">${rows}</div>
     <div class="diversif-actions">
       <button class="d-btn" onclick="diversifEvenSplit()">⇋ Repartir parejo</button>
-      ${target ? `<button class="d-btn" onclick="diversifProRataToTarget()">⇡ Ajustar al objetivo (${fmtUSD(target)})</button>` : ''}
+      ${world ? `<button class="d-btn" onclick="diversifAlignToWorld()">🌍 Asignar según objetivo (${world.year})</button>` : ''}
       <button class="d-btn" onclick="diversifReset()">↻ Reset</button>
     </div>`;
 
-  // Wire inputs
+  // Wire inputs — auto-rebalance: el resto absorbe el delta proporcionalmente
+  // a sus pesos actuales, así el total siempre = capital largo plazo.
   host.querySelectorAll('.d-amount-input').forEach(inp => {
     inp.addEventListener('change', () => {
       const t = inp.dataset.ticker;
       const raw = parseInt(inp.value.replace(/[^0-9]/g, ''), 10);
       if (isNaN(raw)) return;
-      const stored = loadAmounts();
-      stored[t] = raw;
-      saveAmounts(stored);
+      const targetT = getTargetTotal();
+
+      if (!targetT || selectedTickers.length === 0) {
+        // Sin objetivo: comportamiento simple (override manual)
+        const stored = loadAmounts();
+        stored[t] = raw;
+        saveAmounts(stored);
+        renderDiversif();
+        return;
+      }
+
+      // Cap al target — no se puede asignar más que el largo plazo total
+      const newValue = Math.max(0, Math.min(raw, targetT));
+      const others = selectedTickers.filter(x => x !== t);
+      const remainingForOthers = targetT - newValue;
+
+      // Pesos previos del resto (basados en montos vigentes antes del cambio)
+      const cur = getEffectiveAmounts();
+      const otherSum = others.reduce((s, x) => s + (cur[x] || 0), 0);
+
+      const newAmounts = { [t]: newValue };
+      if (others.length > 0) {
+        if (otherSum > 0) {
+          // Distribuir proporcionalmente al peso actual de cada otro ticker
+          let allocated = 0;
+          others.forEach((x, i) => {
+            const ratio = (cur[x] || 0) / otherSum;
+            const v = i === others.length - 1
+              ? Math.max(0, remainingForOthers - allocated)   // último absorbe redondeo
+              : Math.max(0, Math.round(remainingForOthers * ratio));
+            newAmounts[x] = v;
+            allocated += v;
+          });
+        } else {
+          // Sin pesos previos: split equitativo
+          const each = Math.floor(remainingForOthers / others.length);
+          let allocated = 0;
+          others.forEach((x, i) => {
+            const v = i === others.length - 1 ? remainingForOthers - allocated : each;
+            newAmounts[x] = Math.max(0, v);
+            allocated += v;
+          });
+        }
+      }
+      saveAmounts(newAmounts);
       renderDiversif();
     });
     inp.addEventListener('input', () => {
@@ -1500,6 +2144,57 @@ function diversifProRataToTarget() {
 function diversifReset() {
   saveAmounts({});
   renderDiversif();
+}
+
+// Distribuye amounts según el breakdown regional de la capitalización mundial
+// elegida en cartera/index.html. Para cada región, asigna target * pct% repartido
+// equitativamente entre los ETFs de esa región. Los ETFs "world" reciben lo
+// que sobre (proporcional, si los hay).
+function diversifAlignToWorld() {
+  const world = loadWorldBreakdown();
+  if (!world || !world.regions) {
+    showToast('Elegí primero un año en Capitalización mundial');
+    return;
+  }
+  const target = getTargetTotal();
+  if (!target) {
+    showToast('No hay objetivo de largo plazo definido');
+    return;
+  }
+  const byRegion = { us: [], eu: [], cn: [], jp: [], em: [], other: [], world: [] };
+  selectedTickers.forEach(t => {
+    const etf = ETF_DB[t];
+    if (etf && byRegion[etf.region]) byRegion[etf.region].push(t);
+  });
+
+  const newAmounts = {};
+  let totalAllocated = 0;
+  Object.keys(world.regions).forEach(region => {
+    const pct = world.regions[region] / 100;
+    const regionTotal = target * pct;
+    const tickers = byRegion[region] || [];
+    if (tickers.length === 0) return;
+    const each = Math.round(regionTotal / tickers.length);
+    tickers.forEach(t => {
+      newAmounts[t] = each;
+      totalAllocated += each;
+    });
+  });
+
+  // ETFs "world" absorben el remanente (regiones sin ETFs específicos)
+  if (byRegion.world.length > 0) {
+    const remaining = Math.max(0, target - totalAllocated);
+    if (remaining > 0) {
+      const each = Math.round(remaining / byRegion.world.length);
+      byRegion.world.forEach(t => { newAmounts[t] = each; });
+    } else {
+      byRegion.world.forEach(t => { newAmounts[t] = 0; });
+    }
+  }
+
+  saveAmounts(newAmounts);
+  renderDiversif();
+  showToast(`✓ Asignación según capitalización mundial ${world.year}`);
 }
 
 // ============================================================

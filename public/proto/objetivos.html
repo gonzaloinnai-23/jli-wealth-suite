@@ -669,31 +669,35 @@ function WealthPlanningWorkflow() {
                 {confirmedIntergen !== null ? formatShort(intergenAmount) : "—"}
               </span>
             </div>
-            {/* Card: Corto plazo (Money Market) — autocompleta con assetTotals.mm */}
+            {/* Card: Corto plazo (Money Market) — color del donut #1f3a2e */}
             <div style={{
               display: "flex", flexDirection: "column", justifyContent: "space-between",
               padding: "10px 16px", borderRadius: 12,
-              background: "#ffffff", border: "1px solid #ebebe4",
+              background: assetTotals.mm > 0 ? "#1f3a2e" : "#ffffff",
+              border: "1px solid " + (assetTotals.mm > 0 ? "#1f3a2e" : "#ebebe4"),
+              color: assetTotals.mm > 0 ? "#fafaf7" : "#1a1917",
               minWidth: 130, minHeight: 70,
               opacity: assetTotals.mm > 0 ? 1 : 0.5,
               transition: "all 0.35s cubic-bezier(0.22,1,0.36,1)"
             }}>
-              <span style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#9b9a96", fontWeight: 600, marginBottom: 4 }}>Corto plazo</span>
-              <span className="serif" style={{ fontSize: 22, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: "#1a1917" }}>
+              <span style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: assetTotals.mm > 0 ? "rgba(250,250,247,0.6)" : "#9b9a96", fontWeight: 600, marginBottom: 4 }}>Corto plazo</span>
+              <span className="serif" style={{ fontSize: 22, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
                 {assetTotals.mm > 0 ? formatShort(assetTotals.mm) : "—"}
               </span>
             </div>
-            {/* Card: Mediano plazo (Renta Fija) — autocompleta con assetTotals.fi */}
+            {/* Card: Mediano plazo (Renta Fija) — color del donut #6b6b64 */}
             <div style={{
               display: "flex", flexDirection: "column", justifyContent: "space-between",
               padding: "10px 16px", borderRadius: 12,
-              background: "#ffffff", border: "1px solid #ebebe4",
+              background: assetTotals.fi > 0 ? "#6b6b64" : "#ffffff",
+              border: "1px solid " + (assetTotals.fi > 0 ? "#6b6b64" : "#ebebe4"),
+              color: assetTotals.fi > 0 ? "#fafaf7" : "#1a1917",
               minWidth: 130, minHeight: 70,
               opacity: assetTotals.fi > 0 ? 1 : 0.5,
               transition: "all 0.35s cubic-bezier(0.22,1,0.36,1)"
             }}>
-              <span style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#9b9a96", fontWeight: 600, marginBottom: 4 }}>Mediano plazo</span>
-              <span className="serif" style={{ fontSize: 22, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: "#1a1917" }}>
+              <span style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: assetTotals.fi > 0 ? "rgba(250,250,247,0.6)" : "#9b9a96", fontWeight: 600, marginBottom: 4 }}>Mediano plazo</span>
+              <span className="serif" style={{ fontSize: 22, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
                 {assetTotals.fi > 0 ? formatShort(assetTotals.fi) : "—"}
               </span>
             </div>
