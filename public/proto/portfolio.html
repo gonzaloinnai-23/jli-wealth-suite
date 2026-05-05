@@ -205,47 +205,9 @@
   </div>
 </section>
 </main><script>
-const defaultData=[
-{name:"MercadoLibre",symbol:"MELI",type:"STOCK",account:"Galicia Securities",value:2057095,principal:467916,returns:-7853.36,qty:1103},
-{name:"USD Cash",symbol:"USD",type:"CASH",account:"Galicia Securities",value:50000,principal:50000,returns:0,qty:50000},
-{name:"BlackRock USD Ultra Short Bond",symbol:"BKUU",type:"ETF",account:"JP.Morgan",value:5300968,principal:5232309,returns:0,qty:40759},
-{name:"iShares Core S&P 500 (CSSPX)",symbol:"CSSPX",type:"ETF",account:"JP.Morgan",value:421423,principal:399101,returns:0,qty:561},
-{name:"iShares Semiconductor (SOXX)",symbol:"SOXX",type:"ETF",account:"JP.Morgan",value:264891,principal:101277,returns:-336.6,qty:660},
-{name:"Janus Balanced Fund I2",symbol:"JANUS-BAL",type:"FUND",account:"JP.Morgan",value:7513166,principal:4457580,returns:0,qty:114880},
-{name:"JPM Nasdaq Premium Income (JEQA)",symbol:"JEQA",type:"ETF",account:"JP.Morgan",value:325185,principal:301525,returns:0,qty:10582},
-{name:"JPM US Select 130-30",symbol:"JPM130",type:"FUND",account:"JP.Morgan",value:546016,principal:450000,returns:0,qty:8046},
-{name:"JPM US Select C",symbol:"JPMSELC",type:"FUND",account:"JP.Morgan",value:3346906,principal:2827246,returns:0,qty:3501},
-{name:"JPM America Equity Fund C",symbol:"JPMAM",type:"FUND",account:"JP.Morgan",value:539228,principal:450000,returns:0,qty:5872},
-{name:"MFS European Value W1",symbol:"MFSE",type:"FUND",account:"JP.Morgan",value:144870,principal:66430,returns:-222.22,qty:3585},
-{name:"MS Global Brands I",symbol:"MSGB",type:"FUND",account:"JP.Morgan",value:298790,principal:252081,returns:0,qty:1225},
-{name:"Tesla Inc",symbol:"TSLA",type:"STOCK",account:"JP.Morgan",value:165795,principal:99115,returns:0,qty:423},
-{name:"USD Cash",symbol:"USD",type:"CASH",account:"JP.Morgan",value:6436,principal:6436,returns:0,qty:6436},
-{name:"AB Intl Health Care I$",symbol:"ABHLTH",type:"FUND",account:"Pershing",value:339084,principal:200001,returns:0,qty:475},
-{name:"Financial Select SPDR (XLF)",symbol:"XLF",type:"ETF",account:"Pershing",value:131368,principal:100120,returns:-100.8,qty:2520},
-{name:"Health Care Select SPDR (XLV)",symbol:"XLV",type:"ETF",account:"Pershing",value:360861,principal:299856,returns:-1176,qty:2450},
-{name:"Invesco EQQQ NASDAQ-100",symbol:"EQQQ",type:"ETF",account:"Pershing",value:1119184,principal:498590,returns:0,qty:1760},
-{name:"iShares Core S&P 500 (CSSPX)",symbol:"CSSPX",type:"ETF",account:"Pershing",value:1224456,principal:1203720,returns:0,qty:1630},
-{name:"Janus Global Tech I$",symbol:"JANGTECH",type:"FUND",account:"Pershing",value:1628963,principal:627087,returns:0,qty:30470},
-{name:"JPM US Select C",symbol:"JPMSELC",type:"FUND",account:"Pershing",value:2095627,principal:1877395,returns:0,qty:2192},
-{name:"Neuberger Berman US Multi Cap",symbol:"NBMC",type:"FUND",account:"Pershing",value:2524079,principal:1199957,returns:0,qty:46855},
-{name:"Pictet Robotics I USD",symbol:"PICTET-R",type:"FUND",account:"Pershing",value:147734,principal:90599,returns:0,qty:297},
-{name:"S&P 500 SPY5",symbol:"SPY5",type:"ETF",account:"Pershing",value:2888367,principal:1400039,returns:4614.4,qty:4120},
-{name:"USD Cash",symbol:"USD",type:"CASH",account:"Pershing",value:1553,principal:1553,returns:0,qty:1553},
-{name:"Allianz Europe Equity Growth",symbol:"ALGEU",type:"FUND",account:"Rothschild",value:84842,principal:48859,returns:0,qty:3130},
-{name:"Fidelity S&P 500 Index Fund",symbol:"FSPI",type:"FUND",account:"Rothschild",value:2336301,principal:1998792,returns:0,qty:165600},
-{name:"Hilton Worldwide (HLT)",symbol:"HLT",type:"STOCK",account:"Rothschild",value:132800,principal:49564,returns:1235.96,qty:400},
-{name:"Invesco EQQQ NASDAQ-100",symbol:"EQQQ",type:"ETF",account:"Rothschild",value:737644,principal:199520,returns:0,qty:1160},
-{name:"iShares Dow Jones (CSINDU)",symbol:"CSINDU",type:"ETF",account:"Rothschild",value:587400,principal:252480,returns:0,qty:1000},
-{name:"Norwegian Cruise Line (NCLH)",symbol:"NCLH",type:"STOCK",account:"Rothschild",value:40471,principal:50008,returns:343.14,qty:1900},
-{name:"S&P 500 SPY5",symbol:"SPY5",type:"ETF",account:"Rothschild",value:567859,principal:197267,returns:907.2,qty:810},
-{name:"Southwest Airlines (LUV)",symbol:"LUV",type:"STOCK",account:"Rothschild",value:39406,principal:49799,returns:-209,qty:950},
-{name:"SPDR S&P 500 UCITS (SPYL)",symbol:"SPYL",type:"ETF",account:"Rothschild",value:1242000,principal:1238313,returns:0,qty:72000},
-{name:"USD Cash",symbol:"USD",type:"CASH",account:"Rothschild",value:15149,principal:15149,returns:0,qty:15149},
-{name:"S&P 500 SPY5",symbol:"SPY5",type:"ETF",account:"Santander",value:6592768,principal:5497300,returns:10532.48,qty:9404},
-{name:"SPDR S&P 500 UCITS (SPYL)",symbol:"SPYL",type:"ETF",account:"Santander",value:101775,principal:99308,returns:0,qty:5900},
-{name:"USD Cash",symbol:"USD",type:"CASH",account:"Santander",value:143600,principal:143600,returns:0,qty:143600}
-];
-let DATA=defaultData.filter(d=>d.value>0);
+// Cartera actual arranca en cero — el usuario carga su CSV
+const defaultData = [];
+let DATA = defaultData.filter(d => d.value > 0);
 let chartInstances={};
 function fmt(n){return'$'+Math.abs(Math.round(n)).toLocaleString('en-US');}
 function pct(n,t){return((n/t)*100).toFixed(1)+'%';}
@@ -306,7 +268,14 @@ function handleFileSelect(e){const f=e.target.files[0];if(f)processFile(f);}
 function processFile(file){const r=new FileReader();r.onload=e=>{const text=e.target.result;const fl=text.split('\n')[0];const sep=fl.includes('\t')?'\t':',';const rows=text.trim().split('\n').map(r=>r.split(sep).map(c=>c.trim().replace(/^"|"$/g,'')));if(rows.length<2)return;csvHeaders=rows[0];parsedCSV=rows.slice(1).map(r=>{const o={};csvHeaders.forEach((h,i)=>o[h]=r[i]||'');return o;});showCSVPreview(file,rows);};r.readAsText(file);}
 function showCSVPreview(file,rows){document.getElementById('csv-file-name').textContent=file.name;document.getElementById('csv-file-meta').textContent=`${(file.size/1024).toFixed(1)} KB · ${rows.length-1} filas · ${rows[0].length} columnas`;const fields=[{key:'name',label:'Nombre activo',guesses:['asset.name','name','nombre','activo']},{key:'type',label:'Tipo',guesses:['asset.type','type','tipo']},{key:'account',label:'Custodio',guesses:['account.name','custodio','broker','account']},{key:'value',label:'Valor USD',guesses:['value','valor','mktvalue']},{key:'principal',label:'Principal',guesses:['principal','cost','costo']},{key:'returns',label:'Retorno período',guesses:['returns.period','returns','retorno','pnl']},{key:'qty',label:'Cantidad',guesses:['qty','quantity','cantidad']}];const headers=rows[0];document.getElementById('field-map').innerHTML=fields.map(f=>{const m=headers.find(h=>f.guesses.some(g=>h.toLowerCase().includes(g)))||'';return`<div class="field-row"><label>${f.label}</label><select id="map-${f.key}">${headers.map(h=>`<option ${h===m?'selected':''} value="${h}">${h}</option>`).join('')}<option value="">— no mapear —</option></select></div>`;}).join('');const preview=rows.slice(0,9);document.getElementById('csv-preview-table').innerHTML=`<thead><tr>${preview[0].map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${preview.slice(1).map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;document.getElementById('csv-preview-area').style.display='block';}
 function applyCSV(){if(!parsedCSV)return;const gm=key=>document.getElementById('map-'+key)?.value||'';const mapped=parsedCSV.map(row=>({name:row[gm('name')]||'Sin nombre',type:(row[gm('type')]||'OTHER').toUpperCase(),account:row[gm('account')]||'Desconocido',value:parseFloat(row[gm('value')])||0,principal:parseFloat(row[gm('principal')])||0,returns:parseFloat(row[gm('returns')])||0,qty:parseFloat(row[gm('qty')])||0,symbol:row['asset.symbol']||row['symbol']||''})).filter(d=>!isNaN(d.value));DATA=mapped;document.getElementById('upload-success').style.display='flex';document.getElementById('upload-success-msg').textContent=`${mapped.length} posiciones cargadas correctamente.`;document.getElementById('data-source-label').textContent='Datos: archivo cargado';renderAll();renderTER();setTimeout(()=>showView('overview',document.querySelector('.nav button')),1200);}
-renderAll();
+// Init: si no hay datos arrancamos en la vista "Cargar CSV"
+if (DATA.length === 0) {
+  document.getElementById('data-source-label').textContent = 'Sin datos · cargá un CSV';
+  document.getElementById('header-subtitle').textContent = 'Sin datos cargados';
+  showView('upload', document.querySelector('.nav button:last-child'));
+} else {
+  renderAll();
+}
 </script>
 <script>
 const TER_DB={'MELI':0,'HLT':0,'NCLH':0,'LUV':0,'TSLA':0,'BKUU':0.10,'CSSPX':0.07,'SOXX':0.34,'JANUS-BAL':0.88,'JEQA':0.35,'JPM130':0.80,'JPMSELC':0.70,'JPMAM':0.85,'MFSE':1.25,'MSGB':0.94,'ABHLTH':1.14,'XLF':0.08,'XLV':0.08,'EQQQ':0.30,'JANGTECH':1.61,'NBMC':1.06,'PICTET-R':1.09,'SPY5':0.03,'FSPI':0.06,'CSINDU':0.33,'SPYL':0.03,'ALGEU':1.85};
