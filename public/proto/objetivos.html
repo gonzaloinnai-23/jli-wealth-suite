@@ -751,6 +751,42 @@ function WealthPlanningWorkflow() {
         </div>
       </div>
 
+      {/* Mensaje estratégico + CTA al siguiente paso (Política) */}
+      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "12px 32px 0" }}>
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          gap: 16, flexWrap: "wrap",
+          padding: "14px 18px",
+          background: "#ffffff", border: "1px solid #ebebe4",
+          borderRadius: 14,
+          marginBottom: 4,
+        }}>
+          <div className="serif" style={{ fontSize: 22, lineHeight: 1.15, letterSpacing: "-0.01em", color: "#1a1917", flex: 1, minWidth: 220 }}>
+            La mejor estrategia es <em style={{ fontStyle: "italic", color: "#6b6b64", fontWeight: 400 }}>invertir en algo y mantenerlo</em>; para eso definí tus objetivos así sabrás cuánto puedes poner al largo plazo.
+          </div>
+          <button
+            type="button"
+            onClick={() => { try { window.parent.location.hash = '#politica'; } catch (e) {} }}
+            disabled={currentStep < 6}
+            style={{
+              padding: "10px 16px",
+              background: currentStep < 6 ? "#ebebe4" : "#0a0a0a",
+              color: currentStep < 6 ? "#9b9a96" : "#fafaf7",
+              border: "1px solid " + (currentStep < 6 ? "#ebebe4" : "#0a0a0a"),
+              borderRadius: 12,
+              fontFamily: "'Geist', sans-serif",
+              fontSize: 13, fontWeight: 600, letterSpacing: "0.04em",
+              cursor: currentStep < 6 ? "not-allowed" : "pointer",
+              whiteSpace: "nowrap",
+              transition: "transform 0.18s, box-shadow 0.18s, background 0.18s",
+            }}
+            onMouseEnter={(e) => { if (currentStep >= 6) { e.currentTarget.style.background = "#1a1a1a"; e.currentTarget.style.transform = "translateY(-1px) translateX(2px)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(10,10,10,0.18)"; } }}
+            onMouseLeave={(e) => { if (currentStep >= 6) { e.currentTarget.style.background = "#0a0a0a"; e.currentTarget.style.transform = "translateX(0)"; e.currentTarget.style.boxShadow = "none"; } }}
+            title={currentStep < 6 ? "Completá los pasos para continuar" : "Ir a Política de inversión →"}
+          >POLÍTICA DE INVERSIÓN →</button>
+        </div>
+      </div>
+
       {/* QUESTIONS */}
       <section style={{ maxWidth: 1120, margin: "0 auto", padding: currentStep === 6 ? "16px 32px 0" : "56px 32px 40px", minHeight: currentStep === 6 ? 0 : 560, display: "flex", flexDirection: "column" }}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>

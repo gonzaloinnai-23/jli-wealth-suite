@@ -370,6 +370,34 @@
   .jli-label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); font-weight: 600; }
   .jli-val { font-family: 'Geist', sans-serif; font-size: 18px; font-weight: 700; line-height: 1.1; margin-top: 2px; color: var(--text); }
   .jli-val.serif { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; letter-spacing: -0.02em; }
+
+  /* Card combinada Fondos: 3 sub-valores en una grid */
+  .jli-mini-multi { min-width: 220px; }
+  .jli-multi {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    column-gap: 18px;
+    align-items: end;
+    margin-top: 2px;
+  }
+  .jli-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .jli-cell-val {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 18px; font-weight: 400;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .jli-cell-lbl {
+    font-size: 9px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    font-weight: 600;
+  }
+  .jli-mini.active .jli-cell-val { color: var(--bg) !important; }
+  .jli-mini.active .jli-cell-lbl { color: rgba(250,250,247,0.6) !important; }
   .jli-sub { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
 
   /* Card "A invertir en largo plazo →" — color marrón consistente con largo plazo */
@@ -430,20 +458,31 @@
       <div class="jli-label">Capitalización mundial</div>
       <div class="jli-val serif">$128T</div>
     </div>
-    <div class="jli-mini" data-go="fondos">
+    <!-- Card combinada Fondos: 3 sub-valores -->
+    <div class="jli-mini jli-mini-multi" data-go="fondos" title="Ver selección de fondos">
       <div class="jli-label">Fondos</div>
-      <div class="jli-val serif" id="jm-funds">0</div>
+      <div class="jli-multi">
+        <div class="jli-cell">
+          <span class="jli-cell-val serif" id="jm-funds">0</span>
+          <span class="jli-cell-lbl">fondos</span>
+        </div>
+        <div class="jli-cell">
+          <span class="jli-cell-val serif" id="jm-companies">0</span>
+          <span class="jli-cell-lbl">empresas</span>
+        </div>
+        <div class="jli-cell">
+          <span class="jli-cell-val serif" id="jm-score">0.0</span>
+          <span class="jli-cell-lbl">diversif</span>
+        </div>
+      </div>
     </div>
-    <div class="jli-mini" data-go="fondos">
-      <div class="jli-label">Empresas</div>
-      <div class="jli-val serif" id="jm-companies">0</div>
-    </div>
-    <div class="jli-mini" data-go="diversif">
-      <div class="jli-label">Diversificación</div>
-      <div class="jli-val serif" id="jm-score">0.0</div>
+    <!-- Card Asignación: % desvío regional vs capitalización mundial -->
+    <div class="jli-mini" data-go="diversif" title="Editar asignación · el número es el desvío regional vs capitalización mundial">
+      <div class="jli-label">Asignación · desvío</div>
+      <div class="jli-val serif" id="jm-asignacion">—</div>
     </div>
     <div class="jli-mini" data-go="ter">
-      <div class="jli-label">TER medio</div>
+      <div class="jli-label">Costo medio</div>
       <div class="jli-val serif" id="jm-ter">0.00%</div>
     </div>
   </div>
@@ -452,16 +491,92 @@
 <script src="etf_data.js"></script>
 <script>
   (function () {
-    // Hidratar cards desde la selección guardada
+    // Hidratar cards desde la selección guardada.
+    // Sin selección → todos los valores en "—". Se autocalculan a medida
+    // que el usuario selecciona ETFs y ajusta la asignación en etfs.html.
     try {
       const sel = (typeof loadSelection === 'function') ? loadSelection() : [];
-      document.getElementById('jm-funds').textContent = sel.length;
-      const c = (typeof computeTotalHoldings === 'function') ? computeTotalHoldings(sel) : 0;
-      document.getElementById('jm-companies').textContent = c >= 1000 ? (c/1000).toFixed(1)+'K' : c;
-      const s = (typeof computeDiversificationScore === 'function') ? computeDiversificationScore(sel) : 0;
-      document.getElementById('jm-score').textContent = s.toFixed(1);
-      const t = (typeof computeAvgTER === 'function') ? computeAvgTER(sel) : 0;
-      document.getElementById('jm-ter').textContent = t.toFixed(2) + '%';
+      const hasSelection = sel.length > 0;
+
+      if (!hasSelection) {
+        document.getElementById('jm-funds').textContent = '—';
+        document.getElementById('jm-companies').textContent = '—';
+        document.getElementById('jm-score').textContent = '—';
+        document.getElementById('jm-ter').textContent = '—';
+      } else {
+        document.getElementById('jm-funds').textContent = sel.length;
+        const c = (typeof computeTotalHoldings === 'function') ? computeTotalHoldings(sel) : 0;
+        document.getElementById('jm-companies').textContent = c >= 1000 ? (c/1000).toFixed(1)+'K' : c;
+        const s = (typeof computeDiversificationScore === 'function') ? computeDiversificationScore(sel) : 0;
+        document.getElementById('jm-score').textContent = s.toFixed(1);
+
+        // TER ponderado por monto asignado (no simple avg)
+        let weightedTER = 0;
+        try {
+          let amts = {};
+          try { amts = JSON.parse(localStorage.getItem('etf_amounts_v1') || '{}') || {}; } catch (e) {}
+          let tgt = 0;
+          try { const o = JSON.parse(localStorage.getItem('jli_objetivos') || 'null'); tgt = (o && o.largoPlazoUSD) || 0; } catch (e) {}
+          const evenSplit = sel.length > 0 ? Math.round(tgt / sel.length) : 0;
+          const filled = {};
+          sel.forEach(tk => { filled[tk] = (amts[tk] != null ? amts[tk] : evenSplit); });
+          const totalA = Object.values(filled).reduce((acc, v) => acc + (Number(v) || 0), 0);
+          if (totalA > 0 && typeof ETF_DB !== 'undefined') {
+            sel.forEach(tk => {
+              const e = ETF_DB[tk]; if (!e) return;
+              weightedTER += ((filled[tk] || 0) / totalA) * e.ter;
+            });
+          } else if (typeof computeAvgTER === 'function') {
+            weightedTER = computeAvgTER(sel);
+          }
+        } catch (e) {
+          if (typeof computeAvgTER === 'function') weightedTER = computeAvgTER(sel);
+        }
+        document.getElementById('jm-ter').textContent = weightedTER.toFixed(2) + '%';
+      }
+
+      // Desvío regional vs capitalización mundial
+      const asignEl = document.getElementById('jm-asignacion');
+      let world = null;
+      try { world = JSON.parse(localStorage.getItem('jli_world_breakdown') || 'null'); } catch (e) {}
+      if (asignEl && sel.length > 0 && world && world.regions && typeof computeRegionalMix === 'function') {
+        // Reusar amounts persistidos para reflejar lo que el usuario ya editó
+        let amounts = {};
+        try { amounts = JSON.parse(localStorage.getItem('etf_amounts_v1') || '{}') || {}; } catch (e) {}
+        // Si no hay amounts manuales, repartir parejo según target
+        let targetTotal = 0;
+        try {
+          const obj = JSON.parse(localStorage.getItem('jli_objetivos') || 'null');
+          targetTotal = (obj && obj.largoPlazoUSD) || 0;
+        } catch (e) {}
+        const filledAmounts = {};
+        const evenSplit = sel.length > 0 ? Math.round(targetTotal / sel.length) : 0;
+        sel.forEach(t => { filledAmounts[t] = (amounts[t] != null ? amounts[t] : evenSplit); });
+        // computeRegionalMix toma { ticker: pesoNormalizado }; convertimos amounts → pesos
+        const totalUSD = Object.values(filledAmounts).reduce((s, v) => s + (Number(v) || 0), 0);
+        const mix = { us:0, eu:0, cn:0, jp:0, em:0, other:0 };
+        if (totalUSD > 0) {
+          const REGION_WEIGHTS_FALLBACK = { us:60, eu:15, cn:8, jp:5, em:8, other:4 };
+          const GLOBAL_BD = (typeof GLOBAL_BREAKDOWN !== 'undefined') ? GLOBAL_BREAKDOWN : {};
+          Object.entries(filledAmounts).forEach(([tk, a]) => {
+            const etf = (typeof ETF_DB !== 'undefined') ? ETF_DB[tk] : null;
+            if (!etf || !a) return;
+            const w = a / totalUSD * 100;
+            if (etf.region === 'world') {
+              const br = GLOBAL_BD[tk] || REGION_WEIGHTS_FALLBACK;
+              Object.keys(mix).forEach(r => { mix[r] += (br[r] || 0) * w / 100; });
+            } else {
+              mix[etf.region] = (mix[etf.region] || 0) + w;
+            }
+          });
+        }
+        const REGS = ['us','eu','cn','jp','em','other'];
+        const sumAbsDelta = REGS.reduce((s, r) => s + Math.abs((mix[r] || 0) - (world.regions[r] || 0)), 0);
+        const deviation = sumAbsDelta / 2;
+        asignEl.textContent = (deviation < 0.05 ? '0' : deviation.toFixed(deviation < 10 ? 1 : 0)) + '%';
+      } else if (asignEl) {
+        asignEl.textContent = '—';
+      }
     } catch (e) {}
 
     // Hidratar largo plazo desde Objetivos
@@ -478,6 +593,32 @@
         }
       }
     } catch (e) {}
+
+    // Mostrar/ocultar el botón "Limpiar selección" según haya selección guardada.
+    // Diferimos a DOMContentLoaded porque el #reset-bar está más abajo en el DOM.
+    const wireResetBar = () => {
+      try {
+        const sel0 = (typeof loadSelection === 'function') ? loadSelection() : [];
+        const resetBar = document.getElementById('reset-bar');
+        if (resetBar) resetBar.style.display = sel0.length > 0 ? '' : 'none';
+        const btnReset = document.getElementById('btn-reset-cartera');
+        if (btnReset && !btnReset.dataset.wired) {
+          btnReset.dataset.wired = '1';
+          btnReset.addEventListener('mouseenter', () => { btnReset.style.color = 'var(--text)'; btnReset.style.background = 'var(--panel)'; });
+          btnReset.addEventListener('mouseleave', () => { btnReset.style.color = 'var(--text-dim)'; btnReset.style.background = 'transparent'; });
+          btnReset.addEventListener('click', () => {
+            try { localStorage.removeItem('etf_selection_v1'); } catch (e) {}
+            try { localStorage.removeItem('etf_amounts_v1'); } catch (e) {}
+            location.reload();
+          });
+        }
+      } catch (e) {}
+    };
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', wireResetBar);
+    } else {
+      wireResetBar();
+    }
 
     // Click handlers de las cards
     document.querySelectorAll('.jli-mini').forEach(card => {
@@ -496,10 +637,15 @@
 
 <div class="container">
 
+  <!-- Link de reset rápido (visible solo cuando hay selección) -->
+  <div id="reset-bar" style="display:none;text-align:right;margin:0 2px 6px">
+    <button type="button" id="btn-reset-cartera" style="background:transparent;border:none;color:var(--text-dim);font-family:'Geist',sans-serif;font-size:11px;letter-spacing:0.04em;cursor:pointer;padding:4px 8px;border-radius:8px;transition:color 0.15s,background 0.15s" title="Empezar de cero — borra selección y montos">↻ Limpiar selección</button>
+  </div>
+
   <!-- Mensaje principal + CTA Selección de fondos -->
   <div class="invest-message">
     <div class="msg-text">
-      Invertir a largo plazo es <em>capturar la capitalización mundial</em>
+      La estrategia ganadora es <em>poseer todos los negocios que cotizan a un coste muy bajo</em>
     </div>
     <a href="etfs.html" class="cta-fondos">SELECCIÓN DE FONDOS →</a>
   </div>

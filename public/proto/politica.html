@@ -99,6 +99,46 @@
   }
   section.card .lead { font-size: 13px; color: var(--text-2); margin-bottom: 20px; }
 
+  /* Mensaje estratégico + CTA siguiente paso */
+  .invest-message {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin: 4px 0 16px;
+  }
+  .invest-message .msg-text {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 22px; line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    flex: 1; min-width: 220px;
+  }
+  .invest-message .msg-text em {
+    font-style: italic; color: var(--text-2); font-weight: 400;
+  }
+  .cta-next {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 16px;
+    background: #0a0a0a; color: #fafaf7;
+    border: 1px solid #0a0a0a;
+    border-radius: 12px;
+    font-family: 'Geist', sans-serif;
+    font-size: 13px; font-weight: 600;
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: transform 0.18s, box-shadow 0.18s, background 0.18s;
+    white-space: nowrap;
+  }
+  .cta-next:hover {
+    background: #1a1a1a;
+    transform: translateY(-1px) translateX(2px);
+    box-shadow: 0 6px 18px rgba(10,10,10,0.18);
+  }
+
   /* Filter rows */
   .row {
     display: grid;
@@ -257,6 +297,14 @@
 
   <!-- Cards de navegación en el flujo: Mapa de objetivos (izq) ↔ A invertir en largo plazo (der) -->
   <div id="cta-row" style="display:flex;justify-content:space-between;align-items:stretch;gap:12px;margin:4px 0 16px"></div>
+
+  <!-- Mensaje estratégico + CTA al siguiente paso -->
+  <div class="invest-message">
+    <div class="msg-text">
+      Definir el marco es <em>quitar los sesgos y quitar los grupieres financieros</em>
+    </div>
+    <button type="button" class="cta-next" onclick="try{window.parent.location.hash='#cartera';}catch(e){}">CARTERA OBJETIVO →</button>
+  </div>
 
   <section class="card">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:6px">

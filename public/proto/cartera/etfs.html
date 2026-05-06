@@ -112,6 +112,37 @@
     font-variant-numeric: tabular-nums;
   }
   .mini-stat-value.score { color: var(--text); }
+
+  /* Card combinada Fondos: 3 sub-valores en una grid (fondos / empresas / diversif) */
+  .mini-stat-asignacion { min-width: 220px; }
+  .mini-stat-multi {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    column-gap: 18px;
+    align-items: end;
+  }
+  .mini-stat-cell {
+    display: flex; flex-direction: column;
+    align-items: flex-start; gap: 2px;
+  }
+  .mini-stat-cell .cell-val {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 22px; font-weight: 400;
+    color: var(--text);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .mini-stat-cell .cell-val.score { color: var(--text); }
+  .mini-stat-cell .cell-lbl {
+    font-size: 9px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    font-weight: 600;
+  }
+  /* En estado activo (card seleccionada) los sub-valores y labels se invierten */
+  .mini-stat.clickable.active .mini-stat-cell .cell-val { color: var(--bg) !important; }
+  .mini-stat.clickable.active .mini-stat-cell .cell-lbl { color: rgba(250,250,247,0.6) !important; }
   .mini-stat-subvalue {
     font-size: 10px;
     color: var(--text-dim);
@@ -224,6 +255,69 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 15px;
+  }
+
+  /* Tu selección actual: tickers agrupados por región */
+  .current-selection {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 22px;
+  }
+  .current-selection h3 {
+    font-size: 0.95rem; font-weight: 500;
+    margin-bottom: 4px; color: var(--text);
+  }
+  .current-selection .cs-sub {
+    font-size: 11px; color: var(--text-dim);
+    letter-spacing: 0.04em;
+    margin-bottom: 12px;
+  }
+  .current-selection .cs-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .current-selection .cs-group {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .current-selection .cs-group-name {
+    font-size: 10px; letter-spacing: 0.10em;
+    text-transform: uppercase; color: var(--text-dim);
+    font-weight: 600; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .current-selection .cs-group-dot {
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+  .current-selection .cs-tickers {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .current-selection .cs-ticker {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-family: 'Geist', sans-serif;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, transform 0.12s;
+  }
+  .current-selection .cs-ticker:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .current-selection .cs-ticker .cs-name {
+    font-weight: 400; color: var(--text-dim);
+    font-size: 11px; margin-left: 6px;
   }
   .suggest-card {
     background: var(--panel-2);
@@ -1213,6 +1307,51 @@
     filter: grayscale(0.2);
     border-color: rgba(216, 90, 48, 0.45) !important;
   }
+
+  /* Mensajes estratégicos por vista */
+  .invest-message {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+    padding: 14px 18px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin: 4px 0 16px;
+  }
+  .invest-message .msg-text {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 22px; line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    flex: 1; min-width: 220px;
+  }
+  .invest-message .msg-text em {
+    font-style: italic; color: var(--text-dim); font-weight: 400;
+  }
+  .cta-next {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 16px;
+    background: #4a3f2a; color: #fafaf7;
+    border: 1px solid #4a3f2a;
+    border-radius: 12px;
+    font-family: 'Geist', sans-serif;
+    font-size: 13px; font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: transform 0.18s, box-shadow 0.18s, background 0.18s, color 0.18s;
+    white-space: nowrap;
+  }
+  .cta-next:hover:not(:disabled) {
+    background: #5d4f36;
+    transform: translateY(-1px) translateX(2px);
+    box-shadow: 0 6px 18px rgba(74,63,42,0.28);
+  }
+  .cta-next:disabled {
+    background: var(--panel-2);
+    color: var(--text-dim);
+    border-color: var(--border);
+    cursor: not-allowed;
+  }
 </style>
 </head>
 <body>
@@ -1229,20 +1368,31 @@
         <div class="mini-stat-label">Capitalización mundial</div>
         <div class="mini-stat-value">$128T</div>
       </div>
-      <div class="mini-stat clickable active" id="stat-funds" data-view="fondos">
-        <div class="mini-stat-label">Fondos</div>
-        <div class="mini-stat-value" id="val-funds">0</div>
+      <!-- Card combinada Fondos: muestra fondos / empresas / diversif y va a la vista Fondos -->
+      <div class="mini-stat clickable active mini-stat-asignacion" id="stat-fondos" data-view="fondos" title="Ver selección de fondos">
+        <div class="mini-stat-label">Fondos <a class="info-link" onclick="event.stopPropagation();openDiversModal()" title="¿Cómo se calcula la diversificación?">ⓘ</a></div>
+        <div class="mini-stat-multi">
+          <div class="mini-stat-cell">
+            <span class="cell-val" id="val-funds">0</span>
+            <span class="cell-lbl">fondos</span>
+          </div>
+          <div class="mini-stat-cell">
+            <span class="cell-val" id="val-companies">0</span>
+            <span class="cell-lbl">empresas</span>
+          </div>
+          <div class="mini-stat-cell">
+            <span class="cell-val score" id="val-score">0.0</span>
+            <span class="cell-lbl">diversif</span>
+          </div>
+        </div>
       </div>
-      <div class="mini-stat clickable active" id="stat-companies" data-view="fondos">
-        <div class="mini-stat-label">Empresas</div>
-        <div class="mini-stat-value" id="val-companies">0</div>
-      </div>
-      <div class="mini-stat clickable" id="stat-score" data-view="diversif" title="Editar diversificación">
-        <div class="mini-stat-label">Diversificación <a class="info-link" onclick="event.stopPropagation();openDiversModal()" title="¿Cómo se calcula?">ⓘ</a></div>
-        <div class="mini-stat-value score" id="val-score">0.0</div>
+      <!-- Card Asignación: % desvío regional vs capitalización mundial -->
+      <div class="mini-stat clickable" id="stat-asignacion" data-view="diversif" title="Editar asignación · el número es el desvío regional vs capitalización mundial">
+        <div class="mini-stat-label">Asignación · desvío</div>
+        <div class="mini-stat-value" id="val-asignacion">—</div>
       </div>
       <div class="mini-stat clickable" id="stat-ter" data-view="ter">
-        <div class="mini-stat-label">TER medio</div>
+        <div class="mini-stat-label">Costo medio</div>
         <div class="mini-stat-value" id="val-ter">0.00%</div>
       </div>
     </div>
@@ -1253,11 +1403,24 @@
   <!-- ============ HERO LARGO PLAZO (placeholder vacío si no hay onboarding) ============ -->
   <div id="lp-host"></div>
 
+  <!-- Link de reset rápido (visible solo cuando hay selección) -->
+  <div id="reset-bar" style="display:none;text-align:right;margin:6px 2px -2px">
+    <button type="button" onclick="resetCarteraDemo()" style="background:transparent;border:none;color:var(--text-dim);font-family:'Geist',sans-serif;font-size:11px;letter-spacing:0.04em;cursor:pointer;padding:4px 8px;border-radius:8px;transition:color 0.15s,background 0.15s" onmouseenter="this.style.color='var(--text)';this.style.background='var(--panel)'" onmouseleave="this.style.color='var(--text-dim)';this.style.background='transparent'" title="Empezar de cero — borra selección y montos">↻ Limpiar selección</button>
+  </div>
+
   <!-- Notificación: concentración por gestora (solo se muestra si la regla se viola) -->
   <div class="conc-warning" id="conc-warning" style="display:none"></div>
 
   <!-- ============ VISTA: FONDOS (selección) ============ -->
   <section id="view-fondos">
+    <!-- Mensaje estratégico + CTA Diversificación (botón se habilita al seleccionar al menos un ETF) -->
+    <div class="invest-message">
+      <div class="msg-text">
+        Los <em>fondos indexados</em> eliminan el riesgo de acciones individuales, los sectores de mercado y el gestor — sólo permanece el riesgo del mercado.
+      </div>
+      <button id="cta-asignacion" type="button" class="cta-next" onclick="setView('diversif')" disabled title="Seleccioná al menos un ETF para continuar">ASIGNACIÓN →</button>
+    </div>
+
     <!-- CARTERAS MODELO -->
     <div class="portfolio-suggest">
       <h2>Carteras modelo</h2>
@@ -1266,33 +1429,33 @@
       </div>
     </div>
 
+    <!-- Tu selección actual: ETFs seleccionados agrupados por región (renderiza JS si hay selección) -->
+    <div id="current-selection-host" style="display:none"></div>
+
     <!-- Las secciones de ETFs las rellenamos dinámicamente desde JS -->
     <div id="etf-sections"></div>
-
-    <!-- CTA: ir a vista Diversificación -->
-    <div style="display:flex;justify-content:flex-end;margin:18px 0 4px">
-      <button id="cta-asignacion" type="button" onclick="setView('diversif')" style="
-        display:inline-flex;align-items:center;gap:8px;
-        padding:12px 20px;border-radius:12px;
-        background:#4a3f2a;color:#fafaf7;
-        border:1px solid #4a3f2a;
-        font-family:'Geist',sans-serif;font-size:13px;font-weight:600;
-        letter-spacing:0.04em;cursor:pointer;
-        transition: transform 0.18s, box-shadow 0.18s, background 0.18s;
-      "
-      onmouseenter="this.style.background='#5d4f36';this.style.transform='translateY(-1px) translateX(2px)';this.style.boxShadow='0 6px 18px rgba(74,63,42,0.28)'"
-      onmouseleave="this.style.background='#4a3f2a';this.style.transform='';this.style.boxShadow=''"
-      >VER ASIGNACIÓN POR ACTIVO →</button>
-    </div>
   </section>
 
   <!-- ============ VISTA: DIVERSIFICACIÓN (editor de montos) ============ -->
   <section id="view-diversif" style="display:none">
+    <!-- Mensaje estratégico + CTA Costos -->
+    <div class="invest-message">
+      <div class="msg-text">
+        En la <em>diversificación máxima</em> se eliminan los sesgos de sectores y regiones.
+      </div>
+      <button type="button" class="cta-next" onclick="setView('ter')" title="Ir a Costos →">COSTOS →</button>
+    </div>
     <div class="diversif-host" id="diversif-host"></div>
   </section>
 
   <!-- ============ VISTA: TER (análisis de costes) ============ -->
   <section id="view-ter" style="display:none">
+    <!-- Mensaje estratégico para Costos -->
+    <div class="invest-message">
+      <div class="msg-text">
+        Los <em>costos</em> pueden parecer pocos en un año, pero también tienen una fórmula compuesta.
+      </div>
+    </div>
     <div class="diversif-host" id="ter-host"></div>
   </section>
 
@@ -1644,26 +1807,22 @@ document.addEventListener('click', (e) => {
 const SUGGESTED = [
   {
     id: 'passive',
-    title: '🌍 PASIVO GLOBAL',
-    desc: '1 ETF UCITS Acc — Replica todo el mundo (Vanguard FTSE All-World).',
+    title: 'Global',
     tickers: ['VWCE']
   },
   {
     id: 'developed-em',
-    title: '⚖️ DESARROLLADO + EM',
-    desc: '2 ETFs UCITS — Mundo desarrollado (MSCI World) + emergentes (MSCI EM IMI).',
+    title: 'Desarrollado + Emergentes',
     tickers: ['SWRD', 'EIMI']
   },
   {
     id: 'mirror',
-    title: '🎯 ESPEJO 3 REGIONES',
-    desc: '3 ETFs UCITS — S&P 500 + Europa + Emergentes (cobertura ~95% del mapa actual).',
+    title: 'EEUU + Europa + Emergentes',
     tickers: ['CSPX', 'IMEU', 'EIMI']
   },
   {
     id: 'multi-gestora',
-    title: '🚀 MULTI-GESTORA UCITS',
-    desc: '4 ETFs · 4 gestoras (Vanguard, SPDR, DWS, BlackRock). Cumple regla 30% por gestora.',
+    title: 'Global varios ETFs',
     tickers: ['VUAA', 'SWRD', 'XDWD', 'EIMI']
   }
 ];
@@ -1675,14 +1834,11 @@ function renderSuggestedPortfolios() {
     const score = computeDiversificationScore(port.tickers);
     const companies = computeTotalHoldings(port.tickers);
     const ter = computeAvgTER(port.tickers);
-    const tickerBadges = port.tickers.map(t => `<strong>${t}</strong>`).join(' ');
 
     const card = document.createElement('div');
     card.className = 'suggest-card';
     card.innerHTML = `
       <h3>${port.title}</h3>
-      <div style="font-size:0.8rem;color:var(--text-dim);">${port.desc}</div>
-      <div class="suggest-tickers">${tickerBadges}</div>
       <div class="suggest-metrics">
         <div class="suggest-metric"><strong>${port.tickers.length}</strong> fondos</div>
         <div class="suggest-metric"><strong>${companies.toLocaleString('es')}</strong> empresas</div>
@@ -1732,11 +1888,53 @@ document.addEventListener('click', (e) => {
 function applyPortfolio(id) {
   const port = SUGGESTED.find(p => p.id === id);
   if (!port) return;
+  // Reemplaza la selección anterior — limpia y aplica el combo
   selectedTickers = [...port.tickers];
   saveSelection(selectedTickers);
   updateUI();
   showToast(`✓ Cartera "${port.title}" aplicada (${port.tickers.length} ETFs)`);
   // Sin scroll automático — el usuario ya ve la actualización en el sticky header
+}
+
+// Renderiza un bloque con los ETFs seleccionados agrupados por región.
+// Se invoca desde updateUI() para mantenerlo sincronizado con la selección.
+function renderCurrentSelection() {
+  const host = document.getElementById('current-selection-host');
+  if (!host) return;
+  if (selectedTickers.length === 0) {
+    host.style.display = 'none';
+    host.innerHTML = '';
+    return;
+  }
+  // Agrupar por región
+  const groups = {};
+  selectedTickers.forEach(t => {
+    const etf = ETF_DB[t]; if (!etf) return;
+    const r = etf.region || 'other';
+    if (!groups[r]) groups[r] = [];
+    groups[r].push({ ticker: t, name: etf.name });
+  });
+  const ORDER = ['world', 'us', 'eu', 'jp', 'cn', 'em', 'other'];
+  const meta = (typeof REGION_META !== 'undefined') ? REGION_META : {};
+  const groupsHTML = ORDER
+    .filter(r => groups[r] && groups[r].length > 0)
+    .map(r => {
+      const m = meta[r] || { name: r, hex: '#888', emoji: '' };
+      const tickers = groups[r].map(({ ticker, name }) => `
+        <button type="button" class="cs-ticker" onclick="toggleSelection('${ticker}')" title="Quitar ${ticker} de la selección">${ticker}<span class="cs-name">${name}</span></button>`).join('');
+      return `
+        <div class="cs-group">
+          <div class="cs-group-name"><span class="cs-group-dot" style="background:${m.hex}"></span>${m.emoji} ${m.name} <span style="color:var(--text-dim);font-weight:500">· ${groups[r].length}</span></div>
+          <div class="cs-tickers">${tickers}</div>
+        </div>`;
+    }).join('');
+  host.innerHTML = `
+    <div class="current-selection">
+      <h3>Tu selección actual</h3>
+      <div class="cs-sub">${selectedTickers.length} ETF${selectedTickers.length === 1 ? '' : 's'} agrupados por región — clic para quitar</div>
+      <div class="cs-groups">${groupsHTML}</div>
+    </div>`;
+  host.style.display = '';
 }
 
 function clearAllSelection() {
@@ -1894,9 +2092,7 @@ function renderDiversif() {
   const host = document.getElementById('diversif-host');
   if (selectedTickers.length === 0) {
     host.innerHTML = `
-      <h2>Diversificación de la cartera objetivo</h2>
-      <div class="lead">Antes de distribuir montos, seleccioná al menos un ETF en la vista <a href="#" onclick="event.preventDefault();setView('fondos')">Fondos</a>.</div>
-      <div class="d-empty">— sin selección todavía —</div>`;
+      <div class="d-empty">Antes de distribuir montos, seleccioná al menos un ETF en la vista <a href="#" onclick="event.preventDefault();setView('fondos')">Fondos</a>.</div>`;
     return;
   }
   const amounts = getEffectiveAmounts();
@@ -2017,8 +2213,6 @@ function renderDiversif() {
   }).join('');
 
   host.innerHTML = `
-    <h2>Diversificación de la cartera objetivo</h2>
-    <div class="lead">Editá el monto asignado a cada ETF. Los porcentajes y métricas se recalculan automáticamente.</div>
     <div class="diversif-summary">
       <div class="ds-cell">
         <div class="ds-label">Capital largo plazo</div>
@@ -2037,12 +2231,12 @@ function renderDiversif() {
     </div>
     ${stackHTML}
     ${regionCompareHTML}
-    <div class="diversif-list">${rows}</div>
-    <div class="diversif-actions">
+    <div class="diversif-actions" style="margin:12px 0 14px">
       <button class="d-btn" onclick="diversifEvenSplit()">⇋ Repartir parejo</button>
       ${world ? `<button class="d-btn" onclick="diversifAlignToWorld()">🌍 Asignar según objetivo (${world.year})</button>` : ''}
       <button class="d-btn" onclick="diversifReset()">↻ Reset</button>
-    </div>`;
+    </div>
+    <div class="diversif-list">${rows}</div>`;
 
   // Wire inputs — auto-rebalance: el resto absorbe el delta proporcionalmente
   // a sus pesos actuales, así el total siempre = capital largo plazo.
@@ -2228,15 +2422,91 @@ function renderTer() {
   }
 
   const annualCost = total * weightedTER / 100;
-  // Proyección 10 años: capital crece menos cada año por el TER
-  // costAccum10 = total - total * (1 - ter/100)^10
-  const factor10 = Math.pow(1 - weightedTER / 100, 10);
-  const cost10y = total * (1 - factor10);
-  // Proyección 30 años (extra)
-  const cost30y = total * (1 - Math.pow(1 - weightedTER / 100, 30));
+
+  // === Rendimiento esperado anual ponderado por la asignación regional ===
+  // Tasas históricas nominales aproximadas por región (largo plazo, USD).
+  const REGION_RETURNS = { us: 10.0, eu: 7.0, jp: 5.5, cn: 6.5, em: 8.0, world: 8.0, other: 6.0 };
+  let weightedReturn = 0;
+  if (total > 0) {
+    selectedTickers.forEach(t => {
+      const etf = ETF_DB[t]; if (!etf) return;
+      const w = (amounts[t] || 0) / total;
+      const r = REGION_RETURNS[etf.region] != null ? REGION_RETURNS[etf.region] : 7.0;
+      weightedReturn += w * r;
+    });
+  } else {
+    weightedReturn = 8.0; // fallback razonable: cartera global diversificada
+  }
+
+  // Proyección con interés compuesto + reinversión:
+  //   Capital sin TER después de N años:  P × (1 + R)^N
+  //   Capital con TER después de N años:  P × (1 + R - T)^N
+  //   Costo acumulado por TER (oportunidad perdida) = diff entre los dos.
+  const r = weightedReturn / 100;
+  const t = weightedTER / 100;
+  const grossAt = (years) => total * Math.pow(1 + r, years);
+  const netAt   = (years) => total * Math.pow(1 + r - t, years);
+  const costAt  = (years) => grossAt(years) - netAt(years);
+
+  const cost1y  = costAt(1);
+  const cost10y = costAt(10);
+  const cost30y = costAt(30);
+  // % del valor potencial (sin TER) que se pierde en costes
+  const pctOf = (years) => {
+    const g = grossAt(years);
+    return g > 0 ? (costAt(years) / g) * 100 : 0;
+  };
+  const pct1y  = pctOf(1);
+  const pct10y = pctOf(10);
+  const pct30y = pctOf(30);
 
   const fmtUSD = n => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
   const fmtPct = n => n.toFixed(2) + '%';
+
+  // === Chart SVG: oportunidad perdida por TER, año a año (0 → 30) ===
+  // Eje Y: % del valor potencial (capital + rendimiento sin TER) perdido en costes.
+  // Eje X: años. La reinversión hace que el coste sea exponencial — pequeño en el año 1,
+  // pero significativo a 30 años incluso con TER bajos.
+  const chartYears = 30;
+  const points = [];
+  for (let y = 0; y <= chartYears; y++) points.push({ y, pct: pctOf(y) });
+  const yMax = Math.max(pct30y * 1.05, 0.5); // mínimo 0.5% para que se vea algo
+  const chartW = 640, chartH = 180, padL = 44, padR = 12, padT = 14, padB = 28;
+  const innerW = chartW - padL - padR;
+  const innerH = chartH - padT - padB;
+  const xAt = y => padL + (y / chartYears) * innerW;
+  const yAt = p => padT + innerH - (p / yMax) * innerH;
+  const linePath = points.map((pt, i) => (i === 0 ? 'M' : 'L') + xAt(pt.y).toFixed(1) + ' ' + yAt(pt.pct).toFixed(1)).join(' ');
+  const areaPath = linePath + ` L ${xAt(chartYears).toFixed(1)} ${yAt(0).toFixed(1)} L ${xAt(0).toFixed(1)} ${yAt(0).toFixed(1)} Z`;
+  // Marcadores en años 1, 10, 30
+  const markers = [
+    { y: 1,  pct: pct1y,  label: '1 año' },
+    { y: 10, pct: pct10y, label: '10 años' },
+    { y: 30, pct: pct30y, label: '30 años' },
+  ];
+  // Grid horizontal cada ~25% del rango
+  const gridLines = [0, 0.25, 0.5, 0.75, 1].map(f => ({
+    pct: f * yMax,
+    yPos: yAt(f * yMax),
+  }));
+  const chartHTML = `
+    <svg viewBox="0 0 ${chartW} ${chartH}" preserveAspectRatio="none" style="width:100%;max-width:${chartW}px;height:${chartH}px;display:block;margin:8px 0 12px" aria-label="Erosión del capital en costes (interés compuesto)">
+      <!-- Grid -->
+      ${gridLines.map(g => `<line x1="${padL}" x2="${chartW-padR}" y1="${g.yPos.toFixed(1)}" y2="${g.yPos.toFixed(1)}" stroke="${'rgba(139,156,179,0.18)'}" stroke-width="1"/>`).join('')}
+      ${gridLines.map(g => `<text x="${padL-6}" y="${(g.yPos+3).toFixed(1)}" fill="var(--text-dim)" font-size="9" font-family="Geist,sans-serif" text-anchor="end">${g.pct.toFixed(1)}%</text>`).join('')}
+      <!-- Eje X labels -->
+      ${[0,5,10,15,20,25,30].map(y => `<text x="${xAt(y).toFixed(1)}" y="${(chartH-8).toFixed(1)}" fill="var(--text-dim)" font-size="9" font-family="Geist,sans-serif" text-anchor="middle">${y}a</text>`).join('')}
+      <!-- Curva de erosión -->
+      <path d="${areaPath}" fill="rgba(216,90,48,0.18)"/>
+      <path d="${linePath}" stroke="#D85A30" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+      <!-- Marcadores 1y / 10y / 30y -->
+      ${markers.map(m => `
+        <line x1="${xAt(m.y).toFixed(1)}" x2="${xAt(m.y).toFixed(1)}" y1="${yAt(m.pct).toFixed(1)}" y2="${(chartH-padB).toFixed(1)}" stroke="rgba(216,90,48,0.35)" stroke-width="1" stroke-dasharray="3,3"/>
+        <circle cx="${xAt(m.y).toFixed(1)}" cy="${yAt(m.pct).toFixed(1)}" r="4" fill="#D85A30" stroke="var(--bg)" stroke-width="1.5"/>
+        <text x="${xAt(m.y).toFixed(1)}" y="${(yAt(m.pct)-9).toFixed(1)}" fill="var(--text)" font-size="11" font-weight="600" font-family="Geist,sans-serif" text-anchor="middle">${m.pct.toFixed(1)}%</text>
+        <text x="${xAt(m.y).toFixed(1)}" y="${(yAt(m.pct)-22).toFixed(1)}" fill="var(--text-dim)" font-size="9" font-family="Geist,sans-serif" text-anchor="middle">${m.label}</text>
+      `).join('')}
+    </svg>`;
 
   // Bar de contribución por ETF al TER ponderado
   const rows = selectedTickers.map(t => {
@@ -2265,8 +2535,6 @@ function renderTer() {
   }).join('');
 
   host.innerHTML = `
-    <h2>Coste de la cartera (TER)</h2>
-    <div class="lead">El <strong style="color:var(--text)">Total Expense Ratio</strong> (TER) es el coste anual del fondo. Acá ves cuánto pagás cada año, en 10 y en 30 años (efecto compuesto sobre el capital).</div>
     <div class="diversif-summary" style="grid-template-columns:repeat(auto-fit, minmax(170px, 1fr))">
       <div class="ds-cell">
         <div class="ds-label">TER ponderado</div>
@@ -2274,33 +2542,53 @@ function renderTer() {
         <div class="ds-sub">media por monto invertido</div>
       </div>
       <div class="ds-cell">
+        <div class="ds-label">Rendimiento esperado</div>
+        <div class="ds-value">${fmtPct(weightedReturn)}</div>
+        <div class="ds-sub">anual ponderado por región</div>
+      </div>
+      <div class="ds-cell">
         <div class="ds-label">Capital invertido</div>
         <div class="ds-value">${fmtUSD(total)}</div>
         <div class="ds-sub">total asignado</div>
       </div>
       <div class="ds-cell warn">
-        <div class="ds-label">Coste anual</div>
-        <div class="ds-value">${fmtUSD(annualCost)}</div>
-        <div class="ds-sub">primer año</div>
+        <div class="ds-label">Coste 1 año</div>
+        <div class="ds-value">${fmtUSD(cost1y)}</div>
+        <div class="ds-sub">${pct1y.toFixed(2)}% del valor potencial</div>
       </div>
       <div class="ds-cell warn">
         <div class="ds-label">Coste 10 años</div>
         <div class="ds-value">${fmtUSD(cost10y)}</div>
-        <div class="ds-sub">interés compuesto sobre capital</div>
+        <div class="ds-sub">${pct10y.toFixed(1)}% · oportunidad perdida</div>
       </div>
       <div class="ds-cell warn">
         <div class="ds-label">Coste 30 años</div>
         <div class="ds-value">${fmtUSD(cost30y)}</div>
-        <div class="ds-sub">jubilación / largo plazo</div>
+        <div class="ds-sub">${pct30y.toFixed(1)}% · jubilación</div>
       </div>
     </div>
+
+    <!-- Chart de erosión por interés compuesto + reinversión -->
+    <div style="margin:18px 0 6px;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);font-weight:600">% del valor potencial perdido en costes (compuesto, con reinversión)</div>
+    ${chartHTML}
 
     <div style="margin:14px 0 4px;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);font-weight:600">Contribución por ETF</div>
     <div class="diversif-list">${rows}</div>
 
     <p style="margin-top:14px;font-size:11px;color:var(--text-dim);line-height:1.5">
-      Cálculo: <code>coste 10 años = capital × (1 − (1 − TER)¹⁰)</code>. Asume que el TER se descuenta cada año sobre el saldo del momento (sin considerar rentabilidad ni aportes adicionales). En la práctica con mercados que rinden positivo, el coste absoluto es mayor porque el saldo crece.
+      Cálculo: el coste a N años es la diferencia entre lo que tu cartera valdría sin TER (<code>P × (1 + R)<sup>N</sup></code>) y lo que vale con TER (<code>P × (1 + R − T)<sup>N</sup></code>), donde R es el rendimiento esperado ponderado por región y T el TER ponderado. Asume reinversión completa de los rendimientos, sin aportes adicionales. Las tasas regionales son aproximaciones históricas largoplacistas (US ~10%, EU ~7%, JP ~5,5%, EM ~8%, world ~8%) y pueden no reflejar el futuro.
     </p>`;
+}
+
+// Reset rápido de la cartera: borra selección + amounts y vuelve a vista Fondos
+function resetCarteraDemo() {
+  try { localStorage.removeItem('etf_selection_v1'); } catch (e) {}
+  try { localStorage.removeItem('etf_amounts_v1'); } catch (e) {}
+  selectedTickers = [];
+  setView('fondos');
+  renderETFSections();
+  updateUI();
+  showToast('✓ Selección limpiada — empezá de cero');
 }
 
 function fmtUSDShort(n) {
@@ -2364,27 +2652,84 @@ function setShowOnlyEligible(on) {
 }
 
 function updateUI() {
-  // Actualizar métricas del header
-  const funds = selectedTickers.length;
-  const companies = computeTotalHoldings(selectedTickers);
-  const score = computeDiversificationScore(selectedTickers);
-  const ter = computeAvgTER(selectedTickers);
+  // Actualizar métricas del header.
+  // Sin selección → todos los valores en "—". Se autocalculan a medida que el usuario
+  // selecciona ETFs y ajusta la asignación.
+  const hasSelection = selectedTickers.length > 0;
 
-  document.getElementById('val-funds').textContent = funds;
-  document.getElementById('val-companies').textContent = companies >= 1000 ? (companies/1000).toFixed(1)+'K' : companies;
-  document.getElementById('val-score').textContent = score.toFixed(1);
-  document.getElementById('val-ter').textContent = ter.toFixed(2) + '%';
+  if (!hasSelection) {
+    document.getElementById('val-funds').textContent = '—';
+    document.getElementById('val-companies').textContent = '—';
+    document.getElementById('val-score').textContent = '—';
+    document.getElementById('val-ter').textContent = '—';
+  } else {
+    const funds = selectedTickers.length;
+    const companies = computeTotalHoldings(selectedTickers);
+    const score = computeDiversificationScore(selectedTickers);
+
+    // TER ponderado por monto asignado (no simple avg)
+    let weightedTER = 0;
+    try {
+      const _amounts = getEffectiveAmounts();
+      const _total = Object.values(_amounts).reduce((s, v) => s + (Number(v) || 0), 0);
+      if (_total > 0) {
+        selectedTickers.forEach(t => {
+          const _etf = ETF_DB[t]; if (!_etf) return;
+          const _w = (_amounts[t] || 0) / _total;
+          weightedTER += _w * _etf.ter;
+        });
+      } else {
+        weightedTER = computeAvgTER(selectedTickers);
+      }
+    } catch (e) { weightedTER = computeAvgTER(selectedTickers); }
+
+    document.getElementById('val-funds').textContent = funds;
+    document.getElementById('val-companies').textContent = companies >= 1000 ? (companies/1000).toFixed(1)+'K' : companies;
+    document.getElementById('val-score').textContent = score.toFixed(1);
+    document.getElementById('val-ter').textContent = weightedTER.toFixed(2) + '%';
+  }
+
+  // Desvío regional respecto a la capitalización mundial.
+  // Métrica: Σ|delta_region|/2 — 0% = perfecta alineación, 100% = totalmente desalineado.
+  try {
+    const valEl = document.getElementById('val-asignacion');
+    const world = (typeof loadWorldBreakdown === 'function') ? loadWorldBreakdown() : null;
+    if (!valEl) {} else if (selectedTickers.length === 0 || !world || !world.regions) {
+      valEl.textContent = '—';
+    } else {
+      const amounts = getEffectiveAmounts();
+      const actualMix = computeRegionalMixByAmount(amounts);
+      const REGS = ['us','eu','cn','jp','em','other'];
+      const sumAbsDelta = REGS.reduce((s, r) => s + Math.abs((actualMix[r] || 0) - (world.regions[r] || 0)), 0);
+      const deviation = sumAbsDelta / 2; // 0–100 (%)
+      valEl.textContent = (deviation < 0.05 ? '0' : deviation.toFixed(deviation < 10 ? 1 : 0)) + '%';
+    }
+  } catch (e) {}
 
   // Animación pulso en las stats actualizadas
-  ['stat-funds', 'stat-companies', 'stat-score', 'stat-ter'].forEach(id => {
+  ['stat-fondos', 'stat-asignacion', 'stat-ter'].forEach(id => {
     const el = document.getElementById(id);
+    if (!el) return;
     el.classList.remove('updated');
     void el.offsetWidth; // reflow
     el.classList.add('updated');
     setTimeout(() => el.classList.remove('updated'), 800);
   });
 
-  // Botones laterales eliminados — diversificar se accede vía sticky stat
+  // Habilitar/deshabilitar el CTA de Diversificación según si hay selección
+  const ctaDiv = document.getElementById('cta-asignacion');
+  if (ctaDiv) {
+    const enabled = selectedTickers.length > 0;
+    ctaDiv.disabled = !enabled;
+    ctaDiv.title = enabled ? 'Ir a Asignación →' : 'Seleccioná al menos un ETF para continuar';
+  }
+
+  // Mostrar/ocultar el link "Limpiar selección"
+  const resetBar = document.getElementById('reset-bar');
+  if (resetBar) resetBar.style.display = selectedTickers.length > 0 ? '' : 'none';
+
+  // Renderizar bloque "Tu selección actual" agrupando tickers por región
+  renderCurrentSelection();
 
   // Actualizar todas las cards: añadir/quitar clase selected
   document.querySelectorAll('.etf-card').forEach(card => {
