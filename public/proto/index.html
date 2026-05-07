@@ -146,6 +146,45 @@
     border-bottom-color: var(--text);
   }
   .tab .ext { font-size: 10px; opacity: 0.5; margin-left: 4px; }
+  /* Empujar el grupo de la derecha (Cartera actual / Volatilidad / Capitally) al borde derecho */
+  .tab-right-start { margin-left: auto; }
+
+  /* Card "Largo plazo" entre Cartera objetivo y Cartera actual.
+     Color marrón claro (#c9a55a) — coincide con el de la donut/largo plazo.
+     Click → vuelve a la pestaña Objetivos.
+     margin-left + margin-right: auto = centrada horizontalmente entre los dos grupos de tabs. */
+  .nav-invertir-card {
+    margin-left: auto;
+    margin-right: auto;
+    display: flex; align-items: center; gap: 10px;
+    background: #c9a55a;
+    border: 1px solid #c9a55a;
+    color: #fafaf7;
+    padding: 6px 14px;
+    border-radius: 10px;
+    font-family: 'Geist', sans-serif;
+    align-self: center;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.12s, box-shadow 0.15s;
+  }
+  .nav-invertir-card:hover {
+    background: #b89249;
+    border-color: #b89249;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(201,165,90,0.35);
+  }
+  .nav-invertir-card[hidden] { display: none; }
+  .nav-invertir-card .nav-invertir-lbl {
+    font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+    font-weight: 600; opacity: 0.85;
+  }
+  .nav-invertir-card .nav-invertir-val {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 18px; line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  /* Cuando la card está visible, el grupo derecho ya no necesita margin-left: auto */
+  .nav-invertir-card:not([hidden]) ~ .tab-right-start { margin-left: 0; }
   .vol-pill {
     display: inline-flex; align-items: center;
     margin-left: 6px;
@@ -279,10 +318,17 @@
         </div>
       </div>
       <nav class="tabs" id="tabs">
+        <!-- Izquierda: flujo de definición -->
         <button class="tab active" data-tab="objetivos">Objetivos</button>
         <button class="tab" data-tab="politica">Política de inversión</button>
         <button class="tab" data-tab="cartera">Cartera objetivo</button>
-        <button class="tab" data-tab="portfolio">Cartera actual</button>
+        <!-- Card "Largo plazo" — visible cuando estás en cartera objetivo. Click → Objetivos -->
+        <button type="button" class="nav-invertir-card" id="nav-invertir-card" hidden title="Ver objetivos">
+          <span class="nav-invertir-lbl">Largo plazo</span>
+          <span class="nav-invertir-val" id="nav-invertir-val">$0</span>
+        </button>
+        <!-- Derecha: monitoreo / herramientas externas -->
+        <button class="tab tab-right-start" data-tab="portfolio">Cartera actual</button>
         <button class="tab" data-tab="volatilidad">Volatilidad <span class="vol-pill" id="vol-pill" hidden></span></button>
         <button class="tab" data-tab="capitally">Capitally <span class="ext">↗</span></button>
       </nav>
@@ -397,7 +443,43 @@
       if (f && !f.src && f.dataset.src) f.src = f.dataset.src;
     }
     if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
+    refreshInvertirCard(name);
   }
+
+  // Card "A invertir en largo plazo" entre las pestañas — visible sólo en cartera
+  function refreshInvertirCard(activeName) {
+    const card = document.getElementById('nav-invertir-card');
+    const valEl = document.getElementById('nav-invertir-val');
+    if (!card || !valEl) return;
+    let amount = 0;
+    try {
+      const snap = JSON.parse(localStorage.getItem('jli_objetivos') || 'null');
+      amount = (snap && snap.largoPlazoUSD) || 0;
+    } catch (e) {}
+    const fmt = (n) => n >= 1_000_000 ? '$' + (n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1) + 'M'
+                    : n >= 1_000     ? '$' + Math.round(n / 1_000) + 'K'
+                    : '$' + Math.round(n);
+    valEl.textContent = amount > 0 ? fmt(amount) : '$0';
+    // Mostrar en pestañas del flujo (Política y Cartera objetivo) cuando hay un monto cargado
+    if ((activeName === 'politica' || activeName === 'cartera') && amount > 0) {
+      card.removeAttribute('hidden');
+    } else {
+      card.setAttribute('hidden', '');
+    }
+  }
+  // Re-evaluar cuando otra pestaña/iframe escribe a localStorage (ej. al finalizar Objetivos)
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'jli_objetivos') {
+      const active = document.querySelector('.tab.active')?.dataset.tab || 'objetivos';
+      refreshInvertirCard(active);
+    }
+  });
+
+  // Click en la card "Largo plazo" → vuelve a la pestaña Objetivos
+  (() => {
+    const card = document.getElementById('nav-invertir-card');
+    if (card) card.addEventListener('click', () => activateTab('objetivos'));
+  })();
 
   function activateTabFromHash() {
     const h = (location.hash || '#objetivos').slice(1);

@@ -262,6 +262,7 @@
 
   <div class="timeframes">
     <span class="tf-label">Período</span>
+    <button class="tf-btn" data-tf="1w">1 semana</button>
     <button class="tf-btn" data-tf="1m">1 mes</button>
     <button class="tf-btn active" data-tf="3m">3 meses</button>
     <button class="tf-btn" data-tf="1y">1 año</button>
@@ -450,8 +451,9 @@
   function fmtNum(n, d=2) { return new Intl.NumberFormat('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }).format(n); }
 
   function getFiltered() {
-    let daysBack = 90;
-    if (timeframe === '1m') daysBack = 30;
+    let daysBack = 90; // default 3m
+    if (timeframe === '1w') daysBack = 7;
+    else if (timeframe === '1m') daysBack = 30;
     else if (timeframe === '1y') daysBack = 365;
     else if (timeframe === '10y') daysBack = 365 * 10;
     const cutoff = Date.now() - daysBack * 86400000;

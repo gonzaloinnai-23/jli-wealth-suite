@@ -64,14 +64,14 @@
     font-size: 1.1rem;
   }
   .sticky-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 10px;
     width: 100%;
   }
   @media (max-width: 768px) {
     .sticky-content { grid-template-columns: 1fr; gap: 10px; }
-    .sticky-stats { grid-template-columns: repeat(2, 1fr); }
   }
   .mini-stat.clickable { cursor: pointer; transition: background 0.15s, border-color 0.15s, transform 0.12s; }
   .mini-stat.clickable:hover { background: var(--panel) !important; border-color: var(--text) !important; transform: translateY(-1px); }
@@ -84,10 +84,12 @@
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 10px 16px;
-    text-align: left;
+    text-align: center;
     transition: all 0.3s;
     display: flex; flex-direction: column;
-    justify-content: space-between;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
     min-width: 130px;
     min-height: 70px;
   }
@@ -101,7 +103,6 @@
     text-transform: uppercase;
     letter-spacing: 0.12em;
     font-weight: 600;
-    margin-bottom: 4px;
   }
   .mini-stat-value {
     font-family: 'Instrument Serif', Georgia, serif;
@@ -119,11 +120,12 @@
     display: grid;
     grid-template-columns: repeat(3, auto);
     column-gap: 18px;
-    align-items: end;
+    align-items: center;
+    justify-content: center;
   }
   .mini-stat-cell {
     display: flex; flex-direction: column;
-    align-items: flex-start; gap: 2px;
+    align-items: center; gap: 2px;
   }
   .mini-stat-cell .cell-val {
     font-family: 'Instrument Serif', Georgia, serif;
@@ -148,18 +150,34 @@
     color: var(--text-dim);
     margin-top: 3px;
   }
+  /* Botón flecha "Volver" reemplaza la card invertir-card en el header */
+  .nav-back-arrow {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 12px;
+    width: 44px; height: 70px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 22px; line-height: 1;
+    font-family: 'Geist', sans-serif;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
+    flex-shrink: 0;
+  }
+  .nav-back-arrow:hover { background: var(--panel); border-color: var(--accent); color: var(--text); transform: translateX(-2px); }
+
   /* Card "A invertir en largo plazo →" — color marrón consistente con el largo plazo del donut */
   .mini-stat.invertir-card {
-    background: #4a3f2a !important;
-    border-color: #4a3f2a !important;
+    background: #c9a55a !important;
+    border-color: #c9a55a !important;
     color: #fafaf7;
   }
   .mini-stat.invertir-card .mini-stat-label { color: rgba(250,250,247,0.6); }
   .mini-stat.invertir-card .mini-stat-value { color: #fafaf7; }
   .mini-stat.invertir-card .mini-stat-subvalue { color: rgba(250,250,247,0.45); }
   .mini-stat.invertir-card.clickable:hover {
-    background: #5d4f36 !important;
-    border-color: #5d4f36 !important;
+    background: #b89249 !important;
+    border-color: #b89249 !important;
     transform: translateY(-1px) translateX(2px);
   }
   .sticky-cta {
@@ -518,7 +536,7 @@
     line-height: 1.4;
   }
   .etf-tag.region { background: rgba(55,138,221,0.10); color: #2c6cad; border-color: rgba(55,138,221,0.25); }
-  .etf-tag.caps { background: rgba(74,63,42,0.08); color: #4a3f2a; border-color: rgba(74,63,42,0.25); }
+  .etf-tag.caps { background: rgba(201,165,90,0.08); color: #c9a55a; border-color: rgba(201,165,90,0.25); }
 
   /* === Dropdown custom con preview de cards + cards alargadas === */
   .region-select-wrap {
@@ -1331,8 +1349,8 @@
   .cta-next {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 10px 16px;
-    background: #4a3f2a; color: #fafaf7;
-    border: 1px solid #4a3f2a;
+    background: #c9a55a; color: #fafaf7;
+    border: 1px solid #c9a55a;
     border-radius: 12px;
     font-family: 'Geist', sans-serif;
     font-size: 13px; font-weight: 600;
@@ -1342,9 +1360,9 @@
     white-space: nowrap;
   }
   .cta-next:hover:not(:disabled) {
-    background: #5d4f36;
+    background: #b89249;
     transform: translateY(-1px) translateX(2px);
-    box-shadow: 0 6px 18px rgba(74,63,42,0.28);
+    box-shadow: 0 6px 18px rgba(201,165,90,0.28);
   }
   .cta-next:disabled {
     background: var(--panel-2);
@@ -1360,10 +1378,9 @@
 <div class="sticky-header">
   <div class="sticky-content">
     <div class="sticky-stats">
-      <div class="mini-stat clickable invertir-card" id="stat-lp" style="display:none" data-action="goto-politica" title="Volver a Política de inversión">
-        <div class="mini-stat-label">A invertir en largo plazo →</div>
-        <div class="mini-stat-value" id="val-lp">$0</div>
-      </div>
+      <button type="button" class="nav-back-arrow" id="stat-lp" data-action="goto-politica" title="Volver a Política de inversión" aria-label="Volver a Política de inversión">
+        <span aria-hidden="true">←</span>
+      </button>
       <div class="mini-stat clickable mini-stat-map active" id="stat-map" data-action="goto-map" title="Ver capitalización bursátil">
         <div class="mini-stat-label">Capitalización mundial</div>
         <div class="mini-stat-value">$128T</div>
@@ -1891,6 +1908,9 @@ function applyPortfolio(id) {
   // Reemplaza la selección anterior — limpia y aplica el combo
   selectedTickers = [...port.tickers];
   saveSelection(selectedTickers);
+  // Re-renderizar las regional sections para que aparezcan las rows de los nuevos ETFs
+  // y desaparezcan del dropdown "+ Agregar ETF de ..." (se mueven a la fila seleccionada)
+  renderETFSections();
   updateUI();
   showToast(`✓ Cartera "${port.title}" aplicada (${port.tickers.length} ETFs)`);
   // Sin scroll automático — el usuario ya ve la actualización en el sticky header
@@ -2605,8 +2625,7 @@ function renderLargoPlazoHero() {
   const host = document.getElementById('lp-host');
 
   if (snap && snap.largoPlazoUSD > 0) {
-    // Lleno la mini-stat del header
-    document.getElementById('val-lp').textContent = fmtUSDShort(snap.largoPlazoUSD);
+    // (val-lp removido — el monto ahora vive en el nav card del shell)
     if (stat) stat.style.display = '';
     if (sub) sub.textContent = 'Renta Variable según tus objetivos';
     if (host) host.innerHTML = '';
@@ -2778,7 +2797,7 @@ setShowOnlyEligible(false);
 updateUI();
 
 // Header sticky stats actúan como navegación
-document.querySelectorAll('.mini-stat.clickable').forEach(s => {
+document.querySelectorAll('.mini-stat.clickable, .nav-back-arrow').forEach(s => {
   s.addEventListener('click', (e) => {
     if (e.target.closest('.info-link')) return; // ⓘ tiene su propio handler
     if (s.dataset.action === 'goto-objetivos') {

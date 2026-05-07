@@ -342,7 +342,7 @@ function WealthPlanningWorkflow() {
     objectives.push({ id: "psm", code: "PSM", name: "Por Si Las Moscas", startYear: psmStart, duration: psmDuration, capital: psmAmount, color: "#2d2d2d", isLumpSum: true, perYearLabel: "total" });
   }
   if (confirmedEdu !== null) {
-    objectives.push({ id: "edu", code: "EDU", name: "Educación de los hijos", startYear: eduStart, duration: eduDuration, capital: eduTotal, color: "#4a3f2a", annualPerYear: eduAnnual, perYearLabel: "por año" });
+    objectives.push({ id: "edu", code: "EDU", name: "Educación de los hijos", startYear: eduStart, duration: eduDuration, capital: eduTotal, color: "#c9a55a", annualPerYear: eduAnnual, perYearLabel: "por año" });
   }
   if (confirmedRetirement !== null) {
     objectives.push({ id: "ret", code: "JUB", name: "Jubilación", startYear: retStart, duration: retirementMultiplier, capital: retirementCapital, color: "#1a3a2e", annualPerYear: baseMonthlyExpense * 12, perYearLabel: "gasto anual" });
@@ -358,6 +358,22 @@ function WealthPlanningWorkflow() {
   if (confirmedIntergen !== null && intergenAmount > 0) {
     objectives.push({ id: "intergen", code: "INT", name: "Capital Intergeneracional", startYear: intergenStart, duration: intergenDuration, capital: intergenAmount, color: "#5c4a7a", isLumpSum: true, isMilestone: true, perYearLabel: "excedente" });
   }
+
+  // Suma proporcional anual: cada objetivo aporta capital/duration por año en su rango.
+  // Para años > visibleYears (10), se suman al bucket "10+" (índice visibleYears).
+  const yearlyTotals = (() => {
+    const totals = Array.from({ length: 11 /* visibleYears + 1 */ }, () => 0);
+    objectives.forEach((obj) => {
+      const perYear = obj.duration > 0 ? obj.capital / obj.duration : obj.capital;
+      for (let y = obj.startYear; y < obj.startYear + obj.duration; y++) {
+        if (y >= 1 && y <= maxYear) {
+          const idx = y <= 10 ? y - 1 : 10;
+          totals[idx] += perYear;
+        }
+      }
+    });
+    return totals;
+  })();
 
   const handleConfirmStep0 = () => { setConfirmedExpense(monthlyExpense); setCurrentStep(1); };
   const handleConfirmStep1 = () => { setConfirmedIncome(monthlyIncome); setCurrentStep(2); };
@@ -558,11 +574,7 @@ function WealthPlanningWorkflow() {
         completedAt: new Date().toISOString(),
       }));
     } catch (e) {}
-    const t = setTimeout(() => {
-      const gantt = document.querySelector('[data-gantt="true"]');
-      if (gantt) gantt.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 350);
-    return () => clearTimeout(t);
+    // Sin auto-scroll al gantt — el usuario controla manualmente la navegación.
   }, [currentStep, assetTotals.mm, assetTotals.fi, assetTotals.rv, assetGrandTotal, objectivesOnlyTotal, intergenAmount, intergenInvestable]);
 
   const updateCardMix = (cardId, newSplit) => {
@@ -628,10 +640,7 @@ function WealthPlanningWorkflow() {
       {/* TOP BAR */}
       <div style={{ position: "sticky", top: 0, zIndex: 10, background: "rgba(250, 250, 247, 0.85)", backdropFilter: "blur(12px)", borderBottom: "1px solid #ebebe4" }}>
         <div style={{ maxWidth: 1120, margin: "0 auto", padding: "14px 32px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", color: "#fafaf7", fontSize: 13, fontWeight: 600 }}>⌘</div>
-            <span style={{ fontSize: 14, fontWeight: 500 }}>blueprint</span>
-          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}></div>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             {[0, 1, 2, 3, 4, 5].map((i) => (
               <div key={i} style={{ width: i === currentStep ? 24 : 6, height: 6, borderRadius: 999, background: i <= currentStep ? "#0a0a0a" : "#ebebe4", transition: "all 0.4s cubic-bezier(0.22, 1, 0.36, 1)" }} />
@@ -719,18 +728,17 @@ function WealthPlanningWorkflow() {
               style={{
                 display: "flex", flexDirection: "column", justifyContent: "space-between",
                 padding: "10px 16px", borderRadius: 12,
-                background: confirmedIntergen !== null ? "#4a3f2a" : "#ffffff",
+                background: confirmedIntergen !== null ? "#c9a55a" : "#ffffff",
                 color: confirmedIntergen !== null ? "#fafaf7" : "#1a1917",
-                border: "1px solid " + (confirmedIntergen !== null ? "#4a3f2a" : "#ebebe4"),
+                border: "1px solid " + (confirmedIntergen !== null ? "#c9a55a" : "#ebebe4"),
                 minWidth: 170, minHeight: 70,
                 cursor: confirmedIntergen !== null ? "pointer" : "default",
                 opacity: confirmedIntergen !== null ? 1 : 0.5,
                 transition: "all 0.35s cubic-bezier(0.22,1,0.36,1), transform 0.35s cubic-bezier(0.22,1,0.36,1)",
-                transform: currentStep === 6 ? "translateX(-8px)" : "translateX(0)",
                 outline: "none",
               }}
-              onMouseEnter={(e) => { if (confirmedIntergen !== null) e.currentTarget.style.transform = "translateY(-1px) translateX(" + (currentStep === 6 ? '-8px' : '0') + ")"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = currentStep === 6 ? "translateX(-8px)" : "translateX(0)"; }}
+              onMouseEnter={(e) => { if (confirmedIntergen !== null) e.currentTarget.style.transform = "translateY(-1px)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
               title={confirmedIntergen !== null ? "Definir política de inversión →" : ""}
             >
               <span style={{
@@ -749,47 +757,46 @@ function WealthPlanningWorkflow() {
             </div>
           )}
         </div>
-      </div>
 
-      {/* Mensaje estratégico + CTA al siguiente paso (Política) */}
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "12px 32px 0" }}>
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          gap: 16, flexWrap: "wrap",
-          padding: "14px 18px",
-          background: "#ffffff", border: "1px solid #ebebe4",
-          borderRadius: 14,
-          marginBottom: 4,
-        }}>
-          <div className="serif" style={{ fontSize: 22, lineHeight: 1.15, letterSpacing: "-0.01em", color: "#1a1917", flex: 1, minWidth: 220 }}>
-            La mejor estrategia es <em style={{ fontStyle: "italic", color: "#6b6b64", fontWeight: 400 }}>invertir en algo y mantenerlo</em>; para eso definí tus objetivos así sabrás cuánto puedes poner al largo plazo.
+        {/* Mensaje estratégico + CTA — DENTRO del sticky topbar para que quede fijo bajo las cards al scrollear */}
+        <div style={{ maxWidth: 1120, margin: "0 auto", padding: "10px 32px 14px" }}>
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            gap: 16, flexWrap: "wrap",
+            padding: "14px 18px",
+            background: "#ffffff", border: "1px solid #ebebe4",
+            borderRadius: 14,
+          }}>
+            <div className="serif" style={{ fontSize: 22, lineHeight: 1.15, letterSpacing: "-0.01em", color: "#1a1917", flex: 1, minWidth: 220 }}>
+              La mejor estrategia es <em style={{ fontStyle: "italic", color: "#6b6b64", fontWeight: 400 }}>invertir en algo y mantenerlo</em>; para eso definí tus objetivos así sabrás cuánto puedes poner al largo plazo.
+            </div>
+            <button
+              type="button"
+              onClick={() => { try { window.parent.location.hash = '#politica'; } catch (e) {} }}
+              disabled={currentStep < 6}
+              style={{
+                padding: "10px 16px",
+                background: currentStep < 6 ? "#ebebe4" : "#0a0a0a",
+                color: currentStep < 6 ? "#9b9a96" : "#fafaf7",
+                border: "1px solid " + (currentStep < 6 ? "#ebebe4" : "#0a0a0a"),
+                borderRadius: 12,
+                fontFamily: "'Geist', sans-serif",
+                fontSize: 13, fontWeight: 600, letterSpacing: "0.04em",
+                cursor: currentStep < 6 ? "not-allowed" : "pointer",
+                whiteSpace: "nowrap",
+                transition: "transform 0.18s, box-shadow 0.18s, background 0.18s",
+              }}
+              onMouseEnter={(e) => { if (currentStep >= 6) { e.currentTarget.style.background = "#1a1a1a"; e.currentTarget.style.transform = "translateY(-1px) translateX(2px)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(10,10,10,0.18)"; } }}
+              onMouseLeave={(e) => { if (currentStep >= 6) { e.currentTarget.style.background = "#0a0a0a"; e.currentTarget.style.transform = "translateX(0)"; e.currentTarget.style.boxShadow = "none"; } }}
+              title={currentStep < 6 ? "Completá los pasos para continuar" : "Ir a Política de inversión →"}
+            >POLÍTICA DE INVERSIÓN →</button>
           </div>
-          <button
-            type="button"
-            onClick={() => { try { window.parent.location.hash = '#politica'; } catch (e) {} }}
-            disabled={currentStep < 6}
-            style={{
-              padding: "10px 16px",
-              background: currentStep < 6 ? "#ebebe4" : "#0a0a0a",
-              color: currentStep < 6 ? "#9b9a96" : "#fafaf7",
-              border: "1px solid " + (currentStep < 6 ? "#ebebe4" : "#0a0a0a"),
-              borderRadius: 12,
-              fontFamily: "'Geist', sans-serif",
-              fontSize: 13, fontWeight: 600, letterSpacing: "0.04em",
-              cursor: currentStep < 6 ? "not-allowed" : "pointer",
-              whiteSpace: "nowrap",
-              transition: "transform 0.18s, box-shadow 0.18s, background 0.18s",
-            }}
-            onMouseEnter={(e) => { if (currentStep >= 6) { e.currentTarget.style.background = "#1a1a1a"; e.currentTarget.style.transform = "translateY(-1px) translateX(2px)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(10,10,10,0.18)"; } }}
-            onMouseLeave={(e) => { if (currentStep >= 6) { e.currentTarget.style.background = "#0a0a0a"; e.currentTarget.style.transform = "translateX(0)"; e.currentTarget.style.boxShadow = "none"; } }}
-            title={currentStep < 6 ? "Completá los pasos para continuar" : "Ir a Política de inversión →"}
-          >POLÍTICA DE INVERSIÓN →</button>
         </div>
       </div>
 
       {/* QUESTIONS */}
-      <section style={{ maxWidth: 1120, margin: "0 auto", padding: currentStep === 6 ? "16px 32px 0" : "56px 32px 40px", minHeight: currentStep === 6 ? 0 : 560, display: "flex", flexDirection: "column" }}>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+      <section style={{ maxWidth: 1120, margin: "0 auto", padding: currentStep === 6 ? "0 32px" : "20px 32px 40px", height: currentStep === 6 ? "auto" : 620, minHeight: currentStep === 6 ? 0 : 620, display: "flex", flexDirection: "column", position: "relative", overflow: currentStep === 6 ? "visible" : "hidden", boxSizing: "content-box" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>
           {currentStep === 0 && (
             <div className="question-active" key="step-0">
               <h1 className="serif" style={{ fontSize: 52, lineHeight: 1.05, letterSpacing: "-0.02em", marginBottom: 32, maxWidth: 820 }}>
@@ -986,12 +993,36 @@ function WealthPlanningWorkflow() {
           )}
         </div>
 
-        <div style={{ marginTop: 48, paddingTop: 24, borderTop: "1px solid #ebebe4", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-          <button className="nav-btn nav-back" onClick={handleBack} disabled={currentStep === 0} style={{ opacity: currentStep === 0 ? 0.3 : 1, pointerEvents: currentStep === 0 ? "none" : "auto" }}>
-            <span style={{ fontSize: 16, lineHeight: 1 }}>←</span> Anterior
-          </button>
-          <div />
-          {currentStep < 6 ? (
+        <div style={{
+          marginTop: currentStep === 6 ? 0 : 48,
+          paddingTop: currentStep === 6 ? 0 : 24,
+          borderTop: currentStep === 6 ? "none" : "1px solid #ebebe4",
+          display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12,
+          // Para steps 0-5: fijar el bloque de navegación al fondo del section, así el botón
+          // Siguiente queda siempre a la misma altura visual aunque el contenido cambie.
+          position: currentStep === 6 ? "static" : "absolute",
+          bottom: currentStep === 6 ? "auto" : 40,
+          left: currentStep === 6 ? "auto" : 32,
+          right: currentStep === 6 ? "auto" : 32,
+        }}>
+          {/* Volver fijo a la izquierda — no afecta el centrado del Siguiente */}
+          {currentStep > 0 && (
+            <button
+              className="nav-btn nav-back"
+              onClick={handleBack}
+              style={{
+                background: "transparent", border: "none", color: "#6b6b64",
+                fontSize: 13, padding: "6px 12px",
+                position: currentStep === 6 ? "static" : "absolute",
+                left: currentStep === 6 ? "auto" : 0,
+                top: currentStep === 6 ? "auto" : "50%",
+                transform: currentStep === 6 ? "none" : "translateY(-50%)",
+              }}
+            >
+              <span style={{ fontSize: 14, lineHeight: 1 }}>←</span> Volver
+            </button>
+          )}
+          {currentStep < 6 && (
             <button className="nav-btn nav-next" onClick={() => {
               if (currentStep === 0) handleConfirmStep0();
               else if (currentStep === 1) handleConfirmStep1();
@@ -1002,19 +1033,74 @@ function WealthPlanningWorkflow() {
             }}>
               {currentStep === 5 ? "Finalizar" : "Siguiente"} <span style={{ fontSize: 16, lineHeight: 1 }}>→</span>
             </button>
-          ) : (
-            <button className="nav-btn nav-next" onClick={() => {
-              const gantt = document.querySelector('[data-gantt="true"]');
-              if (gantt) gantt.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }} style={{ background: "transparent", color: "#0a0a0a", border: "1px solid #0a0a0a" }}>
-              Ver mapa <span style={{ fontSize: 16, lineHeight: 1 }}>↓</span>
-            </button>
           )}
         </div>
       </section>
 
       {/* GANTT */}
       <section data-gantt="true" style={{ maxWidth: 1120, margin: "0 auto", padding: "0 32px 80px" }}>
+        {/* ASSET MIX (movido arriba del mapa de horizonte) */}
+        {objectives.length > 0 && (
+          <div className="fade-up" style={{ background: "#fff", border: "1px solid #ebebe4", borderRadius: 20, padding: "28px 28px 24px", marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 500, letterSpacing: "-0.01em" }}>Mix de activos financieros</h3>
+              {Object.keys(mixOverrides).length > 0 && (
+                <button className="nav-btn nav-back" style={{ minWidth: "auto", padding: "8px 16px", fontSize: 12 }} onClick={() => setMixOverrides({})}>Restablecer receta</button>
+              )}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 40, alignItems: "center" }}>
+              <div style={{ position: "relative", width: 200, height: 200 }}>
+                {(() => {
+                  const r = 72, cx = 100, cy = 100;
+                  const C = 2 * Math.PI * r;
+                  const mmPct = pctOf(assetTotals.mm) / 100;
+                  const fiPct = pctOf(assetTotals.fi) / 100;
+                  const rvPct = pctOf(assetTotals.rv) / 100;
+                  return (
+                    <svg viewBox="0 0 200 200" width="200" height="200">
+                      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f0f0e8" strokeWidth="28" />
+                      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#1f3a2e" strokeWidth="28" strokeDasharray={`${mmPct * C} ${C}`} transform={`rotate(-90 ${cx} ${cy})`} />
+                      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#6b6b64" strokeWidth="28" strokeDasharray={`${fiPct * C} ${C}`} strokeDashoffset={-mmPct * C} transform={`rotate(-90 ${cx} ${cy})`} />
+                      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#c9a55a" strokeWidth="28" strokeDasharray={`${rvPct * C} ${C}`} strokeDashoffset={-(mmPct + fiPct) * C} transform={`rotate(-90 ${cx} ${cy})`} />
+                    </svg>
+                  );
+                })()}
+                <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+                  <div style={{ fontSize: 10, color: "#a8a89e", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 2 }}>total</div>
+                  <div className="serif" style={{ fontSize: 22, fontVariantNumeric: "tabular-nums" }}>{formatShort(assetGrandTotal)}</div>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                {[
+                  { label: "Corto plazo", sub: "Money Market", amount: assetTotals.mm, color: "#1f3a2e" },
+                  { label: "Mediano plazo", sub: "Renta Fija", amount: assetTotals.fi, color: "#6b6b64" },
+                  { label: "Largo plazo", sub: "Renta Variable", amount: assetTotals.rv, color: "#c9a55a" },
+                ].map((row) => {
+                  const pct = pctOf(row.amount);
+                  return (
+                    <div key={row.label}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ width: 10, height: 10, borderRadius: 3, background: row.color }} />
+                          <span style={{ fontSize: 14, fontWeight: 500 }}>{row.label}</span>
+                          <span style={{ fontSize: 12, color: "#a8a89e" }}>· {row.sub}</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
+                          <span className="serif" style={{ fontSize: 20, fontVariantNumeric: "tabular-nums" }}>{formatShort(row.amount)}</span>
+                          <span style={{ fontSize: 12, color: "#6b6b64", fontVariantNumeric: "tabular-nums", minWidth: 44, textAlign: "right" }}>{pct.toFixed(1)}%</span>
+                        </div>
+                      </div>
+                      <div style={{ height: 8, background: "#f0f0e8", borderRadius: 999, overflow: "hidden" }}>
+                        <div style={{ width: `${pct}%`, height: "100%", background: row.color, borderRadius: 999, transition: "width 0.5s" }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div style={{ background: "#fff", border: "1px solid #ebebe4", borderRadius: 20, padding: "28px 28px 24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
             <h3 style={{ fontSize: 18, fontWeight: 500, letterSpacing: "-0.01em" }}>Horizonte patrimonial</h3>
@@ -1088,7 +1174,7 @@ function WealthPlanningWorkflow() {
                   return (
                     <div key={obj.id} style={{ display: "grid", gridTemplateColumns: `repeat(${TOTAL_COLUMNS}, 1fr)`, gap: 6, position: "relative" }}>
                       <div className={`card-enter card-interactive ${isDraggingThis ? "card-dragging" : ""}`}
-                        style={{ gridColumn: `${startCol} / span ${span}`, background: obj.color, color: "#fafaf7", borderRadius: 10, padding: "14px 22px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 100, animationDelay: `${idx * 0.1}s`, position: "relative", overflow: "visible" }}>
+                        style={{ gridColumn: `${startCol} / span ${span}`, background: (obj.startYear === 1 ? "#1f3a2e" : (obj.startYear >= 2 && obj.startYear <= 3 ? "#6b6b64" : "#c9a55a")), color: "#fafaf7", borderRadius: 10, padding: "14px 22px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 100, animationDelay: `${idx * 0.1}s`, position: "relative", overflow: "visible" }}>
                         <div className="resize-handle left" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setDragState({ id: obj.id, mode: "resize-left", initialStart: obj.startYear, initialDuration: obj.duration, startX: e.clientX }); }} />
                         <div className="resize-handle right" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setDragState({ id: obj.id, mode: "resize-right", initialStart: obj.startYear, initialDuration: obj.duration, startX: e.clientX }); }} />
 
@@ -1150,69 +1236,89 @@ function WealthPlanningWorkflow() {
               </div>
             )}
           </div>
-        </div>
 
-        {/* ASSET MIX */}
-        {objectives.length > 0 && (
-          <div className="fade-up" style={{ maxWidth: 1120, margin: "20px auto 0", background: "#fff", border: "1px solid #ebebe4", borderRadius: 20, padding: "28px 28px 24px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 500, letterSpacing: "-0.01em" }}>Mix de activos financieros</h3>
-              {Object.keys(mixOverrides).length > 0 && (
-                <button className="nav-btn nav-back" style={{ minWidth: "auto", padding: "8px 16px", fontSize: 12 }} onClick={() => setMixOverrides({})}>Restablecer receta</button>
-              )}
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 40, alignItems: "center", marginBottom: 32 }}>
-              <div style={{ position: "relative", width: 200, height: 200 }}>
-                {(() => {
-                  const r = 72, cx = 100, cy = 100;
-                  const C = 2 * Math.PI * r;
-                  const mmPct = pctOf(assetTotals.mm) / 100;
-                  const fiPct = pctOf(assetTotals.fi) / 100;
-                  const rvPct = pctOf(assetTotals.rv) / 100;
-                  return (
-                    <svg viewBox="0 0 200 200" width="200" height="200">
-                      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f0f0e8" strokeWidth="28" />
-                      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#1f3a2e" strokeWidth="28" strokeDasharray={`${mmPct * C} ${C}`} transform={`rotate(-90 ${cx} ${cy})`} />
-                      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#6b6b64" strokeWidth="28" strokeDasharray={`${fiPct * C} ${C}`} strokeDashoffset={-mmPct * C} transform={`rotate(-90 ${cx} ${cy})`} />
-                      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#c9a55a" strokeWidth="28" strokeDasharray={`${rvPct * C} ${C}`} strokeDashoffset={-(mmPct + fiPct) * C} transform={`rotate(-90 ${cx} ${cy})`} />
-                    </svg>
-                  );
-                })()}
-                <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-                  <div style={{ fontSize: 10, color: "#a8a89e", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 2 }}>total</div>
-                  <div className="serif" style={{ fontSize: 22, fontVariantNumeric: "tabular-nums" }}>{formatShort(assetGrandTotal)}</div>
-                </div>
+          {/* Totales anuales proporcionales + gráfico de barras (debajo del horizonte) */}
+          {objectives.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
+                <h4 style={{ fontSize: 13, fontWeight: 500, letterSpacing: "0.02em", color: "#6b6b64", textTransform: "uppercase" }}>Necesidad anual proyectada</h4>
+                <span style={{ fontSize: 11, color: "#a8a89e" }}>suma proporcional · USD</span>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                {[
-                  { label: "Corto plazo", sub: "Money Market", amount: assetTotals.mm, color: "#1f3a2e" },
-                  { label: "Mediano plazo", sub: "Renta Fija", amount: assetTotals.fi, color: "#6b6b64" },
-                  { label: "Largo plazo", sub: "Renta Variable", amount: assetTotals.rv, color: "#c9a55a" },
-                ].map((row) => {
-                  const pct = pctOf(row.amount);
+
+              {/* Color por período: año 1 = corto plazo (MM), años 2-3 = mediano plazo (RF),
+                  años 4+ y 10+ = largo plazo (RV). Los hex coinciden con las cards del topbar. */}
+              {(() => null)()}
+
+              {/* Gráfico de barras (sin etiquetas de año, las muestra la fila inferior) */}
+              {(() => {
+                const W = 1080, H = 168;
+                const padL = 8, padR = 8, padT = 16, padB = 8;
+                const innerW = W - padL - padR;
+                const innerH = H - padT - padB;
+                const barGap = 8;
+                const barCount = TOTAL_COLUMNS;
+                const barW = (innerW - barGap * (barCount - 1)) / barCount;
+                const maxVal = Math.max(...yearlyTotals, 1);
+                const ticks = [0, 0.5, 1].map((f) => ({ pct: f, val: f * maxVal }));
+                const periodColor = (i) => {
+                  if (i === 0) return "#1f3a2e";              // corto plazo (MM)
+                  if (i === 1 || i === 2) return "#6b6b64";   // mediano plazo (RF)
+                  return "#c9a55a";                            // largo plazo (RV)
+                };
+                return (
+                  <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: "100%", maxWidth: "100%", height: H, display: "block", marginBottom: 14 }} aria-label="Necesidad anual proyectada">
+                    {/* Líneas guía horizontales */}
+                    {ticks.map((tk, i) => {
+                      const y = padT + innerH - tk.pct * innerH;
+                      return (
+                        <line key={i} x1={padL} x2={W - padR} y1={y.toFixed(1)} y2={y.toFixed(1)} stroke="rgba(168,168,158,0.3)" strokeWidth="1" strokeDasharray={i === 0 ? "0" : "2,3"} />
+                      );
+                    })}
+                    {/* Barras coloreadas por período */}
+                    {yearlyTotals.map((amt, i) => {
+                      const h = maxVal > 0 ? (amt / maxVal) * innerH : 0;
+                      const x = padL + i * (barW + barGap);
+                      const y = padT + (innerH - h);
+                      return (
+                        amt > 0 ? (
+                          <rect key={i} x={x} y={y} width={barW} height={h} rx={3} fill={periodColor(i)}>
+                            <title>{`${i < 10 ? `Año ${i + 1}` : 'Año 10+'}: ${formatShort(Math.round(amt))}`}</title>
+                          </rect>
+                        ) : null
+                      );
+                    })}
+                  </svg>
+                );
+              })()}
+
+              {/* Fila de montos por año coloreada por período (corto / mediano / largo plazo) */}
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${TOTAL_COLUMNS}, 1fr)`, gap: 6 }}>
+                {yearlyTotals.map((amt, i) => {
+                  const periodColor = i === 0 ? "#1f3a2e" : (i === 1 || i === 2 ? "#6b6b64" : "#c9a55a");
+                  const isActive = amt > 0;
                   return (
-                    <div key={row.label}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <div style={{ width: 10, height: 10, borderRadius: 3, background: row.color }} />
-                          <span style={{ fontSize: 14, fontWeight: 500 }}>{row.label}</span>
-                          <span style={{ fontSize: 12, color: "#a8a89e" }}>· {row.sub}</span>
-                        </div>
-                        <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
-                          <span className="serif" style={{ fontSize: 20, fontVariantNumeric: "tabular-nums" }}>{formatShort(row.amount)}</span>
-                          <span style={{ fontSize: 12, color: "#6b6b64", fontVariantNumeric: "tabular-nums", minWidth: 44, textAlign: "right" }}>{pct.toFixed(1)}%</span>
-                        </div>
+                    <div key={i} style={{
+                      textAlign: "center", padding: "8px 4px",
+                      background: isActive ? periodColor : "#fafaf7",
+                      border: "1px solid " + (isActive ? periodColor : "#ebebe4"),
+                      color: isActive ? "#fafaf7" : "#1a1917",
+                      borderRadius: 8,
+                      transition: "background 0.3s, border-color 0.3s",
+                    }}>
+                      <div style={{ fontSize: 9, color: isActive ? "rgba(250,250,247,0.6)" : "#a8a89e", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4, fontWeight: 600 }}>
+                        {i < 10 ? `año ${i + 1}` : "10+"}
                       </div>
-                      <div style={{ height: 8, background: "#f0f0e8", borderRadius: 999, overflow: "hidden" }}>
-                        <div style={{ width: `${pct}%`, height: "100%", background: row.color, borderRadius: 999, transition: "width 0.5s" }} />
+                      <div className="serif" style={{ fontSize: 14, lineHeight: 1.1, fontVariantNumeric: "tabular-nums" }}>
+                        {isActive ? formatShort(Math.round(amt)) : "—"}
                       </div>
                     </div>
                   );
                 })}
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
       </section>
     </div>
   );
