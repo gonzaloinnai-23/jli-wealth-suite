@@ -268,6 +268,10 @@ function WealthPlanningWorkflow() {
   const [eduAnnualOverride, setEduAnnualOverride] = useState(null);
   const [retCapitalOverride, setRetCapitalOverride] = useState(null);
   const [intergenOverride, setIntergenOverride] = useState(null);
+  // Override de nombres por objetivo (para que las cards de mobile permitan renombrarlos)
+  const [nameOverrides, setNameOverrides] = useState({});
+  // Card mobile actualmente en modo edición (id) — null = todas en modo lectura
+  const [editingCardId, setEditingCardId] = useState(null);
 
   useEffect(() => {
     const diff = monthlyExpense - displayedExpense;
@@ -336,16 +340,16 @@ function WealthPlanningWorkflow() {
 
   const objectives = [];
   if (confirmedExpense !== null) {
-    objectives.push({ id: "mnv", code: "MNV", name: "Mantener Nivel de Vida", startYear: mnvStart, duration: mnvDuration, capital: mnvNet, capitalGross: mnvGross, color: "#0a0a0a", annualPerYear: annualExpense, perYearLabel: "gasto anual" });
+    objectives.push({ id: "mnv", code: "MNV", name: nameOverrides.mnv ?? "Mantener Nivel de Vida", startYear: mnvStart, duration: mnvDuration, capital: mnvNet, capitalGross: mnvGross, color: "#0a0a0a", annualPerYear: annualExpense, perYearLabel: "gasto anual" });
   }
   if (confirmedPsm !== null) {
-    objectives.push({ id: "psm", code: "PSM", name: "Por Si Las Moscas", startYear: psmStart, duration: psmDuration, capital: psmAmount, color: "#2d2d2d", isLumpSum: true, perYearLabel: "total" });
+    objectives.push({ id: "psm", code: "PSM", name: nameOverrides.psm ?? "Por Si Las Moscas", startYear: psmStart, duration: psmDuration, capital: psmAmount, color: "#2d2d2d", isLumpSum: true, perYearLabel: "total" });
   }
   if (confirmedEdu !== null) {
-    objectives.push({ id: "edu", code: "EDU", name: "Educación de los hijos", startYear: eduStart, duration: eduDuration, capital: eduTotal, color: "#c9a55a", annualPerYear: eduAnnual, perYearLabel: "por año" });
+    objectives.push({ id: "edu", code: "EDU", name: nameOverrides.edu ?? "Educación de los hijos", startYear: eduStart, duration: eduDuration, capital: eduTotal, color: "#c9a55a", annualPerYear: eduAnnual, perYearLabel: "por año" });
   }
   if (confirmedRetirement !== null) {
-    objectives.push({ id: "ret", code: "JUB", name: "Jubilación", startYear: retStart, duration: retirementMultiplier, capital: retirementCapital, color: "#1a3a2e", annualPerYear: baseMonthlyExpense * 12, perYearLabel: "gasto anual" });
+    objectives.push({ id: "ret", code: "JUB", name: nameOverrides.ret ?? "Jubilación", startYear: retStart, duration: retirementMultiplier, capital: retirementCapital, color: "#1a3a2e", annualPerYear: baseMonthlyExpense * 12, perYearLabel: "gasto anual" });
   }
   customObjectives.forEach((obj) => {
     objectives.push({ ...obj, isLumpSum: true, perYearLabel: "monto", isCustom: true });
@@ -356,7 +360,7 @@ function WealthPlanningWorkflow() {
   const capitalDeficit = Math.max(0, capitalNeeded - intergenInvestable);
 
   if (confirmedIntergen !== null && intergenAmount > 0) {
-    objectives.push({ id: "intergen", code: "INT", name: "Capital Intergeneracional", startYear: intergenStart, duration: intergenDuration, capital: intergenAmount, color: "#5c4a7a", isLumpSum: true, isMilestone: true, perYearLabel: "excedente" });
+    objectives.push({ id: "intergen", code: "INT", name: nameOverrides.intergen ?? "Capital Intergeneracional", startYear: intergenStart, duration: intergenDuration, capital: intergenAmount, color: "#5c4a7a", isLumpSum: true, isMilestone: true, perYearLabel: "excedente" });
   }
 
   // Suma proporcional anual: cada objetivo aporta capital/duration por año en su rango.
@@ -415,6 +419,25 @@ function WealthPlanningWorkflow() {
     const startCol = yearToColumn(startYear);
     const endCol = yearToColumn(endYear);
     return { startCol, span: endCol - startCol + 1 };
+  };
+
+  // Helpers para editar nombre / monto desde la card mobile (sin pasar por el modo edición)
+  const setNameFor = (id, name) => {
+    if (id.startsWith("custom-")) {
+      setCustomObjectives((prev) => prev.map((o) => (o.id === id ? { ...o, name } : o)));
+    } else {
+      setNameOverrides((prev) => ({ ...prev, [id]: name }));
+    }
+  };
+  const setAmountFor = (id, raw) => {
+    const parsed = parseInt(String(raw).replace(/[^0-9]/g, ""), 10);
+    if (isNaN(parsed) || parsed < 0) return;
+    if (id === "mnv") setMnvAnnualOverride(parsed);
+    else if (id === "psm") setPsmTotalOverride(parsed);
+    else if (id === "edu") setEduAnnualOverride(parsed);
+    else if (id === "ret") setRetCapitalOverride(parsed);
+    else if (id === "intergen") setIntergenOverride(parsed);
+    else if (id.startsWith("custom-")) setCustomObjectives((prev) => prev.map((o) => (o.id === id ? { ...o, capital: parsed } : o)));
   };
 
   const setStartFor = (id, val) => {
@@ -635,6 +658,70 @@ function WealthPlanningWorkflow() {
         .card-interactive:hover .resize-handle { opacity: 1; }
 
         .overflow-col { background: repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(168, 168, 158, 0.08) 6px, rgba(168, 168, 158, 0.08) 12px); }
+
+        /* Inputs estilo "click-to-edit": parecen texto plano hasta que el usuario interactúa.
+           Subrayado tenue persistente para indicar que son editables sin cuadros visibles. */
+        .inline-edit {
+          background: transparent;
+          border: none;
+          border-bottom: 1px dashed rgba(255,255,255,0.28);
+          color: inherit;
+          font-family: inherit;
+          padding: 4px 0;
+          margin: 0;
+          outline: none;
+          width: 100%;
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: textfield;
+          transition: border-color 0.15s, background 0.15s;
+          cursor: text;
+        }
+        .inline-edit::-webkit-outer-spin-button,
+        .inline-edit::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .inline-edit:hover { border-bottom-color: rgba(255,255,255,0.55); }
+        .inline-edit:focus { border-bottom-style: solid; border-bottom-color: rgba(255,255,255,0.85); }
+
+        /* === Mobile (≤768px) === */
+        @media (max-width: 768px) {
+          /* Ocultar las 4 cards auxiliares del topbar — sólo queda "A invertir en largo plazo" */
+          .topbar-card-aux { display: none !important; }
+          /* Card "A invertir en largo plazo": sólo visible en mobile cuando se habilita
+             el CTA "POLÍTICA DE INVERSIÓN" (currentStep ≥ 6 → confirmedIntergen ≠ null). */
+          .topbar-card-invertir:not(.is-active) { display: none !important; }
+          /* Versión corta del mensaje estratégico: "La mejor estrategia es invertir en algo y mantenerlo." */
+          .msg-extra { display: none !important; }
+          /* Tamaño consistente con el msg-text de Política (16px) en mobile */
+          .strategic-msg { font-size: 16px !important; line-height: 1.25 !important; }
+          /* Mix de activos financieros: sólo el donut + leyenda compacta (sin barras horizontales). */
+          .asset-mix { padding: 18px 16px !important; }
+          .asset-mix .asset-mix-grid {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+            justify-items: center !important;
+          }
+          .asset-mix .asset-mix-grid > div:nth-child(2) > div > div:last-child { display: none !important; } /* oculta la barra horizontal de cada fila */
+          .asset-mix .asset-mix-grid > div:nth-child(2) { gap: 8px !important; width: 100%; }
+          /* Reemplazar el gantt por la lista de cards completas en mobile */
+          .gantt-header, .gantt-track { display: none !important; }
+          .gantt-mobile { display: flex !important; }
+          .wizard-section { height: auto !important; min-height: 0 !important; padding: 16px !important; overflow: visible !important; }
+          .wizard-nav { position: static !important; margin-top: 24px !important; padding-top: 16px !important; }
+          .question-active h1 { font-size: 30px !important; line-height: 1.1 !important; margin-bottom: 18px !important; max-width: none !important; }
+          .question-active p { font-size: 13px !important; }
+          .question-active > div[style*="grid-template-columns: 1.2fr 1fr"],
+          .question-active > div[style*="grid-template-columns: 1.4fr 1fr"],
+          .question-active > div[style*="grid-template-columns: 1.3fr 1fr"],
+          .question-active > div[style*="grid-template-columns: 1fr 1fr"],
+          .question-active > div[style*="grid-template-columns: 1fr 1fr 1.2fr"],
+          .question-active > div[style*="grid-template-columns: 1fr 1fr 1fr"] {
+            grid-template-columns: 1fr !important;
+            gap: 18px !important;
+            margin-bottom: 18px !important;
+          }
+          .question-active .serif[style*="font-size: 80"] { font-size: 48px !important; }
+          .question-active .serif[style*="font-size: 72"] { font-size: 42px !important; }
+        }
       `}</style>
 
       {/* TOP BAR */}
@@ -651,7 +738,7 @@ function WealthPlanningWorkflow() {
           </div>
           <div style={{ display: "flex", alignItems: "stretch", gap: 8, flexWrap: "wrap" }}>
             {/* Card: Objetivos */}
-            <div style={{
+            <div className="topbar-card-aux" style={{
               display: "flex", flexDirection: "column", justifyContent: "space-between",
               padding: "10px 16px", borderRadius: 12,
               background: "#ffffff", border: "1px solid #ebebe4",
@@ -665,7 +752,7 @@ function WealthPlanningWorkflow() {
               </span>
             </div>
             {/* Card: Capital intergeneracional */}
-            <div style={{
+            <div className="topbar-card-aux" style={{
               display: "flex", flexDirection: "column", justifyContent: "space-between",
               padding: "10px 16px", borderRadius: 12,
               background: "#ffffff", border: "1px solid #ebebe4",
@@ -679,7 +766,7 @@ function WealthPlanningWorkflow() {
               </span>
             </div>
             {/* Card: Corto plazo (Money Market) — color del donut #1f3a2e */}
-            <div style={{
+            <div className="topbar-card-aux" style={{
               display: "flex", flexDirection: "column", justifyContent: "space-between",
               padding: "10px 16px", borderRadius: 12,
               background: assetTotals.mm > 0 ? "#1f3a2e" : "#ffffff",
@@ -695,7 +782,7 @@ function WealthPlanningWorkflow() {
               </span>
             </div>
             {/* Card: Mediano plazo (Renta Fija) — color del donut #6b6b64 */}
-            <div style={{
+            <div className="topbar-card-aux" style={{
               display: "flex", flexDirection: "column", justifyContent: "space-between",
               padding: "10px 16px", borderRadius: 12,
               background: assetTotals.fi > 0 ? "#6b6b64" : "#ffffff",
@@ -710,8 +797,10 @@ function WealthPlanningWorkflow() {
                 {assetTotals.fi > 0 ? formatShort(assetTotals.fi) : "—"}
               </span>
             </div>
-            {/* Card: A invertir en largo plazo — clickeable, color marrón, va a Política */}
+            {/* Card: A invertir en largo plazo — clickeable, color marrón, va a Política.
+                 En mobile sólo aparece cuando confirmedIntergen ≠ null (se habilita la nav). */}
             <div
+              className={"topbar-card-invertir" + (confirmedIntergen !== null ? " is-active" : "")}
               role="button"
               tabIndex={confirmedIntergen !== null ? 0 : -1}
               onClick={() => {
@@ -767,8 +856,8 @@ function WealthPlanningWorkflow() {
             background: "#ffffff", border: "1px solid #ebebe4",
             borderRadius: 14,
           }}>
-            <div className="serif" style={{ fontSize: 22, lineHeight: 1.15, letterSpacing: "-0.01em", color: "#1a1917", flex: 1, minWidth: 220 }}>
-              La mejor estrategia es <em style={{ fontStyle: "italic", color: "#6b6b64", fontWeight: 400 }}>invertir en algo y mantenerlo</em>; para eso definí tus objetivos así sabrás cuánto puedes poner al largo plazo.
+            <div className="serif strategic-msg" style={{ fontSize: 22, lineHeight: 1.15, letterSpacing: "-0.01em", color: "#1a1917", flex: 1, minWidth: 220 }}>
+              La mejor estrategia es <em style={{ fontStyle: "italic", color: "#6b6b64", fontWeight: 400 }}>invertir en algo y mantenerlo</em><span className="msg-extra">; para eso definí tus objetivos así sabrás cuánto puedes poner al largo plazo</span>.
             </div>
             <button
               type="button"
@@ -795,7 +884,7 @@ function WealthPlanningWorkflow() {
       </div>
 
       {/* QUESTIONS */}
-      <section style={{ maxWidth: 1120, margin: "0 auto", padding: currentStep === 6 ? "0 32px" : "20px 32px 40px", height: currentStep === 6 ? "auto" : 620, minHeight: currentStep === 6 ? 0 : 620, display: "flex", flexDirection: "column", position: "relative", overflow: currentStep === 6 ? "visible" : "hidden", boxSizing: "content-box" }}>
+      <section className="wizard-section" style={{ maxWidth: 1120, margin: "0 auto", padding: currentStep === 6 ? "0 32px" : "20px 32px 40px", height: currentStep === 6 ? "auto" : 620, minHeight: currentStep === 6 ? 0 : 620, display: "flex", flexDirection: "column", position: "relative", overflow: currentStep === 6 ? "visible" : "hidden", boxSizing: "content-box" }}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>
           {currentStep === 0 && (
             <div className="question-active" key="step-0">
@@ -914,16 +1003,20 @@ function WealthPlanningWorkflow() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, marginBottom: 32 }}>
                 <div>
                   <SnapSlider steps={eduSteps} value={eduPerYear} onChange={setEduPerYear} labels={["$5K", "$40K", "$75K", "$130K", "$150K"]} />
-                  <div style={{ marginTop: 24 }} className="serif">
-                    <span style={{ fontSize: 48, lineHeight: 1, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" }}>{formatUSD(displayedEdu)}</span>
-                    <span style={{ fontSize: 16, color: "#a8a89e", fontFamily: "'Geist', sans-serif", fontWeight: 400, marginLeft: 8 }}>/ año</span>
+                  <div style={{ marginTop: 24, display: "flex", alignItems: "baseline", flexWrap: "wrap", columnGap: 16, rowGap: 4 }} className="serif">
+                    <span>
+                      <span style={{ fontSize: 48, lineHeight: 1, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" }}>{formatUSD(displayedEdu)}</span>
+                      <span style={{ fontSize: 16, color: "#a8a89e", fontFamily: "'Geist', sans-serif", fontWeight: 400, marginLeft: 8 }}>/ año</span>
+                    </span>
+                    <span style={{ color: "#a8a89e", fontFamily: "'Geist', sans-serif", fontWeight: 400, fontSize: 16 }}>·</span>
+                    <span style={{ fontVariantNumeric: "tabular-nums" }}>
+                      <span style={{ fontSize: 32, letterSpacing: "-0.02em" }}>{eduEndYear - eduStartYear + 1}</span>
+                      <span style={{ fontSize: 14, color: "#6b6b64", fontFamily: "'Geist', sans-serif", marginLeft: 6 }}>años</span>
+                    </span>
                   </div>
                 </div>
                 <div>
                   <YearRangePicker totalYears={15} startYear={eduStartYear} endYear={eduEndYear} onChange={(s, e) => { setEduStartYear(s); setEduEndYear(e); }} />
-                  <div className="serif" style={{ marginTop: 24, fontSize: 32, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
-                    {eduEndYear - eduStartYear + 1} <span style={{ fontSize: 14, color: "#6b6b64", fontFamily: "'Geist', sans-serif" }}>años</span>
-                  </div>
                 </div>
               </div>
             </div>
@@ -993,7 +1086,7 @@ function WealthPlanningWorkflow() {
           )}
         </div>
 
-        <div style={{
+        <div className="wizard-nav" style={{
           marginTop: currentStep === 6 ? 0 : 48,
           paddingTop: currentStep === 6 ? 0 : 24,
           borderTop: currentStep === 6 ? "none" : "1px solid #ebebe4",
@@ -1005,7 +1098,7 @@ function WealthPlanningWorkflow() {
           left: currentStep === 6 ? "auto" : 32,
           right: currentStep === 6 ? "auto" : 32,
         }}>
-          {/* Volver fijo a la izquierda — no afecta el centrado del Siguiente */}
+          {/* Volver junto al Siguiente, ambos centrados como par */}
           {currentStep > 0 && (
             <button
               className="nav-btn nav-back"
@@ -1013,10 +1106,7 @@ function WealthPlanningWorkflow() {
               style={{
                 background: "transparent", border: "none", color: "#6b6b64",
                 fontSize: 13, padding: "6px 12px",
-                position: currentStep === 6 ? "static" : "absolute",
-                left: currentStep === 6 ? "auto" : 0,
-                top: currentStep === 6 ? "auto" : "50%",
-                transform: currentStep === 6 ? "none" : "translateY(-50%)",
+                display: "inline-flex", alignItems: "center", gap: 4,
               }}
             >
               <span style={{ fontSize: 14, lineHeight: 1 }}>←</span> Volver
@@ -1041,14 +1131,14 @@ function WealthPlanningWorkflow() {
       <section data-gantt="true" style={{ maxWidth: 1120, margin: "0 auto", padding: "0 32px 80px" }}>
         {/* ASSET MIX (movido arriba del mapa de horizonte) */}
         {objectives.length > 0 && (
-          <div className="fade-up" style={{ background: "#fff", border: "1px solid #ebebe4", borderRadius: 20, padding: "28px 28px 24px", marginBottom: 20 }}>
+          <div className="fade-up asset-mix" style={{ background: "#fff", border: "1px solid #ebebe4", borderRadius: 20, padding: "28px 28px 24px", marginBottom: 20 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
               <h3 style={{ fontSize: 18, fontWeight: 500, letterSpacing: "-0.01em" }}>Mix de activos financieros</h3>
               {Object.keys(mixOverrides).length > 0 && (
                 <button className="nav-btn nav-back" style={{ minWidth: "auto", padding: "8px 16px", fontSize: 12 }} onClick={() => setMixOverrides({})}>Restablecer receta</button>
               )}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 40, alignItems: "center" }}>
+            <div className="asset-mix-grid" style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 40, alignItems: "center" }}>
               <div style={{ position: "relative", width: 200, height: 200 }}>
                 {(() => {
                   const r = 72, cx = 100, cy = 100;
@@ -1101,6 +1191,7 @@ function WealthPlanningWorkflow() {
           </div>
         )}
 
+        {objectives.length > 0 && (
         <div style={{ background: "#fff", border: "1px solid #ebebe4", borderRadius: 20, padding: "28px 28px 24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
             <h3 style={{ fontSize: 18, fontWeight: 500, letterSpacing: "-0.01em" }}>Horizonte patrimonial</h3>
@@ -1142,7 +1233,100 @@ function WealthPlanningWorkflow() {
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${TOTAL_COLUMNS}, 1fr)`, gap: 6, marginBottom: 10 }}>
+          {/* === Mobile: cards de objetivos. Sólo lectura por defecto; click en el lápiz
+                 entra en modo edición (un objetivo a la vez). === */}
+          {objectives.length > 0 && (
+            <div className="gantt-mobile" style={{ display: "none", flexDirection: "column", gap: 10 }}>
+              {objectives.map((obj) => {
+                const startYear = obj.startYear;
+                const endYear = obj.startYear + obj.duration - 1;
+                const cardBg = startYear === 1 ? "#1f3a2e" : (startYear >= 2 && startYear <= 3 ? "#6b6b64" : "#c9a55a");
+                const isFixed = obj.id === "intergen";
+                const isAnnualBased = obj.id === "mnv" || obj.id === "edu";
+                const editableAmount = isAnnualBased ? Math.round(obj.annualPerYear || 0) : Math.round(obj.capital);
+                const amountSuffix = isAnnualBased ? "/ año" : "total";
+                const isEditing = editingCardId === obj.id;
+
+                const yearRangeLbl = isFixed ? `año ${startYear}` : `año ${startYear} – ${endYear}`;
+
+                return (
+                  <div key={obj.id} style={{ background: cardBg, color: "#fafaf7", borderRadius: 14, padding: "14px 16px", position: "relative" }}>
+                    {/* Header: code + nombre + lápiz / done a la derecha */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 10 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <div style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", opacity: 0.7, fontWeight: 600 }}>{obj.code}</div>
+                        </div>
+                        {isEditing ? (
+                          <input type="text" className="inline-edit" value={obj.name}
+                            onChange={(e) => setNameFor(obj.id, e.target.value)}
+                            aria-label="Nombre del objetivo"
+                            style={{ fontSize: 16, fontWeight: 500, width: "100%" }} />
+                        ) : (
+                          <div style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.2 }}>{obj.name}</div>
+                        )}
+                      </div>
+                      <button type="button"
+                        onClick={() => setEditingCardId(isEditing ? null : obj.id)}
+                        title={isEditing ? "Listo" : "Editar"}
+                        aria-label={isEditing ? "Listo" : "Editar"}
+                        style={{ background: isEditing ? "rgba(255,255,255,0.22)" : "transparent", border: "1px solid rgba(255,255,255,0.4)", color: "#fafaf7", borderRadius: 8, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0, fontSize: 14, lineHeight: 1, flexShrink: 0 }}>
+                        {isEditing ? "✓" : "✎"}
+                      </button>
+                    </div>
+
+                    {!isEditing ? (
+                      /* Modo lectura: amount + year range en una línea */
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, fontVariantNumeric: "tabular-nums" }}>
+                        <div>
+                          <span className="serif" style={{ fontSize: 22, lineHeight: 1 }}>{formatShort(editableAmount)}</span>
+                          <span style={{ fontSize: 11, opacity: 0.7, marginLeft: 6 }}>{amountSuffix}</span>
+                        </div>
+                        <div style={{ fontSize: 12, opacity: 0.85 }}>{yearRangeLbl}</div>
+                      </div>
+                    ) : (
+                      /* Modo edición: monto + año desde / hasta */
+                      <div style={{ display: "grid", gridTemplateColumns: isFixed ? "1fr 1fr" : "1.3fr 1fr 1fr", gap: 12, alignItems: "end" }}>
+                        <label style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+                          <span style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", opacity: 0.6, fontWeight: 600 }}>monto · {amountSuffix}</span>
+                          <input type="text" inputMode="numeric" className="inline-edit"
+                            value={formatWithCommas(editableAmount)}
+                            onChange={(e) => setAmountFor(obj.id, e.target.value)}
+                            aria-label={`Monto ${amountSuffix}`}
+                            style={{ fontSize: 15, fontVariantNumeric: "tabular-nums" }} />
+                        </label>
+                        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          <span style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", opacity: 0.6, fontWeight: 600 }}>desde año</span>
+                          <input type="number" min={1} max={maxYear} className="inline-edit" value={startYear}
+                            onChange={(e) => {
+                              const v = Math.max(1, Math.min(maxYear, parseInt(e.target.value || "1", 10)));
+                              setStartFor(obj.id, v);
+                            }}
+                            aria-label="Año desde"
+                            style={{ fontSize: 15, fontVariantNumeric: "tabular-nums" }} />
+                        </label>
+                        {!isFixed && (
+                          <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <span style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", opacity: 0.6, fontWeight: 600 }}>hasta año</span>
+                            <input type="number" min={startYear} max={maxYear} className="inline-edit" value={endYear}
+                              onChange={(e) => {
+                                const ny = Math.max(startYear, Math.min(maxYear, parseInt(e.target.value || String(startYear), 10)));
+                                setDurationFor(obj.id, Math.max(1, ny - startYear + 1));
+                              }}
+                              aria-label="Año hasta"
+                              style={{ fontSize: 15, fontVariantNumeric: "tabular-nums" }} />
+                          </label>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Desktop: header de años + gantt grid clásico */}
+          <div className="gantt-header" style={{ display: "grid", gridTemplateColumns: `repeat(${TOTAL_COLUMNS}, 1fr)`, gap: 6, marginBottom: 10 }}>
             {Array.from({ length: visibleYears }, (_, i) => {
               const year = i + 1;
               const isActive = objectives.some((o) => year >= o.startYear && year < o.startYear + o.duration);
@@ -1153,7 +1337,7 @@ function WealthPlanningWorkflow() {
             <div style={{ textAlign: "center", fontSize: 11, color: objectives.some(o => o.startYear > visibleYears || o.startYear + o.duration - 1 > visibleYears) ? "#0a0a0a" : "#a8a89e", fontWeight: 500, fontVariantNumeric: "tabular-nums", paddingBottom: 8 }}>10+</div>
           </div>
 
-          <div ref={ganttTrackRef} style={{ position: "relative", background: "#fafaf7", borderRadius: 12, padding: 6, minHeight: 120 }}>
+          <div ref={ganttTrackRef} className="gantt-track" style={{ position: "relative", background: "#fafaf7", borderRadius: 12, padding: 6, minHeight: 120 }}>
             <div style={{ position: "absolute", inset: 6, display: "grid", gridTemplateColumns: `repeat(${TOTAL_COLUMNS}, 1fr)`, gap: 6, pointerEvents: "none" }}>
               {Array.from({ length: TOTAL_COLUMNS }, (_, i) => (
                 <div key={i} className={i === TOTAL_COLUMNS - 1 ? "overflow-col" : ""} style={{ borderRight: i < TOTAL_COLUMNS - 1 ? "1px dashed #ebebe4" : "none", borderLeft: i === TOTAL_COLUMNS - 1 ? "1px dashed #d4d4c8" : "none", borderRadius: i === TOTAL_COLUMNS - 1 ? "0 8px 8px 0" : 0 }} />
@@ -1318,6 +1502,7 @@ function WealthPlanningWorkflow() {
             </div>
           )}
         </div>
+        )}
 
       </section>
     </div>

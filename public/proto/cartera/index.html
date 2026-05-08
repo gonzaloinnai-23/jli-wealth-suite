@@ -157,6 +157,24 @@
   }
   @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
 
+  /* === Mobile (≤768px) === */
+  @media (max-width: 768px) {
+    body { padding: 0; }
+    /* Ocultar el mapa mundial en mobile (no aporta en pantallas chicas) */
+    .world-map-panel { display: none !important; }
+    .container { padding: 14px 12px 40px; }
+    .jli-stick-inner { padding: 10px 12px; gap: 6px; }
+    .jli-mini { min-width: 100px; padding: 8px 10px; min-height: 60px; }
+    .jli-val, .jli-cell-val { font-size: 18px !important; }
+    .jli-mini-multi { min-width: 200px; }
+    .jli-multi { column-gap: 12px; }
+    .invest-message { padding: 12px 14px; gap: 10px; }
+    .invest-message .msg-text { font-size: 16px; line-height: 1.25; }
+    .cta-fondos { padding: 8px 12px; font-size: 12px; }
+    .header h1, .header .h1 { font-size: 24px !important; }
+    .nav-back-arrow { width: 38px; height: 60px; font-size: 18px; }
+  }
+
   /* Mensaje superior + CTA selección de fondos */
   .invest-message {
     display: flex; align-items: center; justify-content: space-between;
@@ -695,8 +713,8 @@
     <div class="regions-list" id="regions-list"></div>
   </div>
 
-  <!-- Mapa Mundial (abajo, full-width) -->
-  <div class="panel">
+  <!-- Mapa Mundial (abajo, full-width) — oculto en mobile vía CSS -->
+  <div class="panel world-map-panel">
     <div class="panel-title">Mapa Mundial — Valor de empresas por región</div>
     <div id="map-container">
       <svg id="world-map" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet"></svg>

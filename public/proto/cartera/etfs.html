@@ -72,6 +72,27 @@
   }
   @media (max-width: 768px) {
     .sticky-content { grid-template-columns: 1fr; gap: 10px; }
+    .sticky-stats { gap: 6px; }
+    /* En mobile ocultamos la card "Capitalización mundial" — se accede vía drawer */
+    #stat-map { display: none !important; }
+    .container { padding: 14px 12px; }
+    .mini-stat { min-width: 100px; padding: 8px 10px; min-height: 60px; gap: 4px; }
+    .mini-stat-value, .mini-stat-cell .cell-val { font-size: 18px !important; }
+    .mini-stat-asignacion { min-width: 200px; }
+    .mini-stat-multi { column-gap: 12px; }
+    .nav-back-arrow { width: 38px; height: 60px; font-size: 18px; }
+    .invest-message { padding: 12px 14px; gap: 10px; flex-direction: column; align-items: flex-start; }
+    .invest-message .msg-text { font-size: 16px; line-height: 1.25; }
+    .cta-next { padding: 8px 12px; font-size: 12px; align-self: flex-end; }
+    .portfolio-suggest { padding: 16px; }
+    .portfolio-suggest h2 { font-size: 1.05rem; }
+    .suggest-grid { grid-template-columns: 1fr !important; gap: 10px; }
+    .suggest-card { padding: 12px; }
+    .current-selection { padding: 12px 14px; }
+    .current-selection .cs-groups { grid-template-columns: 1fr !important; }
+    .diversif-summary { grid-template-columns: 1fr !important; }
+    .etf-row { grid-template-columns: 1fr !important; gap: 6px; padding: 10px; }
+    .etf-row-amount-wrap input { width: 100% !important; }
   }
   .mini-stat.clickable { cursor: pointer; transition: background 0.15s, border-color 0.15s, transform 0.12s; }
   .mini-stat.clickable:hover { background: var(--panel) !important; border-color: var(--text) !important; transform: translateY(-1px); }

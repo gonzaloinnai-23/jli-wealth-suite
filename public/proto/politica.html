@@ -139,6 +139,29 @@
     box-shadow: 0 6px 18px rgba(10,10,10,0.18);
   }
 
+  /* Flecha "Volver" inline dentro del invest-message — alineada con el mensaje y el CTA */
+  .back-arrow-inline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    border-radius: 10px;
+    width: 36px; height: 36px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 18px; line-height: 1;
+    font-family: 'Geist', sans-serif;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
+    flex-shrink: 0;
+    align-self: center;
+  }
+  .back-arrow-inline:hover {
+    background: var(--surface-2);
+    border-color: var(--text);
+    color: var(--text);
+    transform: translateX(-2px);
+  }
+  .back-arrow-inline[hidden] { display: none; }
+
   /* Filter rows */
   .row {
     display: grid;
@@ -282,24 +305,34 @@
   .kpi .threshold .unit { font-size: 12px; color: var(--text-2); }
 
   @media (max-width: 760px) {
-    .row { grid-template-columns: 40px 1fr 56px; }
+    body { padding: 16px 12px 60px; }
+    .row { grid-template-columns: 40px 1fr 56px; gap: 10px; padding: 12px 0; }
     .row .num { font-size: 18px; }
     .row .cat { display: none; }
-    .kpi { grid-template-columns: 40px 1fr 56px; }
+    .row .crit { font-size: 13px; }
+    .kpi { grid-template-columns: 40px 1fr 56px; gap: 10px; padding: 14px 0; }
     .kpi .threshold { grid-column: 2; }
-    .header h1 { font-size: 32px; }
+    .header { margin-bottom: 16px; }
+    .header h1 { font-size: 28px; }
+    .header .sub { font-size: 12px; }
     .tip { width: 220px; }
+    section.card { padding: 16px; border-radius: 14px; }
+    section.card h2 { font-size: 22px; }
+    .invest-message { padding: 12px 14px; }
+    .invest-message .msg-text { font-size: 16px; line-height: 1.25; }
+    .cta-next { padding: 8px 12px; font-size: 12px; }
   }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <!-- Cards de navegación en el flujo: Mapa de objetivos (izq) ↔ A invertir en largo plazo (der) -->
-  <div id="cta-row" style="display:flex;justify-content:space-between;align-items:stretch;gap:12px;margin:4px 0 16px"></div>
-
-  <!-- Mensaje estratégico + CTA al siguiente paso -->
+  <!-- Mensaje estratégico + CTA al siguiente paso. La flecha ← (Volver a Objetivos)
+       se inyecta vía JS al inicio cuando hay un snapshot en localStorage. -->
   <div class="invest-message">
+    <button type="button" id="mapa-btn" class="back-arrow-inline" title="Volver al mapa de objetivos" aria-label="Volver al mapa de objetivos" hidden>
+      <span aria-hidden="true">←</span>
+    </button>
     <div class="msg-text">
       Definir el marco es <em>quitar los sesgos y quitar los grupieres financieros</em>
     </div>
@@ -543,36 +576,18 @@
     return '$' + Math.round(n);
   }
   function renderCtaRow() {
-    const host = document.getElementById('cta-row');
-    if (!host) return;
+    const mapaBtn = document.getElementById('mapa-btn');
+    if (!mapaBtn) return;
     let snap = null;
     try { snap = JSON.parse(localStorage.getItem('jli_objetivos') || 'null'); } catch (e) {}
-
-    if (!snap) { host.innerHTML = ''; return; }
-
-    const objLeft = snap.objetivosTotalUSD || 0;
-    const lpRight = snap.largoPlazoUSD || 0;
-
-    // Solo una flecha "Volver a Objetivos" (sin monto). El monto largo plazo
-    // ahora se muestra en el shell, en el nav card centrado entre las pestañas.
-    const arrowStyle = `
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text-2);
-      border-radius: 12px;
-      width: 44px; height: 70px;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-      font-size: 22px; line-height: 1;
-      font-family: 'Geist', sans-serif;
-      transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
-    `;
-    host.innerHTML = `
-      <button id="mapa-btn" type="button" style="${arrowStyle}" title="Volver al mapa de objetivos" aria-label="Volver al mapa de objetivos">
-        <span aria-hidden="true">←</span>
-      </button>`;
-
-    const mapaBtn = document.getElementById('mapa-btn');
+    // Mostrar la flecha sólo si hay un snapshot de objetivos al que volver
+    if (!snap) {
+      mapaBtn.setAttribute('hidden', '');
+      return;
+    }
+    mapaBtn.removeAttribute('hidden');
+    if (mapaBtn.dataset.wired === '1') return;
+    mapaBtn.dataset.wired = '1';
     mapaBtn.addEventListener('mouseenter', () => {
       mapaBtn.style.background = 'var(--surface-2, #f1efe8)';
       mapaBtn.style.borderColor = 'var(--text)';
