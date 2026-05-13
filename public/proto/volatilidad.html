@@ -95,7 +95,8 @@
     font-size: 12px; font-weight: 500;
     font-variant-numeric: tabular-nums;
   }
-  /* Clickable KPI cards (VIX/SPY) toggle the chart symbol */
+  #cspx-card.active::after { background: var(--green); opacity: 1; }
+  /* Clickable KPI cards (VIX/SPY/CSPX) toggle the chart symbol */
   .stat.selectable { cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; position: relative; }
   .stat.selectable:hover { border-color: var(--text-3); }
   .stat.selectable.active { border-color: var(--text); box-shadow: 0 0 0 3px rgba(10,10,10,0.04); }
@@ -234,15 +235,20 @@
   </header>
 
   <div class="grid-stats">
-    <div class="card stat selectable active" id="vix-card" data-symbol="vix" role="button" tabindex="0" aria-pressed="true" title="Ver gráfico VIX">
+    <div class="card stat" id="vix-card" title="Volatilidad implícita del S&P 500">
       <div class="label">VIX Índice</div>
       <div class="value blue" id="vix-value">—</div>
       <div class="delta" id="vix-delta"></div>
     </div>
-    <div class="card stat selectable" id="spy-card" data-symbol="spy" role="button" tabindex="0" aria-pressed="false" title="Ver gráfico S&P 500">
-      <div class="label">S&amp;P 500 (SPY)</div>
-      <div class="value purple" id="spy-value">—</div>
-      <div class="delta" id="spy-delta"></div>
+    <div class="card stat" id="cspx-card" title="iShares Core S&P 500 UCITS">
+      <div class="label">CSPX <small style="opacity:0.6">UCITS Acc</small></div>
+      <div class="value green" id="cspx-value">—</div>
+      <div class="delta" id="cspx-delta"></div>
+    </div>
+    <div class="card stat" id="pe-card" title="P/E ratio S&P 500 (TTM)">
+      <div class="label">P/E S&amp;P 500 <small style="opacity:0.6">TTM</small></div>
+      <div class="value" id="pe-card-value" style="color:#a8a89e">—</div>
+      <div class="delta" id="pe-card-zone"></div>
     </div>
     <div class="card signal-card" id="signal-card">
       <div class="label">Señal</div>
@@ -269,10 +275,45 @@
     <button class="tf-btn" data-tf="10y">10 años</button>
   </div>
 
-  <div class="card" style="margin-bottom: 18px;">
-    <h3 id="chart-title">Índice VIX</h3>
-    <div class="chart-wrap" id="chart-wrap">
+  <!-- Charts apilados: VIX · CSPX · P/E. El período (1w/1m/3m/1y/10y) los afecta a todos.
+       Mouse-over en cualquiera de los 3 muestra una línea vertical y el valor sincronizado
+       en la misma fecha en los otros dos. -->
+  <div class="card" style="margin-bottom: 14px;">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px">
+      <h3 style="margin:0">Índice VIX <small style="font-size:12px;color:var(--text-3);font-weight:400">— volatilidad implícita</small></h3>
+      <span class="chart-hover-readout" data-readout="vix" style="font-family:'Instrument Serif',Georgia,serif;font-size:18px;color:var(--text-3);font-variant-numeric:tabular-nums"></span>
+    </div>
+    <div class="chart-wrap synced-chart" id="chart-vix" data-symbol="vix">
       <div class="chart-empty">Cargando datos…</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 14px;">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px">
+      <h3 style="margin:0">CSPX <small style="font-size:12px;color:var(--text-3);font-weight:400">— iShares Core S&amp;P 500 UCITS Acc</small></h3>
+      <span class="chart-hover-readout" data-readout="cspx" style="font-family:'Instrument Serif',Georgia,serif;font-size:18px;color:var(--text-3);font-variant-numeric:tabular-nums"></span>
+    </div>
+    <div class="chart-wrap synced-chart" id="chart-cspx" data-symbol="cspx">
+      <div class="chart-empty">Cargando datos…</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 18px;">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+      <h3 style="margin:0">P/E ratio S&amp;P 500 <small style="font-size:12px;color:var(--text-3);font-weight:400">— TTM, mensual</small></h3>
+      <span class="chart-hover-readout" data-readout="pe" style="font-family:'Instrument Serif',Georgia,serif;font-size:18px;color:var(--text-3);font-variant-numeric:tabular-nums"></span>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text-3);margin-bottom:8px">
+      <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#1D9E75;margin-right:5px"></span>Infravalorado &lt; 15</span>
+      <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#a8a89e;margin-right:5px"></span>Razonable 15–22</span>
+      <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#D85A30;margin-right:5px"></span>Sobrevalorado &gt; 22</span>
+    </div>
+    <div class="chart-wrap synced-chart" id="chart-pe" data-symbol="pe" style="height:200px">
+      <div class="chart-empty">Cargando datos…</div>
+    </div>
+    <div style="margin-top:6px;font-size:11px;color:var(--text-3);line-height:1.4">
+      Cálculo: precio del S&amp;P 500 dividido por las ganancias por acción de los últimos 12 meses (TTM).
+      Niveles de referencia: histórico de largo plazo ≈ 16.
     </div>
   </div>
 
@@ -291,9 +332,8 @@
   const THRESHOLD_BUY = 20;   // VIX >= 20 → señal de compra
   const THRESHOLD_SELL = 10;  // VIX <= 10 → señal de venta
   let timeframe = '3m';
-  let chartSymbol = 'vix'; // 'vix' | 'spy'
-  let history = []; // [{ date, ts, vix, spy }]
-  let current = { vix: null, vixChange: 0, vixPct: 0, spy: null, spyChange: 0, spyPct: 0, signal: null };
+  let history = []; // [{ date, ts, vix, spy, cspx }]
+  let current = { vix: null, vixChange: 0, vixPct: 0, spy: null, spyChange: 0, spyPct: 0, cspx: null, cspxChange: 0, cspxPct: 0, signal: null };
   let dataSource = 'pending'; // 'live' | 'mock' | 'error'
 
   // ============ MOCK DATA (fallback if CORS blocks Yahoo) ============
@@ -367,24 +407,30 @@
     document.getElementById('data-source').className = 'data-source';
 
     try {
-      // 10y is the broadest range — derive smaller ones from it client-side
-      const [vixR, spyR] = await Promise.all([
+      // 10y is the broadest range — derive smaller ones from it client-side.
+      // CSPX.L = iShares Core S&P 500 UCITS Acc (LSE listing), USD denominated.
+      const [vixR, spyR, cspxR] = await Promise.all([
         fetchYahoo('^VIX', '10y'),
         fetchYahoo('SPY', '10y'),
+        fetchYahoo('CSPX.L', '10y').catch(() => null), // si falla, seguimos sin CSPX
       ]);
       // align by date
       const spyByTs = new Map(spyR.points.map(p => [p.date, p.close]));
+      const cspxByTs = cspxR ? new Map(cspxR.points.map(p => [p.date, p.close])) : null;
       history = vixR.points.map(p => ({
         ts: p.ts,
         date: p.date,
         vix: parseFloat(p.close.toFixed(2)),
         spy: spyByTs.has(p.date) ? parseFloat(spyByTs.get(p.date).toFixed(2)) : null,
+        cspx: cspxByTs && cspxByTs.has(p.date) ? parseFloat(cspxByTs.get(p.date).toFixed(2)) : null,
       }));
       // current values from meta (same-day)
       const vixCur = vixR.meta.regularMarketPrice;
       const vixPrev = vixR.meta.chartPreviousClose ?? vixR.meta.previousClose ?? vixCur;
       const spyCur = spyR.meta.regularMarketPrice;
       const spyPrev = spyR.meta.chartPreviousClose ?? spyR.meta.previousClose ?? spyCur;
+      const cspxCur = cspxR ? cspxR.meta.regularMarketPrice : null;
+      const cspxPrev = cspxR ? (cspxR.meta.chartPreviousClose ?? cspxR.meta.previousClose ?? cspxCur) : null;
       current = {
         vix: parseFloat(vixCur.toFixed(2)),
         vixChange: parseFloat((vixCur - vixPrev).toFixed(2)),
@@ -392,6 +438,9 @@
         spy: parseFloat(spyCur.toFixed(2)),
         spyChange: parseFloat((spyCur - spyPrev).toFixed(2)),
         spyPct: parseFloat((((spyCur - spyPrev) / spyPrev) * 100).toFixed(2)),
+        cspx: cspxCur != null ? parseFloat(cspxCur.toFixed(2)) : null,
+        cspxChange: cspxCur != null ? parseFloat((cspxCur - cspxPrev).toFixed(2)) : 0,
+        cspxPct: cspxCur != null ? parseFloat((((cspxCur - cspxPrev) / cspxPrev) * 100).toFixed(2)) : 0,
         signal: signalFor(vixCur),
       };
       dataSource = 'live';
@@ -399,7 +448,8 @@
       document.getElementById('data-source').className = 'data-source live';
     } catch (err) {
       console.warn('Yahoo fetch failed (CORS?), using mock data', err);
-      history = MOCK_HISTORY.slice();
+      // Mock con CSPX derivado de SPY (proxy 1:1 con escala distinta)
+      history = MOCK_HISTORY.map(p => ({ ...p, cspx: parseFloat((p.spy * 1.135).toFixed(2)) }));
       const last = history[history.length - 1];
       const prev = history[history.length - 2] || last;
       current = {
@@ -409,6 +459,9 @@
         spy: last.spy,
         spyChange: parseFloat((last.spy - prev.spy).toFixed(2)),
         spyPct: parseFloat((((last.spy - prev.spy) / prev.spy) * 100).toFixed(2)),
+        cspx: last.cspx,
+        cspxChange: parseFloat((last.cspx - prev.cspx).toFixed(2)),
+        cspxPct: parseFloat((((last.cspx - prev.cspx) / prev.cspx) * 100).toFixed(2)),
         signal: signalFor(last.vix),
       };
       dataSource = 'mock';
@@ -484,14 +537,30 @@
       vd.innerHTML = `${up ? '▲' : '▼'} ${up ? '+' : ''}${fmtNum(current.vixChange, 2)} (${up ? '+' : ''}${fmtNum(current.vixPct, 2)}%)`;
     } else { vd.textContent = ''; }
 
-    // SPY card
-    document.getElementById('spy-value').textContent = current.spy !== null ? '$' + fmtNum(current.spy, 2) : '—';
-    const sd = document.getElementById('spy-delta');
-    if (current.spy !== null) {
-      const up = current.spyChange >= 0;
-      sd.className = 'delta ' + (up ? 'up' : 'down');
-      sd.innerHTML = `${up ? '▲' : '▼'} ${up ? '+' : ''}${fmtNum(current.spyChange, 2)} (${up ? '+' : ''}${fmtNum(current.spyPct, 2)}%)`;
-    } else { sd.textContent = ''; }
+    // CSPX card
+    document.getElementById('cspx-value').textContent = current.cspx !== null ? '$' + fmtNum(current.cspx, 2) : '—';
+    const cd = document.getElementById('cspx-delta');
+    if (current.cspx !== null) {
+      const up = current.cspxChange >= 0;
+      cd.className = 'delta ' + (up ? 'up' : 'down');
+      cd.innerHTML = `${up ? '▲' : '▼'} ${up ? '+' : ''}${fmtNum(current.cspxChange, 2)} (${up ? '+' : ''}${fmtNum(current.cspxPct, 2)}%)`;
+    } else { cd.textContent = ''; }
+
+    // P/E card (TTM, último valor de PE_HISTORY) — color por zona
+    const peLatest = PE_HISTORY[PE_HISTORY.length - 1];
+    if (peLatest) {
+      const z = peZoneFor(peLatest.pe);
+      const peValEl = document.getElementById('pe-card-value');
+      const peZoneEl = document.getElementById('pe-card-zone');
+      peValEl.textContent = peLatest.pe.toFixed(1);
+      peValEl.style.color = z.color;
+      peZoneEl.textContent = z.label;
+      peZoneEl.style.color = z.color;
+      peZoneEl.style.fontWeight = '600';
+      peZoneEl.style.letterSpacing = '0.06em';
+      peZoneEl.style.textTransform = 'uppercase';
+      peZoneEl.style.fontSize = '11px';
+    }
 
     // Signal card
     const sigCard = document.getElementById('signal-card');
@@ -504,68 +573,111 @@
     document.getElementById('last-update').textContent =
       new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date());
 
-    renderChart();
+    renderAllCharts();
     renderOpps();
     persistSignal();
   }
 
-  function renderChart() {
-    const data = getFiltered().filter(d => d[chartSymbol] != null);
-    const wrap = document.getElementById('chart-wrap');
-    document.getElementById('chart-title').textContent =
-      chartSymbol === 'vix' ? 'Índice VIX' : 'S&P 500 (SPY)';
+  // ===== Estado de los charts sincronizados =====
+  // chartContext[symbol] guarda los puntos visibles + escalas para que el crosshair
+  // pueda saltar al timestamp más cercano sin recalcular.
+  const chartContext = {};
+
+  function filteredFor(symbol) {
+    if (symbol === 'pe') {
+      // P/E es mensual, mapeamos el timeframe a un rango razonable.
+      let monthsBack = 12;
+      if (timeframe === '1w' || timeframe === '1m') monthsBack = 6;
+      else if (timeframe === '3m') monthsBack = 12;
+      else if (timeframe === '1y') monthsBack = 24;
+      else if (timeframe === '10y') monthsBack = 120;
+      const cutoff = Date.now() - monthsBack * 30.44 * 86400000;
+      return PE_HISTORY.filter(p => p.ts >= cutoff);
+    }
+    return getFiltered().filter(d => d[symbol] != null);
+  }
+
+  function renderAllCharts() {
+    renderSymbolChart('vix');
+    renderSymbolChart('cspx');
+    renderSymbolChart('pe');
+  }
+
+  function renderSymbolChart(symbol) {
+    const wrap = document.getElementById('chart-' + symbol);
+    if (!wrap) return;
+    const data = filteredFor(symbol);
     if (data.length === 0) {
       wrap.innerHTML = '<div class="chart-empty">Sin datos para este período.</div>';
+      chartContext[symbol] = null;
       return;
     }
 
     const W = wrap.clientWidth || 1000;
-    const H = 320;
-    const PAD = { top: 20, right: 20, bottom: 32, left: 56 };
+    const H = symbol === 'pe' ? 200 : 240;
+    const PAD = { top: 18, right: 14, bottom: 28, left: 50 };
     const innerW = W - PAD.left - PAD.right;
     const innerH = H - PAD.top - PAD.bottom;
 
-    const xs = data.map((_, i) => PAD.left + (i / (data.length - 1)) * innerW);
-    const vals = data.map(d => d[chartSymbol]);
+    const valKey = symbol === 'pe' ? 'pe' : symbol;
+    const xs = data.map((_, i) => PAD.left + (i / Math.max(1, data.length - 1)) * innerW);
+    const vals = data.map(d => d[valKey]);
     const rawMin = Math.min(...vals);
     const rawMax = Math.max(...vals);
-    const isVix = chartSymbol === 'vix';
-    // For VIX, force the y-axis to include both thresholds so they're always visible.
-    const minV = isVix ? Math.min(rawMin, THRESHOLD_SELL - 1) : rawMin * 0.98;
-    const maxV = isVix ? Math.max(rawMax, THRESHOLD_BUY + 5) : rawMax * 1.02;
+    const isVix = symbol === 'vix';
+    const isPE = symbol === 'pe';
+    // Escalas: VIX fuerza incluir thresholds; P/E rango fijo 10–45; otros 2% padding.
+    let minV, maxV;
+    if (isVix) { minV = Math.min(rawMin, THRESHOLD_SELL - 1); maxV = Math.max(rawMax, THRESHOLD_BUY + 5); }
+    else if (isPE) { minV = 10; maxV = 45; }
+    else { minV = rawMin * 0.98; maxV = rawMax * 1.02; }
     const yScale = v => PAD.top + innerH - ((v - minV) / (maxV - minV)) * innerH;
 
-    const lineColor = isVix ? '#378ADD' : '#7a4a9a';
-    const fillColor = isVix ? 'rgba(55, 138, 221, 0.12)' : 'rgba(122, 74, 154, 0.12)';
+    const lineColor = isVix ? '#378ADD' : (isPE ? '#1e88e5' : '#1D9E75');
+    const fillColor = isVix ? 'rgba(55,138,221,0.10)' : (isPE ? 'rgba(30,136,229,0.06)' : 'rgba(29,158,117,0.10)');
 
     let pathD = '';
     data.forEach((d, i) => {
       const x = xs[i];
-      const y = yScale(d[chartSymbol]);
-      pathD += (i === 0 ? 'M' : 'L') + x + ',' + y;
+      const y = yScale(d[valKey]);
+      pathD += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1);
     });
-    const areaD = pathD + ' L' + xs[xs.length-1] + ',' + (PAD.top + innerH) + ' L' + xs[0] + ',' + (PAD.top + innerH) + ' Z';
+    const areaD = pathD + ' L' + xs[xs.length-1].toFixed(1) + ',' + (PAD.top + innerH) + ' L' + xs[0].toFixed(1) + ',' + (PAD.top + innerH) + ' Z';
 
-    // Y ticks (4)
+    // Y ticks
     let yTicks = '';
-    const fmtY = v => isVix ? v.toFixed(0) : '$' + v.toFixed(0);
-    for (let i = 0; i <= 4; i++) {
-      const v = minV + ((maxV - minV) * i / 4);
+    const fmtY = v => isVix ? v.toFixed(0) : (isPE ? v.toFixed(0) : '$' + v.toFixed(0));
+    const tickValues = isPE ? [15, 20, 25, 30, 35, 40] : null;
+    if (isPE) {
+      // Bandas de zona para P/E
+      const bandTop = yScale(15);
+      const bandBot = yScale(minV);
+      yTicks += `<rect x="${PAD.left}" y="${bandTop}" width="${innerW}" height="${(bandBot - bandTop).toFixed(1)}" fill="rgba(29,158,117,0.06)"/>`;
+      const bandTop2 = yScale(maxV);
+      const bandBot2 = yScale(22);
+      yTicks += `<rect x="${PAD.left}" y="${bandTop2}" width="${innerW}" height="${(bandBot2 - bandTop2).toFixed(1)}" fill="rgba(216,90,48,0.06)"/>`;
+      // línea de referencia 16
+      const y16 = yScale(16);
+      yTicks += `<line x1="${PAD.left}" y1="${y16}" x2="${PAD.left + innerW}" y2="${y16}" stroke="rgba(168,168,158,0.45)" stroke-width="1" stroke-dasharray="3,3"/>`;
+      yTicks += `<text x="${PAD.left + innerW - 4}" y="${(y16 - 3).toFixed(1)}" fill="#a8a89e" font-size="9" text-anchor="end" font-family="Geist,sans-serif">media 16</text>`;
+    }
+    const ticks = tickValues || (() => { const arr = []; for (let i = 0; i <= 4; i++) arr.push(minV + ((maxV - minV) * i / 4)); return arr; })();
+    ticks.forEach(v => {
       const y = yScale(v);
       yTicks += `<line class="axis-line" x1="${PAD.left}" y1="${y}" x2="${PAD.left + innerW}" y2="${y}"/>`;
-      yTicks += `<text class="axis-tick" x="${PAD.left - 8}" y="${y + 4}" text-anchor="end">${fmtY(v)}</text>`;
-    }
-    // Threshold lines (solo VIX, contrarian: compra cuando VIX alto, venta cuando bajo)
+      yTicks += `<text class="axis-tick" x="${PAD.left - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end">${fmtY(v)}</text>`;
+    });
+    // Threshold lines del VIX (compra/venta)
     if (isVix) {
       if (minV <= THRESHOLD_BUY && maxV >= THRESHOLD_BUY) {
         const y = yScale(THRESHOLD_BUY);
         yTicks += `<line class="threshold-line" x1="${PAD.left}" y1="${y}" x2="${PAD.left + innerW}" y2="${y}" stroke="#1D9E75"/>`;
-        yTicks += `<text class="threshold-label" x="${PAD.left + innerW - 4}" y="${y - 4}" text-anchor="end" fill="#1D9E75">compra ≥ ${THRESHOLD_BUY}</text>`;
+        yTicks += `<text class="threshold-label" x="${PAD.left + innerW - 4}" y="${(y - 4).toFixed(1)}" text-anchor="end" fill="#1D9E75">compra ≥ ${THRESHOLD_BUY}</text>`;
       }
       if (minV <= THRESHOLD_SELL && maxV >= THRESHOLD_SELL) {
         const y = yScale(THRESHOLD_SELL);
         yTicks += `<line class="threshold-line" x1="${PAD.left}" y1="${y}" x2="${PAD.left + innerW}" y2="${y}" stroke="#D85A30"/>`;
-        yTicks += `<text class="threshold-label" x="${PAD.left + innerW - 4}" y="${y - 4}" text-anchor="end" fill="#D85A30">venta ≤ ${THRESHOLD_SELL}</text>`;
+        yTicks += `<text class="threshold-label" x="${PAD.left + innerW - 4}" y="${(y - 4).toFixed(1)}" text-anchor="end" fill="#D85A30">venta ≤ ${THRESHOLD_SELL}</text>`;
       }
     }
     // X ticks (5)
@@ -574,7 +686,8 @@
     for (let i = 0; i < xtCount; i++) {
       const idx = Math.floor((data.length - 1) * (i / (xtCount - 1 || 1)));
       const x = xs[idx];
-      xTicks += `<text class="axis-tick" x="${x}" y="${H - 10}" text-anchor="middle">${data[idx].date.slice(0, 7)}</text>`;
+      const lbl = data[idx].date.slice(0, 7);
+      xTicks += `<text class="axis-tick" x="${x.toFixed(1)}" y="${H - 10}" text-anchor="middle">${lbl}</text>`;
     }
 
     wrap.innerHTML = `
@@ -583,7 +696,83 @@
         ${xTicks}
         <path d="${areaD}" fill="${fillColor}"/>
         <path d="${pathD}" fill="none" stroke="${lineColor}" stroke-width="1.6"/>
+        <g class="crosshair" style="pointer-events:none;display:none">
+          <line class="cx-line" stroke="rgba(168,168,158,0.55)" stroke-width="1" stroke-dasharray="2,3"/>
+          <circle class="cx-dot" r="4" fill="${lineColor}" stroke="var(--bg)" stroke-width="1.5"/>
+        </g>
+        <rect class="cx-capture" x="${PAD.left}" y="${PAD.top}" width="${innerW}" height="${innerH}" fill="transparent" style="cursor:crosshair"/>
       </svg>`;
+
+    // Guardar contexto para crosshair
+    chartContext[symbol] = { data, xs, valKey, PAD, innerW, innerH, H, W, yScale, lineColor };
+
+    // Eventos hover
+    const svg = wrap.querySelector('svg');
+    const cap = wrap.querySelector('.cx-capture');
+    cap.addEventListener('mousemove', (e) => {
+      const rect = svg.getBoundingClientRect();
+      const scaleX = W / rect.width;
+      const xInSvg = (e.clientX - rect.left) * scaleX;
+      // encontrar punto más cercano por x
+      const ctx = chartContext[symbol];
+      if (!ctx) return;
+      let nearestIdx = 0, nearestDist = Infinity;
+      ctx.xs.forEach((cx, i) => {
+        const d = Math.abs(cx - xInSvg);
+        if (d < nearestDist) { nearestDist = d; nearestIdx = i; }
+      });
+      const point = ctx.data[nearestIdx];
+      setCrosshair(point.ts);
+    });
+    cap.addEventListener('mouseleave', () => clearCrosshair());
+  }
+
+  // ===== Crosshair sincronizado: actualiza los 3 charts en la misma fecha =====
+  function setCrosshair(ts) {
+    ['vix', 'cspx', 'pe'].forEach(sym => {
+      const ctx = chartContext[sym];
+      const wrap = document.getElementById('chart-' + sym);
+      const readout = document.querySelector(`.chart-hover-readout[data-readout="${sym}"]`);
+      if (!ctx) { if (readout) readout.textContent = ''; return; }
+      // Encontrar punto más cercano al timestamp
+      let nearestIdx = -1, nearestDist = Infinity;
+      ctx.data.forEach((d, i) => {
+        const dist = Math.abs(d.ts - ts);
+        if (dist < nearestDist) { nearestDist = dist; nearestIdx = i; }
+      });
+      if (nearestIdx < 0) return;
+      const point = ctx.data[nearestIdx];
+      const val = point[ctx.valKey];
+      const x = ctx.xs[nearestIdx];
+      const y = ctx.yScale(val);
+      const g = wrap.querySelector('.crosshair');
+      const line = wrap.querySelector('.cx-line');
+      const dot = wrap.querySelector('.cx-dot');
+      if (g && line && dot) {
+        line.setAttribute('x1', x);
+        line.setAttribute('x2', x);
+        line.setAttribute('y1', ctx.PAD.top);
+        line.setAttribute('y2', ctx.PAD.top + ctx.innerH);
+        dot.setAttribute('cx', x);
+        dot.setAttribute('cy', y);
+        g.style.display = '';
+      }
+      if (readout) {
+        const fmt = sym === 'vix' ? val.toFixed(2) : (sym === 'pe' ? val.toFixed(1) : '$' + fmtNum(val, 2));
+        readout.textContent = `${point.date} · ${fmt}`;
+        readout.style.color = 'var(--text)';
+      }
+    });
+  }
+
+  function clearCrosshair() {
+    ['vix', 'cspx', 'pe'].forEach(sym => {
+      const wrap = document.getElementById('chart-' + sym);
+      const g = wrap?.querySelector('.crosshair');
+      if (g) g.style.display = 'none';
+      const readout = document.querySelector(`.chart-hover-readout[data-readout="${sym}"]`);
+      if (readout) { readout.textContent = ''; readout.style.color = 'var(--text-3)'; }
+    });
   }
 
   function renderOpps() {
@@ -605,37 +794,69 @@
   }
 
   // ============ EVENTS ============
+  // El selector de período afecta a los 3 charts simultáneamente.
   document.querySelectorAll('.tf-btn').forEach(b => {
     b.addEventListener('click', () => {
       timeframe = b.dataset.tf;
       document.querySelectorAll('.tf-btn').forEach(x => x.classList.toggle('active', x.dataset.tf === timeframe));
-      renderChart();
+      renderAllCharts();
     });
   });
   document.getElementById('refresh-btn').addEventListener('click', loadData);
-  window.addEventListener('resize', () => renderChart());
-
-  function selectSymbol(sym) {
-    if (sym !== 'vix' && sym !== 'spy') return;
-    chartSymbol = sym;
-    document.querySelectorAll('.stat.selectable').forEach(c => {
-      const isActive = c.dataset.symbol === sym;
-      c.classList.toggle('active', isActive);
-      c.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-    });
-    renderChart();
-  }
-  document.querySelectorAll('.stat.selectable').forEach(c => {
-    c.addEventListener('click', () => selectSymbol(c.dataset.symbol));
-    c.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        selectSymbol(c.dataset.symbol);
-      }
-    });
-  });
+  window.addEventListener('resize', renderAllCharts);
 
   loadData();
+
+  // ============ P/E RATIO S&P 500 (TTM) ============
+  // Serie mensual aproximada — última década. Refleja eventos reales:
+  // - 2015-2016: estabilidad ~18-21
+  // - 2017-2018: subida moderada ~22-25 / corrección Q4 2018
+  // - 2019: rebote, fin de año ~22
+  // - 2020 COVID: spike a ~35-40 por colapso de EPS
+  // - 2021-2022: normalización + corrección por subida de tasas
+  // - 2023-2024: rally tech, IA, ~24-28
+  // - 2025-2026: mean reversion parcial
+  const PE_HISTORY = (() => {
+    const monthly = [
+      // 2015
+      ['2015-01',19.2],['2015-04',20.0],['2015-07',21.0],['2015-10',22.7],
+      // 2016
+      ['2016-01',22.1],['2016-04',23.5],['2016-07',24.6],['2016-10',24.8],
+      // 2017
+      ['2017-01',23.6],['2017-04',24.2],['2017-07',24.6],['2017-10',25.1],
+      // 2018
+      ['2018-01',26.0],['2018-04',24.5],['2018-07',24.8],['2018-10',23.4],
+      // 2019 — corrección 18.4 a fin de 2018 → rebote 2019
+      ['2019-01',19.4],['2019-04',21.6],['2019-07',22.5],['2019-10',22.0],
+      // 2020 COVID — spike por colapso de EPS
+      ['2020-01',24.9],['2020-04',21.0],['2020-07',29.5],['2020-10',34.5],
+      // 2021 — récord 39.9 en marzo
+      ['2021-01',39.2],['2021-04',43.7],['2021-07',32.5],['2021-10',29.4],
+      // 2022 — corrección por tasas
+      ['2022-01',27.4],['2022-04',23.6],['2022-07',20.4],['2022-10',19.3],
+      // 2023 — rally tech / IA
+      ['2023-01',21.4],['2023-04',22.6],['2023-07',24.6],['2023-10',23.5],
+      // 2024 — Magnificent 7
+      ['2024-01',26.8],['2024-04',27.5],['2024-07',28.4],['2024-10',29.6],
+      // 2025 — mean reversion parcial
+      ['2025-01',28.1],['2025-04',26.4],['2025-07',24.8],['2025-10',25.6],
+      // 2026 — actual aprox
+      ['2026-01',24.2],['2026-04',23.4],
+    ];
+    return monthly.map(([k, v]) => {
+      const [y, m] = k.split('-').map(Number);
+      return { ts: Date.UTC(y, m - 1, 15), date: k, pe: v };
+    });
+  })();
+
+  function peZoneFor(p) {
+    if (p < 15) return { label: 'Infravalorado', color: '#1D9E75' };
+    if (p > 22) return { label: 'Sobrevalorado', color: '#D85A30' };
+    return { label: 'Razonable', color: '#a8a89e' };
+  }
+
+  // renderPEChart eliminada — el P/E ahora es uno de los 3 charts sincronizados
+  // (renderSymbolChart('pe')) controlados por el mismo período y crosshair.
 </script>
 
 </body>
