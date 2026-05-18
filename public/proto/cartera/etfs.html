@@ -2481,12 +2481,13 @@ function renderTer() {
 
   // Proyección con interés compuesto + reinversión:
   //   Capital sin TER después de N años:  P × (1 + R)^N
-  //   Capital con TER después de N años:  P × (1 + R - T)^N
+  //   Capital con TER después de N años:  P × ((1 + R)(1 - T))^N
+  //   El TER se cobra sobre el AUM cada año (drag multiplicativo), no se resta a R.
   //   Costo acumulado por TER (oportunidad perdida) = diff entre los dos.
   const r = weightedReturn / 100;
   const t = weightedTER / 100;
   const grossAt = (years) => total * Math.pow(1 + r, years);
-  const netAt   = (years) => total * Math.pow(1 + r - t, years);
+  const netAt   = (years) => total * Math.pow((1 + r) * (1 - t), years);
   const costAt  = (years) => grossAt(years) - netAt(years);
 
   const cost1y  = costAt(1);
@@ -2617,7 +2618,7 @@ function renderTer() {
     <div class="diversif-list">${rows}</div>
 
     <p style="margin-top:14px;font-size:11px;color:var(--text-dim);line-height:1.5">
-      Cálculo: el coste a N años es la diferencia entre lo que tu cartera valdría sin TER (<code>P × (1 + R)<sup>N</sup></code>) y lo que vale con TER (<code>P × (1 + R − T)<sup>N</sup></code>), donde R es el rendimiento esperado ponderado por región y T el TER ponderado. Asume reinversión completa de los rendimientos, sin aportes adicionales. Las tasas regionales son aproximaciones históricas largoplacistas (US ~10%, EU ~7%, JP ~5,5%, EM ~8%, world ~8%) y pueden no reflejar el futuro.
+      Cálculo: el coste a N años es la diferencia entre lo que tu cartera valdría sin TER (<code>P × (1 + R)<sup>N</sup></code>) y lo que vale con TER (<code>P × ((1 + R)(1 − T))<sup>N</sup></code>), donde R es el rendimiento esperado ponderado por región y T el TER ponderado (cobrado sobre el patrimonio cada año). Asume reinversión completa de los rendimientos, sin aportes adicionales. Las tasas regionales son aproximaciones históricas largoplacistas (US ~10%, EU ~7%, JP ~5,5%, EM ~8%, world ~8%) y pueden no reflejar el futuro.
     </p>`;
 }
 

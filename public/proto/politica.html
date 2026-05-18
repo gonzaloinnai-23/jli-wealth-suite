@@ -343,6 +343,12 @@
       function goToCarteraFromPolitica() {
         try {
           if (!sessionStorage.getItem('jli_cartera_visited')) {
+            const hasPrev = (() => {
+              try { return !!(localStorage.getItem('etf_selection_v1') || localStorage.getItem('etf_amounts_v1')); }
+              catch (e) { return false; }
+            })();
+            const proceed = !hasPrev || window.confirm('Vas a empezar la cartera objetivo desde cero. Se borrará la selección y los montos de ETFs guardados. ¿Continuar?');
+            if (!proceed) return;
             try { localStorage.removeItem('etf_selection_v1'); } catch (e) {}
             try { localStorage.removeItem('etf_amounts_v1'); } catch (e) {}
             sessionStorage.setItem('jli_cartera_visited', '1');
