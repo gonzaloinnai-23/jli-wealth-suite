@@ -368,7 +368,8 @@ function WealthPlanningWorkflow() {
   const yearlyTotals = (() => {
     const totals = Array.from({ length: 11 /* visibleYears + 1 */ }, () => 0);
     objectives.forEach((obj) => {
-      const perYear = obj.duration > 0 ? obj.capital / obj.duration : obj.capital;
+      if (!(obj.duration > 0)) return;
+      const perYear = obj.capital / obj.duration;
       for (let y = obj.startYear; y < obj.startYear + obj.duration; y++) {
         if (y >= 1 && y <= maxYear) {
           const idx = y <= 10 ? y - 1 : 10;
