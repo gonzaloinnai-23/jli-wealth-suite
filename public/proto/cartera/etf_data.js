@@ -108,6 +108,10 @@ const ETF_DB = {
   VFEA: { region: 'em', name: 'Vanguard FTSE Emerging Markets UCITS ETF (Acc)', ter: 0.22, aum: 5, holdings: 6200, focus: 'Broad EM UCITS', tag: 'UCITS 🇮🇪',
           provider: 'Vanguard',     domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2018 },
 
+  // ===== JAPÓN UCITS (domicilio Irlanda — apto para inversores europeos) =====
+  SJPA: { region: 'jp', name: 'iShares Core MSCI Japan IMI UCITS ETF (Acc)', ter: 0.12, aum: 3, holdings: 1100, focus: 'Japón UCITS', tag: 'UCITS 🇮🇪',
+          provider: 'BlackRock',    domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2018 },
+
   // ===== GLOBALES =====
   VT:    { region: 'world', name: 'Vanguard Total World Stock',          ter: 0.07, aum: 45, holdings: 9900, focus: 'Todo el mundo', tag: 'TODO EL MUNDO',
            provider: 'Vanguard',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2008 },
@@ -123,7 +127,10 @@ const ETF_DB = {
   SWRD:  { region: 'world', name: 'SPDR MSCI World UCITS ETF (Acc)',         ter: 0.12, aum: 7,  holdings: 1500, focus: 'MSCI World UCITS', tag: 'UCITS 🇮🇪',
            provider: 'State Street', domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2019 },
   MXWO:  { region: 'world', name: 'Invesco MSCI World UCITS ETF (Acc)',      ter: 0.19, aum: 4,  holdings: 1500, focus: 'MSCI World UCITS', tag: 'UCITS 🇮🇪',
-           provider: 'Invesco',     domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2009 }
+           provider: 'Invesco',     domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2009 },
+  // ----- Factor: Small Cap mundial UCITS (TER > 0.30% — se admite cuando aporta diversificación factorial) -----
+  WSML:  { region: 'world', name: 'iShares MSCI World Small Cap UCITS ETF (Acc)', ter: 0.35, aum: 3.5, holdings: 3500, focus: 'World Small Cap UCITS', tag: 'SMALL-CAP UCITS',
+           provider: 'BlackRock',   domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2018 }
 };
 
 // Pesos regionales del mercado global actual (capitalización bursátil 2026)
@@ -140,7 +147,9 @@ const GLOBAL_BREAKDOWN = {
   // MSCI World = developed markets (sin emergentes ni China)
   XDWD:  { us: 70, eu: 16, cn: 0, jp: 6,   em: 0,  other: 8 },
   SWRD:  { us: 70, eu: 16, cn: 0, jp: 6,   em: 0,  other: 8 },
-  MXWO:  { us: 70, eu: 16, cn: 0, jp: 6,   em: 0,  other: 8 }
+  MXWO:  { us: 70, eu: 16, cn: 0, jp: 6,   em: 0,  other: 8 },
+  // Small Cap tilta levemente más fuera de US que el large-cap
+  WSML:  { us: 60, eu: 18, cn: 0, jp: 8,   em: 0,  other: 14 }
 };
 
 const REGION_META = {

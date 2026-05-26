@@ -373,6 +373,21 @@
     letter-spacing: 1px;
     font-weight: 600;
   }
+  .suggest-sub {
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: var(--text-dim);
+    margin-top: -4px;
+  }
+  .suggest-note {
+    font-size: 0.72rem;
+    line-height: 1.45;
+    color: #c9a55a;
+    background: rgba(201, 165, 90, 0.08);
+    border: 1px solid rgba(201, 165, 90, 0.25);
+    border-radius: 6px;
+    padding: 6px 8px;
+  }
   .suggest-metrics {
     display: flex;
     gap: 10px;
@@ -1838,51 +1853,78 @@ document.addEventListener('click', (e) => {
 // ============================================================
 // PORTFOLIOS SUGERIDOS
 // ============================================================
-// Carteras modelo — todas en UCITS Acc compliant con la IPS estándar
-// (domicilio Irlanda, acumulación, TER ≤ 0.30%, AUM > 1B, antigüedad > 5 años).
-// La regla de concentración del 30% por gestora se respeta sólo en la #4
+// Carteras modelo — diversificación progresiva de 1 a 5 ETFs.
+// Todas en UCITS Acc (domicilio Irlanda, acumulación) y compliant con la IPS
+// estándar (AUM > 1B, antigüedad > 5 años). Mantienen TER ≤ 0.30% por ETF
+// salvo en la #5, donde se admite UN ETF por encima (WSML, 0.35%) a cambio
+// de sumar el factor small-cap (+3.500 empresas pequeñas mundiales) que el
+// resto de las carteras no captura.
+// La regla de concentración del 30% por gestora se respeta sólo en la #5
 // (las primeras dispararán la alerta a propósito como feedback educativo).
 const SUGGESTED = [
   {
-    id: 'passive',
-    title: 'Global',
+    id: 'global-1',
+    title: '1 ETF · Mundo entero',
+    subtitle: 'Lo más simple: una sola línea, todo el mercado global desarrollado + emergente.',
     tickers: ['VWCE']
   },
   {
-    id: 'developed-em',
-    title: 'Desarrollado + Emergentes',
+    id: 'devmkt-em-2',
+    title: '2 ETFs · Desarrollado + Emergentes',
+    subtitle: 'MSCI World no incluye emergentes — EIMI los suma como bloque propio.',
     tickers: ['SWRD', 'EIMI']
   },
   {
-    id: 'mirror',
-    title: 'EEUU + Europa + Emergentes',
+    id: 'regions-3',
+    title: '3 ETFs · EEUU + Europa + Emergentes',
+    subtitle: 'Control regional sobre los tres bloques principales del mercado.',
     tickers: ['CSPX', 'IMEU', 'EIMI']
   },
   {
-    id: 'multi-gestora',
-    title: 'Global varios ETFs',
-    tickers: ['VUAA', 'SWRD', 'XDWD', 'EIMI']
+    id: 'regions-4',
+    title: '4 ETFs · + Japón',
+    subtitle: 'Suma Japón como bloque propio para no diluir su peso dentro de "desarrollado".',
+    tickers: ['CSPX', 'IMEU', 'SJPA', 'EIMI']
+  },
+  {
+    id: 'max-divers-5',
+    title: '5 ETFs · Máxima diversificación',
+    subtitle: 'Agrega small-cap mundial (WSML, TER 0,35%). Supera el cap de 0,30% en ese ETF a cambio de +3.500 empresas pequeñas que el resto no cubre.',
+    tickers: ['CSPX', 'IMEU', 'SJPA', 'EIMI', 'WSML']
   }
 ];
 
 function renderSuggestedPortfolios() {
   const grid = document.getElementById('suggest-grid');
   grid.innerHTML = '';
+  const ipsKpis = loadIPS().kpis;
+  const ipsCap = (ipsKpis.terMaxPct && ipsKpis.terMaxPct.active) ? ipsKpis.terMaxPct.value : null;
   SUGGESTED.forEach(port => {
     const score = computeDiversificationScore(port.tickers);
     const companies = computeTotalHoldings(port.tickers);
     const ter = computeAvgTER(port.tickers);
+    const aboveCap = ipsCap == null
+      ? []
+      : port.tickers.filter(t => (ETF_DB[t] && ETF_DB[t].ter > ipsCap));
 
     const card = document.createElement('div');
     card.className = 'suggest-card';
+    const subtitleHtml = port.subtitle
+      ? `<div class="suggest-sub">${port.subtitle}</div>`
+      : '';
+    const noteHtml = aboveCap.length
+      ? `<div class="suggest-note" title="Política de inversión: cap de TER configurado en ${ipsCap.toFixed(2)}%">⚠ Supera el cap de TER (${ipsCap.toFixed(2)}%) en ${aboveCap.join(', ')} — admitido por su aporte a la diversificación.</div>`
+      : '';
     card.innerHTML = `
       <h3>${port.title}</h3>
+      ${subtitleHtml}
       <div class="suggest-metrics">
         <div class="suggest-metric"><strong>${port.tickers.length}</strong> fondos</div>
         <div class="suggest-metric"><strong>${companies.toLocaleString('es')}</strong> empresas</div>
         <div class="suggest-metric score">Divers. <strong>${score}/10</strong></div>
         <div class="suggest-metric">TER <strong>${ter.toFixed(2)}%</strong></div>
       </div>
+      ${noteHtml}
       <button class="apply-btn" onclick="applyPortfolio('${port.id}')">Aplicar este portfolio</button>
     `;
     grid.appendChild(card);
