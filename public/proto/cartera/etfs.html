@@ -1446,42 +1446,65 @@
     font-family: inherit;
   }
   .sticky-selection .ss-reset:hover { color: var(--text); border-color: var(--text-dim); }
-  .sticky-selection .ss-rows { display: flex; flex-direction: column; gap: 8px; }
-  .sticky-selection .ss-region-row {
-    border-top: 1px solid var(--border);
-    padding-top: 8px;
-  }
-  .sticky-selection .ss-region-row:first-child { border-top: none; padding-top: 0; }
-  .sticky-selection .ss-region-head {
+  /* Grid horizontal: una columna-card por región presente */
+  .sticky-selection .ss-rows {
     display: grid;
-    grid-template-columns: 22px minmax(110px, 1fr) 70px minmax(120px, 2fr) 60px 14px;
-    align-items: center;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 8px;
-    font-size: 13px;
   }
-  .sticky-selection .ss-region-emoji { font-size: 16px; line-height: 1; }
-  .sticky-selection .ss-region-name { color: var(--text); }
+  .sticky-selection .ss-region-row {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: rgba(0,0,0,0.18);
+    padding: 8px 10px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+  }
+  .sticky-selection .ss-region-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    min-height: 20px;
+  }
+  .sticky-selection .ss-region-emoji { font-size: 14px; line-height: 1; }
+  .sticky-selection .ss-region-name {
+    color: var(--text);
+    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .sticky-selection .ss-region-count {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text-dim);
-    text-align: right;
+    letter-spacing: 0.04em;
+  }
+  .sticky-selection .ss-region-pct {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
   }
   .sticky-selection .ss-region-bar {
-    height: 8px;
-    background: var(--surface-2, rgba(255,255,255,0.06));
-    border-radius: 4px;
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
     overflow: hidden;
   }
   .sticky-selection .ss-region-bar > span { display:block; height:100%; transition: width 0.18s ease; }
   .sticky-selection input.ss-pct {
-    width: 60px;
-    background: var(--surface-2, rgba(255,255,255,0.05));
+    width: 50px;
+    background: rgba(255,255,255,0.05);
     border: 1px solid var(--border);
     color: var(--text);
-    border-radius: 6px;
-    padding: 4px 6px;
+    border-radius: 5px;
+    padding: 3px 5px;
     font-family: 'Instrument Serif', Georgia, serif;
-    font-size: 16px;
+    font-size: 15px;
     text-align: right;
     font-variant-numeric: tabular-nums;
   }
@@ -1489,22 +1512,72 @@
     outline: none;
     border-color: var(--accent);
   }
-  .sticky-selection .ss-pct-sign { color: var(--text-dim); font-size: 12px; }
+  .sticky-selection .ss-pct-sign { color: var(--text-dim); font-size: 11px; }
   .sticky-selection .ss-tickers {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 6px;
-    padding-left: 30px;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 4px;
+    border-top: 1px solid var(--border);
+    padding-top: 5px;
   }
   .sticky-selection .ss-tick {
+    display: grid;
+    grid-template-columns: 1fr auto 16px;
+    align-items: center;
+    gap: 5px;
     font-size: 11px;
-    background: var(--surface-2, rgba(255,255,255,0.05));
-    border: 1px solid var(--border);
+    padding: 2px 5px;
     border-radius: 4px;
-    padding: 2px 7px;
+    background: rgba(255,255,255,0.03);
+  }
+  .sticky-selection .ss-tick-name {
+    font-weight: 700;
     color: var(--text);
     font-variant-numeric: tabular-nums;
+    letter-spacing: 0.03em;
+  }
+  .sticky-selection .ss-tick-pct {
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+    font-size: 10px;
+  }
+  .sticky-selection .ss-tick-remove {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    padding: 0;
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sticky-selection .ss-tick-remove:hover {
+    color: #fff;
+    background: #D85A30;
+  }
+  .sticky-selection .ss-region-remove {
+    margin-top: 2px;
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--text-dim);
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.04em;
+  }
+  .sticky-selection .ss-region-remove:hover {
+    color: #fff;
+    background: rgba(216, 90, 48, 0.85);
+    border-color: #D85A30;
+    border-style: solid;
   }
   .sticky-selection .ss-footer {
     margin-top: 10px;
@@ -1515,11 +1588,12 @@
   .sticky-selection .ss-footer strong { color: var(--text); }
   .sticky-selection .ss-footer.warn strong { color: #c9a55a; }
   @media (max-width: 720px) {
-    .sticky-selection .ss-region-head {
-      grid-template-columns: 22px 1fr 70px 50px 14px;
+    .sticky-selection .ss-rows {
+      grid-template-columns: repeat(2, 1fr);
     }
-    .sticky-selection .ss-region-bar { display: none; }
-    .sticky-selection .ss-tickers { padding-left: 0; }
+  }
+  @media (max-width: 460px) {
+    .sticky-selection .ss-rows { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -2235,7 +2309,7 @@ function renderStickySelection() {
   const presentOrdered = REGION_ORDER.filter(r => byR[r] && byR[r].length > 0);
   const fmtUSD = n => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
 
-  const rows = presentOrdered.map(r => {
+  const cards = presentOrdered.map(r => {
     const tickers = byR[r];
     const pct = weights[r] || 0;
     const perEtfPct = tickers.length > 0 ? pct / tickers.length : 0;
@@ -2243,19 +2317,27 @@ function renderStickySelection() {
     const ticksHTML = tickers.map(t => {
       const each = target > 0 ? Math.round(target * perEtfPct / 100) : 0;
       const amtTxt = each > 0 ? ` · ${fmtUSD(each)}` : '';
-      return `<span class="ss-tick">${t} · ${perEtfPct.toFixed(1)}%${amtTxt}</span>`;
+      return `
+        <div class="ss-tick" title="${t} — ${(ETF_DB[t]?.name) || ''}${amtTxt}">
+          <span class="ss-tick-name">${t}</span>
+          <span class="ss-tick-pct">${perEtfPct.toFixed(1)}%</span>
+          <button type="button" class="ss-tick-remove" onclick="toggleSelection('${t}')" aria-label="Quitar ${t}" title="Quitar ${t}">✕</button>
+        </div>`;
     }).join('');
     return `
-      <div class="ss-region-row">
+      <div class="ss-region-row" data-region="${r}">
         <div class="ss-region-head">
           <span class="ss-region-emoji" aria-hidden="true">${m.emoji || ''}</span>
-          <span class="ss-region-name">${REGION_SHORT_LABEL[r] || m.name} <span class="ss-region-count">${tickers.length} ETF${tickers.length > 1 ? 's' : ''}</span></span>
-          <span class="ss-region-count" style="text-align:right">${perEtfPct.toFixed(1)}%/ETF</span>
-          <div class="ss-region-bar"><span style="width:${Math.min(100, pct)}%;background:${m.hex}"></span></div>
+          <span class="ss-region-name">${REGION_SHORT_LABEL[r] || m.name}</span>
+          <span class="ss-region-count">${tickers.length} ETF${tickers.length > 1 ? 's' : ''}</span>
+        </div>
+        <div class="ss-region-pct">
           <input type="number" class="ss-pct" min="0" max="100" step="1" value="${pct.toFixed(0)}" data-region="${r}" aria-label="Porcentaje en ${REGION_SHORT_LABEL[r] || r}" />
           <span class="ss-pct-sign">%</span>
         </div>
+        <div class="ss-region-bar"><span style="width:${Math.min(100, pct)}%;background:${m.hex}"></span></div>
         <div class="ss-tickers">${ticksHTML}</div>
+        <button type="button" class="ss-region-remove" onclick="removeRegion('${r}')" title="Quitar todos los ETFs de ${REGION_SHORT_LABEL[r] || r}">✕ Quitar región</button>
       </div>
     `;
   }).join('');
@@ -2269,8 +2351,8 @@ function renderStickySelection() {
       <div class="ss-title">Selección actual · <strong>${selectedTickers.length}</strong> ETF${selectedTickers.length > 1 ? 's' : ''} · <strong>${presentOrdered.length}</strong> región${presentOrdered.length > 1 ? 'es' : ''}</div>
       <button type="button" class="ss-reset" onclick="resetRegionWeightsToWorld()" title="Restablecer los pesos regionales al breakdown del mercado mundial">↺ Al objetivo mundial</button>
     </div>
-    <div class="ss-rows">${rows}</div>
-    <div class="ss-footer ${footerClass}">Total <strong>${sumW.toFixed(1)}%</strong> ${okIcon} · El resto de regiones se reajusta proporcionalmente al editar uno</div>
+    <div class="ss-rows">${cards}</div>
+    <div class="ss-footer ${footerClass}">Total <strong>${sumW.toFixed(1)}%</strong> ${okIcon} · Editá el % de una región y el resto se rebalancea proporcionalmente</div>
   `;
 
   host.querySelectorAll('input.ss-pct').forEach(inp => {
@@ -2281,6 +2363,20 @@ function renderStickySelection() {
       updateUI();
     });
   });
+}
+
+// Quita de la selección todos los ETFs de una región. Los pesos regionales
+// restantes se renormalizan automáticamente en getEffectiveRegionWeights().
+function removeRegion(region) {
+  const before = selectedTickers.length;
+  const removed = selectedTickers.filter(t => ETF_DB[t] && ETF_DB[t].region === region);
+  if (removed.length === 0) return;
+  selectedTickers = selectedTickers.filter(t => !removed.includes(t));
+  saveSelection(selectedTickers);
+  recomputeAmountsFromRegionWeights();
+  renderETFSections();
+  updateUI();
+  showToast(`✓ ${removed.length} ETF${removed.length > 1 ? 's' : ''} de ${REGION_SHORT_LABEL[region] || region} removido${removed.length > 1 ? 's' : ''}`);
 }
 
 function applyPortfolio(id) {
