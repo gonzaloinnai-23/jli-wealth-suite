@@ -1,10 +1,11 @@
 // ============================================================
 // BASE DE DATOS DE ETFs COMPARTIDA ENTRE LAS 3 PÁGINAS
+// Curada a partir de la planilla "1. Índices y ETFs — Carteras Modelo Indexados".
 // Campos:
 //  region, name, ter, aum (billones USD), holdings, focus, tag (visual)
 // + Campos para evaluar Política de Inversión (IPS):
 //  provider           — gestora
-//  domicile           — 'US' | 'IRL' | 'LU'
+//  domicile           — 'US' | 'IRL' | 'LU' | 'DE'
 //  accumulation       — true = acumulación · false = distribución
 //  isMixed            — true si es híbrido / multi-asset
 //  isSectorial        — true si es sectorial (>10% concentración por industria)
@@ -16,121 +17,97 @@
 //  inceptionYear      — año de lanzamiento del fondo (para track record)
 // ============================================================
 const ETF_DB = {
-  // ===== EEUU =====
-  VOO:  { region: 'us', name: 'Vanguard S&P 500 ETF',             ter: 0.03, aum: 1500, holdings: 500,   focus: 'Large Cap',  tag: 'MÁS POPULAR',
+  // ===== EEUU — S&P 500 (US-domiciliados) =====
+  VOO:  { region: 'us', name: 'Vanguard S&P 500 ETF', ter: 0.03, aum: 817, holdings: 503, focus: 'S&P 500', tag: 'MÁS POPULAR',
           provider: 'Vanguard',     domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2010 },
-  SPY:  { region: 'us', name: 'SPDR S&P 500 ETF Trust',            ter: 0.09, aum: 600,  holdings: 500,   focus: 'Large Cap',  tag: null,
-          provider: 'State Street', domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 1993 },
-  VTI:  { region: 'us', name: 'Vanguard Total Stock Market',       ter: 0.03, aum: 450,  holdings: 3700,  focus: 'Total Market', tag: 'TOTAL MARKET',
-          provider: 'Vanguard',     domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2001 },
-  QQQ:  { region: 'us', name: 'Invesco Nasdaq 100',                ter: 0.20, aum: 380,  holdings: 100,   focus: 'Tech',       tag: 'TECH',
-          provider: 'Invesco',      domicile: 'US',  accumulation: false, isSectorial: true,  inceptionYear: 1999 },
-  IVV:  { region: 'us', name: 'iShares Core S&P 500',              ter: 0.03, aum: 600,  holdings: 500,   focus: 'Large Cap',  tag: null,
+  IVV:  { region: 'us', name: 'iShares Core S&P 500 ETF', ter: 0.03, aum: 580, holdings: 503, focus: 'S&P 500', tag: null,
           provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2000 },
-  SCHD: { region: 'us', name: 'Schwab US Dividend Equity',         ter: 0.06, aum: 70,   holdings: 100,   focus: 'Dividend',   tag: null,
-          provider: 'Charles Schwab', domicile: 'US', accumulation: false, isSectorial: false, inceptionYear: 2011 },
-
-  // ===== EEUU UCITS (domiciliados en Irlanda — aptos para inversores europeos) =====
-  CSPX: { region: 'us', name: 'iShares Core S&P 500 UCITS ETF (Acc)', ter: 0.07, aum: 96,  holdings: 503, focus: 'S&P 500 UCITS',     tag: 'UCITS 🇮🇪',
+  SPY:  { region: 'us', name: 'SPDR S&P 500 ETF Trust', ter: 0.09, aum: 650, holdings: 503, focus: 'S&P 500', tag: null,
+          provider: 'State Street', domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 1993 },
+  // ===== EEUU — S&P 500 UCITS (Irlanda) =====
+  CSPX: { region: 'us', name: 'iShares Core S&P 500 UCITS ETF (Acc)', ter: 0.07, aum: 127, holdings: 503, focus: 'S&P 500 UCITS', tag: 'UCITS 🇮🇪',
           provider: 'BlackRock',    domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2010 },
-  VUAA: { region: 'us', name: 'Vanguard S&P 500 UCITS ETF (Acc)',     ter: 0.07, aum: 13,  holdings: 503, focus: 'S&P 500 UCITS',     tag: 'UCITS 🇮🇪',
+  VUAA: { region: 'us', name: 'Vanguard S&P 500 UCITS ETF (Acc)', ter: 0.07, aum: 29, holdings: 500, focus: 'S&P 500 UCITS', tag: 'UCITS 🇮🇪',
           provider: 'Vanguard',     domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2019 },
-  SPY4: { region: 'us', name: 'SPDR S&P 400 US Mid Cap UCITS ETF',    ter: 0.30, aum: 0.7, holdings: 400, focus: 'S&P 400 Mid-Cap',   tag: 'MID-CAP UCITS',
-          provider: 'State Street', domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2012 },
-  EQQQ: { region: 'us', name: 'Invesco EQQQ Nasdaq-100 UCITS ETF',    ter: 0.30, aum: 10,  holdings: 100, focus: 'Nasdaq 100 UCITS',  tag: 'NASDAQ UCITS',
-          provider: 'Invesco',      domicile: 'IRL', accumulation: false, isSectorial: false, inceptionYear: 2002 },
-  CNDX: { region: 'us', name: 'iShares Nasdaq 100 UCITS ETF (Acc)',   ter: 0.33, aum: 15,  holdings: 100, focus: 'Nasdaq 100 UCITS',  tag: 'UCITS 🇮🇪',
-          provider: 'BlackRock',    domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2010 },
-  XRSU: { region: 'us', name: 'Xtrackers Russell 2000 UCITS ETF (Acc)', ter: 0.30, aum: 1.5, holdings: 2000, focus: 'Russell 2000 Small-Cap', tag: 'SMALL-CAP UCITS',
-          provider: 'DWS',          domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2016 },
-  // ----- Alternativas a Vanguard/BlackRock para S&P 500 UCITS -----
-  SPYL: { region: 'us', name: 'SPDR S&P 500 UCITS ETF (Acc)',          ter: 0.03, aum: 5,   holdings: 503, focus: 'S&P 500 UCITS', tag: 'UCITS 🇮🇪',
-          provider: 'State Street', domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2012 },
-  XSPX: { region: 'us', name: 'Xtrackers S&P 500 UCITS ETF 1C (Acc)',  ter: 0.07, aum: 10,  holdings: 503, focus: 'S&P 500 UCITS', tag: 'UCITS 🇮🇪',
-          provider: 'DWS',          domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2010 },
-  SPXP: { region: 'us', name: 'Invesco S&P 500 UCITS ETF (Acc)',       ter: 0.05, aum: 8,   holdings: 503, focus: 'S&P 500 UCITS', tag: 'UCITS 🇮🇪',
-          provider: 'Invesco',      domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2010 },
+  SPY5: { region: 'us', name: 'SPDR S&P 500 UCITS ETF', ter: 0.03, aum: 14.85, holdings: 500, focus: 'S&P 500 UCITS', tag: 'UCITS 🇮🇪',
+          provider: 'State Street', domicile: 'IRL', accumulation: false, isSectorial: false, inceptionYear: 2011 },
+  // ===== EEUU — Total Market =====
+  VTI:  { region: 'us', name: 'Vanguard Total Stock Market ETF', ter: 0.03, aum: 430, holdings: 3506, focus: 'CRSP US Total Market', tag: 'TOTAL MARKET',
+          provider: 'Vanguard',     domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2001 },
+  ITOT: { region: 'us', name: 'iShares Core S&P Total US Stock Market ETF', ter: 0.03, aum: 80, holdings: 2500, focus: 'S&P Total Market', tag: null,
+          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2004 },
 
   // ===== EUROPA =====
-  VGK:  { region: 'eu', name: 'Vanguard FTSE Europe ETF',          ter: 0.09, aum: 25,   holdings: 1300,  focus: 'Broad Europe',  tag: 'MÁS POPULAR',
-          provider: 'Vanguard',     domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2005 },
-  IEUR: { region: 'eu', name: 'iShares Core MSCI Europe',          ter: 0.09, aum: 5,    holdings: 1000,  focus: 'Broad Europe',  tag: null,
-          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2014 },
-  IMEU: { region: 'eu', name: 'iShares Core MSCI Europe UCITS ETF (Acc)', ter: 0.12, aum: 8, holdings: 430, focus: 'UCITS Europe', tag: 'UCITS 🇮🇪',
+  MEUF: { region: 'eu', name: 'Amundi Core Stoxx Europe 600 UCITS ETF Acc', ter: 0.07, aum: 18.5, holdings: 600, focus: 'STOXX Europe 600', tag: 'UCITS 🇱🇺',
+          provider: 'Amundi',       domicile: 'LU',  accumulation: true,  isSectorial: false, inceptionYear: 2014 },
+  EXSA: { region: 'eu', name: 'iShares STOXX Europe 600 UCITS ETF (DE)', ter: 0.20, aum: 9.2, holdings: 602, focus: 'STOXX Europe 600', tag: 'UCITS 🇩🇪',
+          provider: 'BlackRock',    domicile: 'DE',  accumulation: false, isSectorial: false, inceptionYear: 2010 },
+  IMEU: { region: 'eu', name: 'iShares Core MSCI Europe UCITS ETF (Acc)', ter: 0.12, aum: 10, holdings: 410, focus: 'MSCI Europe', tag: 'UCITS 🇮🇪',
           provider: 'BlackRock',    domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2009 },
-  EZU:  { region: 'eu', name: 'iShares MSCI Eurozone',             ter: 0.51, aum: 7,    holdings: 240,   focus: 'Eurozone',      tag: 'SIN UK',
-          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2000 },
-  EWG:  { region: 'eu', name: 'iShares MSCI Germany',              ter: 0.50, aum: 1.5,  holdings: 60,    focus: 'Alemania',      tag: null,
-          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 1996 },
-  EWU:  { region: 'eu', name: 'iShares MSCI United Kingdom',       ter: 0.50, aum: 2.5,  holdings: 85,    focus: 'UK',            tag: null,
-          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 1996 },
+  SXR7: { region: 'eu', name: 'iShares Core MSCI EMU UCITS ETF EUR (Acc)', ter: 0.12, aum: 6.8, holdings: 233, focus: 'MSCI EMU (Eurozona)', tag: 'UCITS 🇮🇪',
+          provider: 'BlackRock',    domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2009 },
 
   // ===== CHINA =====
-  MCHI: { region: 'cn', name: 'iShares MSCI China',                ter: 0.59, aum: 7,    holdings: 600,   focus: 'Broad China',   tag: 'MÁS POPULAR',
-          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2011 },
-  FXI:  { region: 'cn', name: 'iShares China Large-Cap',           ter: 0.74, aum: 7,    holdings: 50,    focus: 'Large Cap HK',  tag: null,
-          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2004 },
-  KWEB: { region: 'cn', name: 'KraneShares CSI China Internet',    ter: 0.70, aum: 7.4,  holdings: 35,    focus: 'Tech China',    tag: 'TECH CHINA',
-          provider: 'KraneShares',  domicile: 'US',  accumulation: false, isSectorial: true,  inceptionYear: 2013 },
-  ASHR: { region: 'cn', name: 'Xtrackers CSI 300 A-Shares',        ter: 0.65, aum: 2,    holdings: 300,   focus: 'A-Shares',      tag: null,
+  ASHR: { region: 'cn', name: 'Xtrackers Harvest CSI 300 China A-Shares ETF', ter: 0.65, aum: 1.5, holdings: 300, focus: 'CSI 300 A-Shares', tag: 'A-SHARES',
           provider: 'DWS',          domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2013 },
+  RQFI: { region: 'cn', name: 'Xtrackers Harvest CSI 300 UCITS ETF 1D', ter: 0.65, aum: 0.27, holdings: 300, focus: 'CSI 300 A-Shares UCITS', tag: 'UCITS 🇱🇺',
+          provider: 'DWS',          domicile: 'LU',  accumulation: false, isSectorial: false, inceptionYear: 2014 },
+  MCHI: { region: 'cn', name: 'iShares MSCI China ETF', ter: 0.59, aum: 6.6, holdings: 588, focus: 'MSCI China', tag: 'MÁS POPULAR',
+          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2011 },
+  FXI:  { region: 'cn', name: 'iShares China Large-Cap ETF', ter: 0.74, aum: 6.0, holdings: 58, focus: 'FTSE China 50', tag: null,
+          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2004 },
 
   // ===== JAPÓN =====
-  EWJ:  { region: 'jp', name: 'iShares MSCI Japan',                ter: 0.50, aum: 15,   holdings: 230,   focus: 'Broad Japan',    tag: 'MÁS POPULAR',
+  EWJ:  { region: 'jp', name: 'iShares MSCI Japan ETF', ter: 0.49, aum: 20.4, holdings: 188, focus: 'MSCI Japan', tag: 'MÁS POPULAR',
           provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 1996 },
-  DXJ:  { region: 'jp', name: 'WisdomTree Japan Hedged Equity',    ter: 0.48, aum: 6,    holdings: 330,   focus: 'Yen Hedged',     tag: 'YEN HEDGED',
-          provider: 'WisdomTree',   domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2006 },
-  BBJP: { region: 'jp', name: 'JPMorgan BetaBuilders Japan',       ter: 0.19, aum: 12,   holdings: 480,   focus: 'Broad Japan',    tag: null,
-          provider: 'JPMorgan',     domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2018, isCommercialBank: true },
-  SCJ:  { region: 'jp', name: 'iShares MSCI Japan Small-Cap',      ter: 0.47, aum: 0.25, holdings: 750,   focus: 'Small Cap',      tag: null,
-          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2007 },
-
-  // ===== EMERGENTES =====
-  VWO:  { region: 'em', name: 'Vanguard FTSE Emerging Markets',    ter: 0.06, aum: 85,   holdings: 6200,  focus: 'Broad EM',        tag: 'MÁS POPULAR',
-          provider: 'Vanguard',     domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2005 },
-  IEMG: { region: 'em', name: 'iShares Core MSCI Emerging Markets',ter: 0.09, aum: 144,  holdings: 2600,  focus: 'Broad EM',        tag: null,
-          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2012 },
-  EMXC: { region: 'em', name: 'iShares MSCI EM ex-China',          ter: 0.25, aum: 15,   holdings: 640,   focus: 'EM ex-China',     tag: 'SIN CHINA',
-          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2017 },
-  INDA: { region: 'em', name: 'iShares MSCI India',                ter: 0.64, aum: 9,    holdings: 130,   focus: 'India',           tag: '⭐ ESTRELLA 2050',
-          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2012 },
-  EWZ:  { region: 'em', name: 'iShares MSCI Brazil',               ter: 0.59, aum: 5,    holdings: 50,    focus: 'Brasil',          tag: null,
-          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2000 },
-  EWW:  { region: 'em', name: 'iShares MSCI Mexico',               ter: 0.50, aum: 2,    holdings: 50,    focus: 'México',          tag: null,
-          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 1996 },
-  EWT:  { region: 'em', name: 'iShares MSCI Taiwan',               ter: 0.56, aum: 4,    holdings: 90,    focus: 'Taiwán',          tag: null,
-          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2000 },
-  EWY:  { region: 'em', name: 'iShares MSCI South Korea',          ter: 0.59, aum: 4,    holdings: 110,   focus: 'Corea del Sur',   tag: null,
-          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2000 },
-  // ----- UCITS acumulativos para Emergentes (domicilio Irlanda) -----
-  EIMI: { region: 'em', name: 'iShares Core MSCI EM IMI UCITS ETF (Acc)', ter: 0.18, aum: 23,   holdings: 3000, focus: 'Broad EM UCITS',  tag: 'UCITS 🇮🇪',
-          provider: 'BlackRock',    domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2014 },
-  VFEA: { region: 'em', name: 'Vanguard FTSE Emerging Markets UCITS ETF (Acc)', ter: 0.22, aum: 5, holdings: 6200, focus: 'Broad EM UCITS', tag: 'UCITS 🇮🇪',
-          provider: 'Vanguard',     domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2018 },
-
-  // ===== JAPÓN UCITS (domicilio Irlanda — apto para inversores europeos) =====
-  SJPA: { region: 'jp', name: 'iShares Core MSCI Japan IMI UCITS ETF (Acc)', ter: 0.12, aum: 3, holdings: 1100, focus: 'Japón UCITS', tag: 'UCITS 🇮🇪',
+  VJPN: { region: 'jp', name: 'Vanguard FTSE Japan UCITS ETF (Dist)', ter: 0.15, aum: 2.6, holdings: 500, focus: 'FTSE Japan', tag: 'UCITS 🇮🇪',
+          provider: 'Vanguard',     domicile: 'IRL', accumulation: false, isSectorial: false, inceptionYear: 2013 },
+  SJPA: { region: 'jp', name: 'iShares Core MSCI Japan IMI UCITS ETF (Acc)', ter: 0.12, aum: 5.0, holdings: 1250, focus: 'MSCI Japan IMI', tag: 'UCITS 🇮🇪',
           provider: 'BlackRock',    domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2018 },
 
-  // ===== GLOBALES =====
-  VT:    { region: 'world', name: 'Vanguard Total World Stock',          ter: 0.07, aum: 45, holdings: 9900, focus: 'Todo el mundo', tag: 'TODO EL MUNDO',
-           provider: 'Vanguard',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2008 },
-  ACWI:  { region: 'world', name: 'iShares MSCI ACWI',                   ter: 0.32, aum: 22, holdings: 2400, focus: 'Todo el mundo', tag: null,
-           provider: 'BlackRock',   domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2008 },
-  VWCE:  { region: 'world', name: 'Vanguard FTSE All-World UCITS',       ter: 0.22, aum: 18, holdings: 3700, focus: 'UCITS Global',  tag: 'UCITS 🇪🇺',
-           provider: 'Vanguard',    domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2019 },
-  VXUS:  { region: 'world', name: 'Vanguard Total International Stock',  ter: 0.05, aum: 95, holdings: 8600, focus: 'Mundo ex-USA',  tag: 'EX-USA',
-           provider: 'Vanguard',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2011 },
-  // ----- Alternativas Globales UCITS no-Vanguard/BlackRock -----
-  XDWD:  { region: 'world', name: 'Xtrackers MSCI World UCITS ETF 1C (Acc)', ter: 0.19, aum: 14, holdings: 1500, focus: 'MSCI World UCITS', tag: 'UCITS 🇮🇪',
-           provider: 'DWS',         domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2014 },
-  SWRD:  { region: 'world', name: 'SPDR MSCI World UCITS ETF (Acc)',         ter: 0.12, aum: 7,  holdings: 1500, focus: 'MSCI World UCITS', tag: 'UCITS 🇮🇪',
-           provider: 'State Street', domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2019 },
-  MXWO:  { region: 'world', name: 'Invesco MSCI World UCITS ETF (Acc)',      ter: 0.19, aum: 4,  holdings: 1500, focus: 'MSCI World UCITS', tag: 'UCITS 🇮🇪',
-           provider: 'Invesco',     domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2009 },
-  // ----- Factor: Small Cap mundial UCITS (TER > 0.30% — se admite cuando aporta diversificación factorial) -----
-  WSML:  { region: 'world', name: 'iShares MSCI World Small Cap UCITS ETF (Acc)', ter: 0.35, aum: 3.5, holdings: 3500, focus: 'World Small Cap UCITS', tag: 'SMALL-CAP UCITS',
-           provider: 'BlackRock',   domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2018 }
+  // ===== EMERGENTES =====
+  EEM:  { region: 'em', name: 'iShares MSCI Emerging Markets ETF', ter: 0.70, aum: 18, holdings: 1250, focus: 'MSCI EM', tag: null,
+          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2003 },
+  IEMG: { region: 'em', name: 'iShares Core MSCI Emerging Markets ETF', ter: 0.09, aum: 135, holdings: 2800, focus: 'MSCI EM IMI', tag: 'MÁS POPULAR',
+          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2012 },
+  EIMI: { region: 'em', name: 'iShares Core MSCI EM IMI UCITS ETF (Acc)', ter: 0.18, aum: 37, holdings: 3018, focus: 'MSCI EM IMI', tag: 'UCITS 🇮🇪',
+          provider: 'BlackRock',    domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2014 },
+  VWO:  { region: 'em', name: 'Vanguard FTSE Emerging Markets ETF', ter: 0.06, aum: 120, holdings: 5095, focus: 'FTSE EM (sin Corea)', tag: null,
+          provider: 'Vanguard',     domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2005 },
+  XMME: { region: 'em', name: 'Xtrackers MSCI Emerging Markets UCITS ETF 1C', ter: 0.18, aum: 11, holdings: 1350, focus: 'MSCI EM', tag: 'UCITS 🇮🇪',
+          provider: 'DWS',          domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2014 },
+
+  // ===== GLOBAL — Resto ex-US (US-dom) =====
+  VXUS: { region: 'world', name: 'Vanguard Total International Stock ETF', ter: 0.05, aum: 144, holdings: 8842, focus: 'FTSE Global All Cap ex US', tag: 'EX-USA',
+          provider: 'Vanguard',     domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2011 },
+  VEU:  { region: 'world', name: 'Vanguard FTSE All-World ex-US ETF', ter: 0.04, aum: 85, holdings: 3600, focus: 'FTSE All-World ex US', tag: 'EX-USA',
+          provider: 'Vanguard',     domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2007 },
+  IXUS: { region: 'world', name: 'iShares Core MSCI Total International Stock ETF', ter: 0.07, aum: 45, holdings: 4300, focus: 'MSCI ACWI ex US IMI', tag: 'EX-USA',
+          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2012 },
+
+  // ===== GLOBAL — DM ex-US =====
+  EFA:  { region: 'world', name: 'iShares MSCI EAFE ETF', ter: 0.32, aum: 68, holdings: 720, focus: 'MSCI EAFE (DM ex-US ex-CA)', tag: null,
+          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2001 },
+  VEA:  { region: 'world', name: 'Vanguard FTSE Developed Markets ETF', ter: 0.03, aum: 150, holdings: 3957, focus: 'FTSE Developed All Cap ex US', tag: null,
+          provider: 'Vanguard',     domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2007 },
+
+  // ===== GLOBAL — Mundo DM (MSCI World, sin emergentes) =====
+  IWDA: { region: 'world', name: 'iShares Core MSCI World UCITS ETF (Acc)', ter: 0.20, aum: 121, holdings: 1349, focus: 'MSCI World (DM)', tag: 'UCITS 🇮🇪',
+          provider: 'BlackRock',    domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2009 },
+  HMWO: { region: 'world', name: 'HSBC MSCI World UCITS ETF', ter: 0.15, aum: 11, holdings: 1368, focus: 'MSCI World (DM)', tag: 'UCITS 🇮🇪',
+          provider: 'HSBC',         domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2010, isCommercialBank: true },
+
+  // ===== GLOBAL — Mundo total (ACWI / All-World) =====
+  ACWI: { region: 'world', name: 'iShares MSCI ACWI ETF', ter: 0.32, aum: 22, holdings: 2317, focus: 'MSCI ACWI', tag: null,
+          provider: 'BlackRock',    domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2008 },
+  VT:   { region: 'world', name: 'Vanguard Total World Stock ETF', ter: 0.06, aum: 90, holdings: 9800, focus: 'FTSE All-World', tag: 'TODO EL MUNDO',
+          provider: 'Vanguard',     domicile: 'US',  accumulation: false, isSectorial: false, inceptionYear: 2008 },
+  VWCE: { region: 'world', name: 'Vanguard FTSE All-World UCITS ETF (Acc)', ter: 0.19, aum: 36, holdings: 3700, focus: 'FTSE All-World', tag: 'UCITS 🇮🇪',
+          provider: 'Vanguard',     domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2019 },
+  VWRL: { region: 'world', name: 'Vanguard FTSE All-World UCITS ETF (Dist)', ter: 0.19, aum: 22, holdings: 3700, focus: 'FTSE All-World', tag: 'UCITS 🇮🇪',
+          provider: 'Vanguard',     domicile: 'IRL', accumulation: false, isSectorial: false, inceptionYear: 2012 },
+  SPYI: { region: 'world', name: 'SPDR MSCI ACWI IMI UCITS ETF', ter: 0.17, aum: 5.9, holdings: 8228, focus: 'MSCI ACWI IMI', tag: 'UCITS 🇮🇪',
+          provider: 'State Street', domicile: 'IRL', accumulation: true,  isSectorial: false, inceptionYear: 2011 }
 };
 
 // Pesos regionales del mercado global actual (capitalización bursátil 2026)
@@ -140,16 +117,23 @@ const REGION_WEIGHTS = {
 
 // Para ETFs globales, asumimos distribución interna según market cap mundial
 const GLOBAL_BREAKDOWN = {
-  VT:    { us: 62, eu: 14, cn: 3, jp: 5.5, em: 11, other: 4.5 }, // solapa EM con china
-  ACWI:  { us: 62, eu: 14, cn: 3, jp: 5.5, em: 11, other: 4.5 },
-  VWCE:  { us: 62, eu: 14, cn: 3, jp: 5.5, em: 11, other: 4.5 },
-  VXUS:  { us: 0,  eu: 37, cn: 8, jp: 14,  em: 30, other: 11 }, // ex-USA redistribuido
-  // MSCI World = developed markets (sin emergentes ni China)
-  XDWD:  { us: 70, eu: 16, cn: 0, jp: 6,   em: 0,  other: 8 },
-  SWRD:  { us: 70, eu: 16, cn: 0, jp: 6,   em: 0,  other: 8 },
-  MXWO:  { us: 70, eu: 16, cn: 0, jp: 6,   em: 0,  other: 8 },
-  // Small Cap tilta levemente más fuera de US que el large-cap
-  WSML:  { us: 60, eu: 18, cn: 0, jp: 8,   em: 0,  other: 14 }
+  // Mundo total (ACWI / FTSE All-World) — DM + EM
+  ACWI: { us: 62, eu: 14, cn: 3, jp: 5.5, em: 11, other: 4.5 },
+  VT:   { us: 62, eu: 14, cn: 3, jp: 5.5, em: 11, other: 4.5 },
+  VWCE: { us: 62, eu: 14, cn: 3, jp: 5.5, em: 11, other: 4.5 },
+  VWRL: { us: 62, eu: 14, cn: 3, jp: 5.5, em: 11, other: 4.5 },
+  // MSCI ACWI IMI: All-cap (incluye small-cap); US baja levemente
+  SPYI: { us: 60, eu: 15, cn: 3, jp: 5.5, em: 11, other: 5.5 },
+  // Resto ex-US (DM + EM, sin EEUU)
+  VXUS: { us: 0, eu: 37, cn: 8, jp: 14, em: 30, other: 11 },
+  VEU:  { us: 0, eu: 40, cn: 8, jp: 15, em: 25, other: 12 },
+  IXUS: { us: 0, eu: 38, cn: 8, jp: 14, em: 28, other: 12 },
+  // DM ex-US (sin emergentes ni China)
+  EFA:  { us: 0, eu: 65, cn: 0, jp: 25, em: 0, other: 10 },
+  VEA:  { us: 0, eu: 60, cn: 0, jp: 22, em: 0, other: 18 },
+  // MSCI World = developed markets puros (sin emergentes, sin China)
+  IWDA: { us: 70, eu: 16, cn: 0, jp: 6, em: 0, other: 8 },
+  HMWO: { us: 70, eu: 16, cn: 0, jp: 6, em: 0, other: 8 }
 };
 
 const REGION_META = {
