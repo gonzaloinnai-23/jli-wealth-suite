@@ -1449,7 +1449,7 @@
   /* Grid horizontal: una columna-card por región presente */
   .sticky-selection .ss-rows {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     gap: 8px;
   }
   .sticky-selection .ss-region-row {
@@ -1468,6 +1468,7 @@
     gap: 6px;
     font-size: 12px;
     min-height: 20px;
+    padding-right: 22px; /* deja lugar al ✕ esquinero */
   }
   .sticky-selection .ss-region-emoji { font-size: 14px; line-height: 1; }
   .sticky-selection .ss-region-name {
@@ -1485,34 +1486,88 @@
     letter-spacing: 0.04em;
   }
   .sticky-selection .ss-region-pct {
-    display: flex;
-    align-items: baseline;
+    display: grid;
+    grid-template-columns: 50px 12px 1fr;
+    align-items: center;
+    gap: 4px;
+  }
+  .sticky-selection .ss-amt-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: center;
     gap: 3px;
   }
-  .sticky-selection .ss-region-bar {
-    height: 6px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 3px;
-    overflow: hidden;
+  .sticky-selection .ss-amt-row.has-target {
+    grid-template-columns: 14px 1fr;
   }
-  .sticky-selection .ss-region-bar > span { display:block; height:100%; transition: width 0.18s ease; }
-  .sticky-selection input.ss-pct {
-    width: 50px;
+  .sticky-selection .ss-amt-sign {
+    color: var(--text-dim);
+    font-size: 11px;
+    text-align: center;
+  }
+  .sticky-selection input.ss-pct,
+  .sticky-selection input.ss-amt {
     background: rgba(255,255,255,0.05);
     border: 1px solid var(--border);
     color: var(--text);
     border-radius: 5px;
     padding: 3px 5px;
     font-family: 'Instrument Serif', Georgia, serif;
-    font-size: 15px;
     text-align: right;
     font-variant-numeric: tabular-nums;
   }
-  .sticky-selection input.ss-pct:focus {
+  .sticky-selection input.ss-pct { width: 50px; font-size: 15px; }
+  .sticky-selection input.ss-amt {
+    width: 100%;
+    font-size: 13px;
+    font-family: 'Geist', sans-serif;
+  }
+  .sticky-selection input.ss-pct:focus,
+  .sticky-selection input.ss-amt:focus {
     outline: none;
     border-color: var(--accent);
   }
   .sticky-selection .ss-pct-sign { color: var(--text-dim); font-size: 11px; }
+  /* Barra con marker para la capitalización mundial */
+  .sticky-selection .ss-region-bar {
+    position: relative;
+    height: 8px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .sticky-selection .ss-region-bar > .ss-bar-fill {
+    display: block;
+    height: 100%;
+    transition: width 0.18s ease;
+  }
+  /* Línea vertical de referencia = % de capitalización mundial para la región */
+  .sticky-selection .ss-region-bar > .ss-bar-mark {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    width: 2px;
+    background: var(--text);
+    opacity: 0.85;
+    transform: translateX(-1px);
+    border-radius: 1px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
+  }
+  .sticky-selection .ss-bar-legend {
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-top: 1px;
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+  }
+  .sticky-selection .ss-bar-legend strong {
+    color: var(--text);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
   .sticky-selection .ss-tickers {
     display: flex;
     flex-direction: column;
@@ -1542,42 +1597,42 @@
     font-variant-numeric: tabular-nums;
     font-size: 10px;
   }
-  .sticky-selection .ss-tick-remove {
+  .sticky-selection .ss-tick-remove,
+  .sticky-selection .ss-region-remove {
     background: none;
     border: none;
     color: var(--text-dim);
     cursor: pointer;
-    font-size: 12px;
     line-height: 1;
     padding: 0;
-    width: 16px;
-    height: 16px;
     border-radius: 3px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
+  .sticky-selection .ss-tick-remove {
+    font-size: 12px;
+    width: 16px;
+    height: 16px;
+  }
   .sticky-selection .ss-tick-remove:hover {
     color: #fff;
     background: #D85A30;
   }
+  /* ✕ esquinero (sólo icono, sin texto) para quitar la región entera */
   .sticky-selection .ss-region-remove {
-    margin-top: 2px;
-    background: transparent;
-    border: 1px dashed var(--border);
-    color: var(--text-dim);
-    border-radius: 4px;
-    padding: 3px 6px;
-    font-size: 10px;
-    cursor: pointer;
-    font-family: inherit;
-    letter-spacing: 0.04em;
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 18px;
+    height: 18px;
+    font-size: 13px;
+    border: 1px solid transparent;
   }
   .sticky-selection .ss-region-remove:hover {
     color: #fff;
-    background: rgba(216, 90, 48, 0.85);
+    background: #D85A30;
     border-color: #D85A30;
-    border-style: solid;
   }
   .sticky-selection .ss-footer {
     margin-top: 10px;
@@ -1628,11 +1683,6 @@
           </div>
         </div>
       </div>
-      <!-- Card Asignación: % desvío regional vs capitalización mundial -->
-      <div class="mini-stat clickable" id="stat-asignacion" data-view="diversif" title="Editar asignación · el número es el desvío regional vs capitalización mundial">
-        <div class="mini-stat-label">Asignación · desvío</div>
-        <div class="mini-stat-value" id="val-asignacion">—</div>
-      </div>
       <div class="mini-stat clickable" id="stat-ter" data-view="ter">
         <div class="mini-stat-label">Costo medio</div>
         <div class="mini-stat-value" id="val-ter">0.00%</div>
@@ -1663,7 +1713,7 @@
       <div class="msg-text">
         Los <em>fondos indexados</em> eliminan el riesgo de acciones individuales, los sectores de mercado y el gestor — sólo permanece el riesgo del mercado.
       </div>
-      <button id="cta-asignacion" type="button" class="cta-next" onclick="setView('diversif')" disabled title="Seleccioná al menos un ETF para continuar">ASIGNACIÓN →</button>
+      <button id="cta-asignacion" type="button" class="cta-next" onclick="setView('ter')" disabled title="Seleccioná al menos un ETF para continuar">COSTOS →</button>
     </div>
 
     <!-- CARTERAS MODELO -->
@@ -1679,18 +1729,6 @@
 
     <!-- Las secciones de ETFs las rellenamos dinámicamente desde JS -->
     <div id="etf-sections"></div>
-  </section>
-
-  <!-- ============ VISTA: DIVERSIFICACIÓN (editor de montos) ============ -->
-  <section id="view-diversif" style="display:none">
-    <!-- Mensaje estratégico + CTA Costos -->
-    <div class="invest-message">
-      <div class="msg-text">
-        En la <em>diversificación máxima</em> se eliminan los sesgos de sectores y regiones.
-      </div>
-      <button type="button" class="cta-next" onclick="setView('ter')" title="Ir a Costos →">COSTOS →</button>
-    </div>
-    <div class="diversif-host" id="diversif-host"></div>
   </section>
 
   <!-- ============ VISTA: TER (análisis de costes) ============ -->
@@ -2293,6 +2331,15 @@ function resetRegionWeightsToWorld() {
   showToast('✓ Pesos regionales reajustados al objetivo mundial');
 }
 
+// Sincroniza el `top` del panel sticky con la altura real del header sticky
+// (que tapa el panel si no se compensa).
+function syncStickyTop() {
+  const header = document.querySelector('.sticky-header');
+  const panel = document.getElementById('sticky-selection');
+  if (!header || !panel) return;
+  panel.style.top = header.offsetHeight + 'px';
+}
+
 function renderStickySelection() {
   const host = document.getElementById('sticky-selection');
   if (!host) return;
@@ -2308,12 +2355,24 @@ function renderStickySelection() {
   const meta = (typeof REGION_META !== 'undefined') ? REGION_META : {};
   const presentOrdered = REGION_ORDER.filter(r => byR[r] && byR[r].length > 0);
   const fmtUSD = n => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+  const fmtUSDInput = n => Math.round(n).toString();
+  const world = (typeof loadWorldBreakdown === 'function') ? loadWorldBreakdown() : null;
+  const worldRegions = (world && world.regions) ? world.regions : null;
 
   const cards = presentOrdered.map(r => {
     const tickers = byR[r];
     const pct = weights[r] || 0;
     const perEtfPct = tickers.length > 0 ? pct / tickers.length : 0;
     const m = meta[r] || { name: REGION_SHORT_LABEL[r] || r, hex: '#888', emoji: '' };
+    const regionAmt = target > 0 ? Math.round(target * pct / 100) : 0;
+    // Marker para capitalización mundial (no aplica a la región 'world')
+    const worldPct = worldRegions && r !== 'world' ? (worldRegions[r] || 0) : null;
+    const markerHTML = worldPct != null
+      ? `<span class="ss-bar-mark" style="left:${Math.min(100, worldPct)}%" title="Capitalización mundial: ${worldPct.toFixed(1)}%"></span>`
+      : '';
+    const legendHTML = worldPct != null
+      ? `<div class="ss-bar-legend"><span>Cartera <strong>${pct.toFixed(1)}%</strong></span><span>Mundo <strong>${worldPct.toFixed(1)}%</strong></span></div>`
+      : `<div class="ss-bar-legend"><span>Cartera <strong>${pct.toFixed(1)}%</strong></span></div>`;
     const ticksHTML = tickers.map(t => {
       const each = target > 0 ? Math.round(target * perEtfPct / 100) : 0;
       const amtTxt = each > 0 ? ` · ${fmtUSD(each)}` : '';
@@ -2324,8 +2383,15 @@ function renderStickySelection() {
           <button type="button" class="ss-tick-remove" onclick="toggleSelection('${t}')" aria-label="Quitar ${t}" title="Quitar ${t}">✕</button>
         </div>`;
     }).join('');
+    const amtRowHTML = target > 0
+      ? `<div class="ss-amt-row has-target">
+           <span class="ss-amt-sign">$</span>
+           <input type="number" class="ss-amt" min="0" step="100" value="${fmtUSDInput(regionAmt)}" data-region="${r}" aria-label="Monto USD en ${REGION_SHORT_LABEL[r] || r}" />
+         </div>`
+      : '';
     return `
       <div class="ss-region-row" data-region="${r}">
+        <button type="button" class="ss-region-remove" onclick="removeRegion('${r}')" title="Quitar todos los ETFs de ${REGION_SHORT_LABEL[r] || r}" aria-label="Quitar región">✕</button>
         <div class="ss-region-head">
           <span class="ss-region-emoji" aria-hidden="true">${m.emoji || ''}</span>
           <span class="ss-region-name">${REGION_SHORT_LABEL[r] || m.name}</span>
@@ -2334,10 +2400,14 @@ function renderStickySelection() {
         <div class="ss-region-pct">
           <input type="number" class="ss-pct" min="0" max="100" step="1" value="${pct.toFixed(0)}" data-region="${r}" aria-label="Porcentaje en ${REGION_SHORT_LABEL[r] || r}" />
           <span class="ss-pct-sign">%</span>
+          ${amtRowHTML}
         </div>
-        <div class="ss-region-bar"><span style="width:${Math.min(100, pct)}%;background:${m.hex}"></span></div>
+        <div class="ss-region-bar">
+          <span class="ss-bar-fill" style="width:${Math.min(100, pct)}%;background:${m.hex}"></span>
+          ${markerHTML}
+        </div>
+        ${legendHTML}
         <div class="ss-tickers">${ticksHTML}</div>
-        <button type="button" class="ss-region-remove" onclick="removeRegion('${r}')" title="Quitar todos los ETFs de ${REGION_SHORT_LABEL[r] || r}">✕ Quitar región</button>
       </div>
     `;
   }).join('');
@@ -2345,14 +2415,16 @@ function renderStickySelection() {
   const sumW = presentOrdered.reduce((s, r) => s + (weights[r] || 0), 0);
   const okIcon = Math.abs(sumW - 100) < 0.5 ? '✓' : '⚠';
   const footerClass = Math.abs(sumW - 100) < 0.5 ? '' : 'warn';
+  const targetTxt = target > 0 ? ` · objetivo ${fmtUSD(target)}` : '';
+  const markerNote = worldRegions ? ' · la línea ▎ sobre cada barra marca la capitalización mundial' : '';
 
   host.innerHTML = `
     <div class="ss-header">
-      <div class="ss-title">Selección actual · <strong>${selectedTickers.length}</strong> ETF${selectedTickers.length > 1 ? 's' : ''} · <strong>${presentOrdered.length}</strong> región${presentOrdered.length > 1 ? 'es' : ''}</div>
+      <div class="ss-title">Selección actual · <strong>${selectedTickers.length}</strong> ETF${selectedTickers.length > 1 ? 's' : ''} · <strong>${presentOrdered.length}</strong> región${presentOrdered.length > 1 ? 'es' : ''}${targetTxt}</div>
       <button type="button" class="ss-reset" onclick="resetRegionWeightsToWorld()" title="Restablecer los pesos regionales al breakdown del mercado mundial">↺ Al objetivo mundial</button>
     </div>
     <div class="ss-rows">${cards}</div>
-    <div class="ss-footer ${footerClass}">Total <strong>${sumW.toFixed(1)}%</strong> ${okIcon} · Editá el % de una región y el resto se rebalancea proporcionalmente</div>
+    <div class="ss-footer ${footerClass}">Total <strong>${sumW.toFixed(1)}%</strong> ${okIcon} · Editá % o monto: el resto se rebalancea proporcionalmente${markerNote}</div>
   `;
 
   host.querySelectorAll('input.ss-pct').forEach(inp => {
@@ -2363,6 +2435,26 @@ function renderStickySelection() {
       updateUI();
     });
   });
+  host.querySelectorAll('input.ss-amt').forEach(inp => {
+    inp.addEventListener('change', (e) => {
+      const r = e.target.dataset.region;
+      const v = Number(e.target.value) || 0;
+      setRegionAmount(r, v);
+      updateUI();
+    });
+  });
+
+  // Reposicionar el sticky bajo el header (recalcula por si cambió alto)
+  syncStickyTop();
+}
+
+// Convierte un monto USD para una región en un % equivalente y delega
+// en setRegionWeight() para que las demás regiones se rebalanceen.
+function setRegionAmount(region, amountUSD) {
+  const target = getTargetTotal();
+  if (target <= 0) return;
+  const newPct = Math.max(0, Math.min(100, (amountUSD / target) * 100));
+  setRegionWeight(region, newPct);
 }
 
 // Quita de la selección todos los ETFs de una región. Los pesos regionales
@@ -2463,20 +2555,18 @@ function loadObjetivosSnapshot() {
 // ====== VIEWS ======
 let currentView = 'fondos';
 function setView(name) {
-  const valid = ['fondos', 'diversif', 'ter'];
+  const valid = ['fondos', 'ter'];
   if (!valid.includes(name)) name = 'fondos';
-  if ((name === 'diversif' || name === 'ter') && selectedTickers.length === 0) name = 'fondos';
+  if (name === 'ter' && selectedTickers.length === 0) name = 'fondos';
   currentView = name;
   document.getElementById('view-fondos').style.display   = name === 'fondos'   ? '' : 'none';
-  document.getElementById('view-diversif').style.display = name === 'diversif' ? '' : 'none';
   document.getElementById('view-ter').style.display      = name === 'ter'      ? '' : 'none';
 
   // Progressive darkening (orden lógico):
   //  1. mapa (siempre pasado en etfs.html)
   //  2. fondos / empresas (data-view="fondos")
-  //  3. diversif (data-view="diversif")
-  //  4. ter (data-view="ter")
-  const ORDER = { fondos: 1, diversif: 2, ter: 3 };
+  //  3. ter (data-view="ter")
+  const ORDER = { fondos: 1, ter: 2 };
   const currentIdx = ORDER[name];
   document.querySelectorAll('.mini-stat.clickable').forEach(s => {
     let active = false;
@@ -2485,7 +2575,6 @@ function setView(name) {
     s.classList.toggle('active', active);
   });
 
-  if (name === 'diversif') renderDiversif();
   if (name === 'ter')      renderTer();
   // Mantener el scroll al tope (instant, sin smooth — evita race con renderizado)
   window.scrollTo(0, 0);
@@ -2592,6 +2681,7 @@ function computeRegionalMixByAmount(tickersAmounts) {
 
 function renderDiversif() {
   const host = document.getElementById('diversif-host');
+  if (!host) return; // vista de asignación/desvío removida; los pesos ahora se editan en el panel sticky
   if (selectedTickers.length === 0) {
     host.innerHTML = `
       <div class="d-empty">Antes de distribuir montos, seleccioná al menos un ETF en la vista <a href="#" onclick="event.preventDefault();setView('fondos')">Armado de Cartera</a>.</div>`;
@@ -3209,7 +3299,7 @@ function updateUI() {
   } catch (e) {}
 
   // Animación pulso en las stats actualizadas
-  ['stat-fondos', 'stat-asignacion', 'stat-ter'].forEach(id => {
+  ['stat-fondos', 'stat-ter'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.classList.remove('updated');
@@ -3282,6 +3372,10 @@ setShowOnlyEligible(false);
 // según los pesos regionales vigentes (o el breakdown mundial por defecto)
 if (selectedTickers.length > 0) recomputeAmountsFromRegionWeights();
 updateUI();
+// Mantener el `top` del panel sticky alineado con la altura real del header
+syncStickyTop();
+window.addEventListener('resize', syncStickyTop);
+window.addEventListener('load', syncStickyTop);
 
 // Header sticky stats actúan como navegación
 document.querySelectorAll('.mini-stat.clickable, .nav-back-arrow').forEach(s => {
@@ -3306,7 +3400,7 @@ document.querySelectorAll('.mini-stat.clickable, .nav-back-arrow').forEach(s => 
 // Inicializa view: respeta el hash si viene desde otra página de cartera
 (function initView() {
   const h = (location.hash || '').replace('#','').toLowerCase();
-  const valid = ['fondos', 'diversif', 'ter'];
+  const valid = ['fondos', 'ter'];
   setView(valid.includes(h) ? h : 'fondos');
 })();
 
