@@ -216,7 +216,20 @@ function YearRangePicker({ totalYears, startYear, endYear, onChange }) {
 function WealthPlanningWorkflow() {
   const visibleYears = 10;
   const maxYear = 40;
-  const [currentStep, setCurrentStep] = useState(0);
+
+  // Si hay snapshot guardado (hidratado por el shell desde Supabase o local),
+  // skip del wizard: cargamos el estado y arrancamos directo en el step 6.
+  const __snap = (() => {
+    try {
+      const raw = localStorage.getItem('jli_objetivos');
+      if (!raw) return null;
+      const p = JSON.parse(raw);
+      return (p && p.wizardState) ? p : null;
+    } catch (e) { return null; }
+  })();
+  const __ws = __snap?.wizardState || {};
+
+  const [currentStep, setCurrentStep] = useState(__snap ? 6 : 0);
 
   const expenseSteps = [1000, 2000, 3000, 4000, 5000, 7000, 9000, 11000, 13000, 15000, 17000, 19000, 21000, 23000, 25000];
   const incomeSteps = [0, 1000, 2000, 3000, 5000, 7000, 10000, 13000, 16000, 20000, 25000];
@@ -224,41 +237,41 @@ function WealthPlanningWorkflow() {
   const eduSteps = [5000, 10000, 15000, 20000, 30000, 40000, 50000, 60000, 75000, 90000, 110000, 130000, 150000];
   const intergenSteps = [500000, 1000000, 2000000, 3000000, 5000000, 7500000, 10000000, 15000000, 20000000, 30000000, 50000000, 75000000, 100000000];
 
-  const [monthlyExpense, setMonthlyExpense] = useState(9000);
-  const [displayedExpense, setDisplayedExpense] = useState(9000);
-  const [monthlyIncome, setMonthlyIncome] = useState(3000);
-  const [displayedIncome, setDisplayedIncome] = useState(3000);
-  const [psmValue, setPsmValue] = useState(500000);
-  const [displayedPsm, setDisplayedPsm] = useState(500000);
+  const [monthlyExpense, setMonthlyExpense] = useState(__ws.monthlyExpense ?? 9000);
+  const [displayedExpense, setDisplayedExpense] = useState(__ws.monthlyExpense ?? 9000);
+  const [monthlyIncome, setMonthlyIncome] = useState(__ws.monthlyIncome ?? 3000);
+  const [displayedIncome, setDisplayedIncome] = useState(__ws.monthlyIncome ?? 3000);
+  const [psmValue, setPsmValue] = useState(__ws.psmValue ?? 500000);
+  const [displayedPsm, setDisplayedPsm] = useState(__ws.psmValue ?? 500000);
   const [psmUserTouched, setPsmUserTouched] = useState(false);
-  const [eduPerYear, setEduPerYear] = useState(30000);
-  const [displayedEdu, setDisplayedEdu] = useState(30000);
-  const [eduStartYear, setEduStartYear] = useState(5);
-  const [eduEndYear, setEduEndYear] = useState(10);
-  const [yearsToRetirement, setYearsToRetirement] = useState(15);
-  const [retirementMultiplier, setRetirementMultiplier] = useState(25);
-  const [intergenCapital, setIntergenCapital] = useState(5000000);
-  const [displayedIntergen, setDisplayedIntergen] = useState(5000000);
+  const [eduPerYear, setEduPerYear] = useState(__ws.eduPerYear ?? 30000);
+  const [displayedEdu, setDisplayedEdu] = useState(__ws.eduPerYear ?? 30000);
+  const [eduStartYear, setEduStartYear] = useState(__ws.eduStartYear ?? 5);
+  const [eduEndYear, setEduEndYear] = useState(__ws.eduEndYear ?? 10);
+  const [yearsToRetirement, setYearsToRetirement] = useState(__ws.yearsToRetirement ?? 15);
+  const [retirementMultiplier, setRetirementMultiplier] = useState(__ws.retirementMultiplier ?? 25);
+  const [intergenCapital, setIntergenCapital] = useState(__ws.intergenCapital ?? 5000000);
+  const [displayedIntergen, setDisplayedIntergen] = useState(__ws.intergenCapital ?? 5000000);
 
-  const [confirmedExpense, setConfirmedExpense] = useState(null);
-  const [confirmedIncome, setConfirmedIncome] = useState(null);
-  const [confirmedPsm, setConfirmedPsm] = useState(null);
-  const [confirmedEdu, setConfirmedEdu] = useState(null);
-  const [confirmedRetirement, setConfirmedRetirement] = useState(null);
-  const [confirmedIntergen, setConfirmedIntergen] = useState(null);
+  const [confirmedExpense, setConfirmedExpense] = useState(__ws.confirmedExpense ?? null);
+  const [confirmedIncome, setConfirmedIncome] = useState(__ws.confirmedIncome ?? null);
+  const [confirmedPsm, setConfirmedPsm] = useState(__ws.confirmedPsm ?? null);
+  const [confirmedEdu, setConfirmedEdu] = useState(__ws.confirmedEdu ?? null);
+  const [confirmedRetirement, setConfirmedRetirement] = useState(__ws.confirmedRetirement ?? null);
+  const [confirmedIntergen, setConfirmedIntergen] = useState(__ws.confirmedIntergen ?? null);
 
-  const [mnvStart, setMnvStart] = useState(1);
-  const [mnvDuration, setMnvDuration] = useState(2);
-  const [psmStart, setPsmStart] = useState(1);
-  const [psmDuration, setPsmDuration] = useState(3);
-  const [eduStart, setEduStart] = useState(5);
-  const [eduDuration, setEduDuration] = useState(6);
-  const [retStart, setRetStart] = useState(15);
+  const [mnvStart, setMnvStart] = useState(__ws.mnvStart ?? 1);
+  const [mnvDuration, setMnvDuration] = useState(__ws.mnvDuration ?? 2);
+  const [psmStart, setPsmStart] = useState(__ws.psmStart ?? 1);
+  const [psmDuration, setPsmDuration] = useState(__ws.psmDuration ?? 3);
+  const [eduStart, setEduStart] = useState(__ws.eduStart ?? 5);
+  const [eduDuration, setEduDuration] = useState(__ws.eduDuration ?? 6);
+  const [retStart, setRetStart] = useState(__ws.retStart ?? 15);
   const [, setRetDuration] = useState(1);
-  const [intergenStart, setIntergenStart] = useState(11);
-  const [intergenDuration, setIntergenDuration] = useState(1);
+  const [intergenStart, setIntergenStart] = useState(__ws.intergenStart ?? 11);
+  const [intergenDuration, setIntergenDuration] = useState(__ws.intergenDuration ?? 1);
 
-  const [customObjectives, setCustomObjectives] = useState([]);
+  const [customObjectives, setCustomObjectives] = useState(__ws.customObjectives ?? []);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newObjName, setNewObjName] = useState("");
   const [newObjAmount, setNewObjAmount] = useState("");
@@ -269,7 +282,7 @@ function WealthPlanningWorkflow() {
   const [retCapitalOverride, setRetCapitalOverride] = useState(null);
   const [intergenOverride, setIntergenOverride] = useState(null);
   // Override de nombres por objetivo (para que las cards de mobile permitan renombrarlos)
-  const [nameOverrides, setNameOverrides] = useState({});
+  const [nameOverrides, setNameOverrides] = useState(__ws.nameOverrides ?? {});
   // Card mobile actualmente en modo edición (id) — null = todas en modo lectura
   const [editingCardId, setEditingCardId] = useState(null);
 
@@ -531,7 +544,7 @@ function WealthPlanningWorkflow() {
     setAmountDraft("");
   };
 
-  const [mixOverrides, setMixOverrides] = useState({});
+  const [mixOverrides, setMixOverrides] = useState(__ws.mixOverrides ?? {});
 
   const handleCreateCustom = () => {
     const trimmedName = newObjName.trim();
@@ -595,6 +608,15 @@ function WealthPlanningWorkflow() {
       intergenUSD: Math.round(intergenAmount),
       capitalDisponibleUSD: Math.round(intergenInvestable),
       completedAt: new Date().toISOString(),
+      // Estado completo del wizard para restaurar al volver y saltear el onboarding
+      wizardState: {
+        monthlyExpense, monthlyIncome, psmValue, eduPerYear, eduStartYear, eduEndYear,
+        yearsToRetirement, retirementMultiplier, intergenCapital,
+        confirmedExpense, confirmedIncome, confirmedPsm, confirmedEdu, confirmedRetirement, confirmedIntergen,
+        mnvStart, mnvDuration, psmStart, psmDuration, eduStart, eduDuration, retStart,
+        intergenStart, intergenDuration,
+        customObjectives, mixOverrides, nameOverrides,
+      },
     };
     try { localStorage.setItem('jli_objetivos', JSON.stringify(snapshot)); } catch (e) {}
     // Sync silencioso a Supabase si el shell padre lo expone (window.parent.jliSync).
