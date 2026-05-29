@@ -2355,7 +2355,7 @@ function renderStickySelection() {
   const meta = (typeof REGION_META !== 'undefined') ? REGION_META : {};
   const presentOrdered = REGION_ORDER.filter(r => byR[r] && byR[r].length > 0);
   const fmtUSD = n => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
-  const fmtUSDInput = n => Math.round(n).toString();
+  const fmtUSDInput = n => Math.round(n).toLocaleString('en-US');
   const world = (typeof loadWorldBreakdown === 'function') ? loadWorldBreakdown() : null;
   const worldRegions = (world && world.regions) ? world.regions : null;
 
@@ -2386,7 +2386,7 @@ function renderStickySelection() {
     const amtRowHTML = target > 0
       ? `<div class="ss-amt-row has-target">
            <span class="ss-amt-sign">$</span>
-           <input type="number" class="ss-amt" min="0" step="100" value="${fmtUSDInput(regionAmt)}" data-region="${r}" aria-label="Monto USD en ${REGION_SHORT_LABEL[r] || r}" />
+           <input type="text" inputmode="numeric" class="ss-amt" value="${fmtUSDInput(regionAmt)}" data-region="${r}" aria-label="Monto USD en ${REGION_SHORT_LABEL[r] || r}" />
          </div>`
       : '';
     return `
@@ -2438,7 +2438,9 @@ function renderStickySelection() {
   host.querySelectorAll('input.ss-amt').forEach(inp => {
     inp.addEventListener('change', (e) => {
       const r = e.target.dataset.region;
-      const v = Number(e.target.value) || 0;
+      // Parsea aceptando comas/espacios/símbolos no numéricos como separadores
+      const raw = String(e.target.value).replace(/[^\d.-]/g, '');
+      const v = Number(raw) || 0;
       setRegionAmount(r, v);
       updateUI();
     });
