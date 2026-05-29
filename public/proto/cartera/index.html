@@ -400,27 +400,56 @@
   .jli-val { font-family: 'Instrument Serif', Georgia, serif; font-size: 22px; font-weight: 400; line-height: 1; letter-spacing: -0.02em; color: var(--text); font-variant-numeric: tabular-nums; }
   .jli-val.serif { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; letter-spacing: -0.02em; }
 
-  /* Subheader-nav: navega entre las dos sub-vistas de Cartera objetivo
-     (Capitalización mundial y Armado de Cartera). Ubicado debajo del sticky-header,
-     no-sticky — desaparece al hacer scroll. Idéntica regla en cartera/etfs.html. */
-  .cartera-subnav {
-    background: rgba(255,255,255,0.45);
-    border-bottom: 1px solid var(--border);
-    padding: 8px 0;
-  }
-  .cartera-subnav-inner {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 20px;
+  /* Nav-bar de texto: reemplaza las cards del header con texto + ← back.
+     Idéntica regla en cartera/etfs.html. */
+  .cartera-navbar {
     display: flex;
-    gap: 10px;
+    align-items: center;
+    gap: 28px;
     justify-content: center;
     flex-wrap: wrap;
   }
-  .cartera-subnav-tab { text-decoration: none; color: inherit; }
-  @media (max-width: 768px) {
-    .cartera-subnav { padding: 6px 0; }
-    .cartera-subnav-inner { padding: 0 12px; gap: 6px; }
+  .cartera-navbar .navbar-back {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: inherit;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .cartera-navbar .navbar-back:hover {
+    color: var(--text);
+    border-color: var(--text-dim);
+    background: rgba(255,255,255,0.4);
+  }
+  .cartera-navbar .navbar-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    padding: 6px 2px 8px;
+    cursor: pointer;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+  .cartera-navbar .navbar-tab:hover { color: var(--text); }
+  .cartera-navbar .navbar-tab.active {
+    color: var(--text);
+    border-bottom-color: var(--text);
+    font-weight: 600;
+  }
+  @media (max-width: 600px) {
+    .cartera-navbar { gap: 14px; }
+    .cartera-navbar .navbar-tab { font-size: 13px; letter-spacing: 0; }
+    .cartera-navbar .navbar-back { padding: 4px 8px; font-size: 14px; }
   }
 
   /* Card combinada Fondos: 3 sub-valores en una grid */
@@ -518,41 +547,12 @@
 <!-- === Sticky nav cards (mirrored from etfs.html) === -->
 <div class="jli-stick">
   <div class="jli-stick-inner">
-    <button type="button" class="nav-back-arrow" id="jm-lp" data-go="politica" title="Volver a Política de inversión" aria-label="Volver a Política de inversión">
-      <span aria-hidden="true">←</span>
-    </button>
-    <div style="flex:1"></div>
-    <div class="jli-mini" data-go="ter">
-      <div class="jli-label">Costo medio</div>
-      <div class="jli-val serif" id="jm-ter">0.00%</div>
-    </div>
-  </div>
-</div>
-
-<!-- Subheader: nav entre Capitalización mundial (activa acá) y Armado de Cartera -->
-<div class="cartera-subnav">
-  <div class="cartera-subnav-inner">
-    <div class="jli-mini cartera-subnav-tab active" id="jm-map" data-go="mapa" title="Capitalización bursátil">
-      <div class="jli-label">Capitalización mundial</div>
-      <div class="jli-val serif">$128T</div>
-    </div>
-    <div class="jli-mini cartera-subnav-tab jli-mini-multi" data-go="fondos" title="Ver selección de fondos">
-      <div class="jli-label">Armado de Cartera</div>
-      <div class="jli-multi">
-        <div class="jli-cell">
-          <span class="jli-cell-val serif" id="jm-funds">0</span>
-          <span class="jli-cell-lbl">fondos</span>
-        </div>
-        <div class="jli-cell">
-          <span class="jli-cell-val serif" id="jm-companies">0</span>
-          <span class="jli-cell-lbl">empresas</span>
-        </div>
-        <div class="jli-cell">
-          <span class="jli-cell-val serif" id="jm-score">0.0</span>
-          <span class="jli-cell-lbl">diversif</span>
-        </div>
-      </div>
-    </div>
+    <nav class="cartera-navbar">
+      <button type="button" class="navbar-back" id="jm-lp" data-go="politica" title="Volver a Política de inversión" aria-label="Volver a Política de inversión">←</button>
+      <button type="button" class="navbar-tab active" id="jm-map" data-go="mapa" title="Capitalización bursátil">Capitalización mundial</button>
+      <button type="button" class="navbar-tab" data-go="fondos" title="Armado de Cartera">Armado de Cartera</button>
+      <button type="button" class="navbar-tab" data-go="ter" title="Costos">Costos</button>
+    </nav>
   </div>
 </div>
 
@@ -563,20 +563,23 @@
     // Sin selección → todos los valores en "—". Se autocalculan a medida
     // que el usuario selecciona ETFs y ajusta la asignación en etfs.html.
     try {
+      // Los nodos jm-* dejaron de existir cuando el header pasó a una navbar de
+      // texto. Mantengo la lógica con setText() guard por si vuelven en otro layout.
+      const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
       const sel = (typeof loadSelection === 'function') ? loadSelection() : [];
       const hasSelection = sel.length > 0;
 
       if (!hasSelection) {
-        document.getElementById('jm-funds').textContent = '—';
-        document.getElementById('jm-companies').textContent = '—';
-        document.getElementById('jm-score').textContent = '—';
-        document.getElementById('jm-ter').textContent = '—';
+        setText('jm-funds', '—');
+        setText('jm-companies', '—');
+        setText('jm-score', '—');
+        setText('jm-ter', '—');
       } else {
-        document.getElementById('jm-funds').textContent = sel.length;
+        setText('jm-funds', sel.length);
         const c = (typeof computeTotalHoldings === 'function') ? computeTotalHoldings(sel) : 0;
-        document.getElementById('jm-companies').textContent = c >= 1000 ? (c/1000).toFixed(1)+'K' : c;
+        setText('jm-companies', c >= 1000 ? (c/1000).toFixed(1)+'K' : c);
         const s = (typeof computeDiversificationScore === 'function') ? computeDiversificationScore(sel) : 0;
-        document.getElementById('jm-score').textContent = s.toFixed(1);
+        setText('jm-score', s.toFixed(1));
 
         // TER ponderado por monto asignado (no simple avg)
         let weightedTER = 0;
@@ -600,7 +603,7 @@
         } catch (e) {
           if (typeof computeAvgTER === 'function') weightedTER = computeAvgTER(sel);
         }
-        document.getElementById('jm-ter').textContent = weightedTER.toFixed(2) + '%';
+        setText('jm-ter', weightedTER.toFixed(2) + '%');
       }
     } catch (e) {}
 
