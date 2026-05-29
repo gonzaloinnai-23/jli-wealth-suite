@@ -164,7 +164,9 @@
     .world-map-panel { display: none !important; }
     .container { padding: 14px 12px 40px; }
     .jli-stick-inner { padding: 10px 12px; gap: 6px; }
-    .jli-mini { min-width: 100px; padding: 8px 10px; min-height: 60px; }
+    /* Mismas medidas que cartera/etfs.html para que ambas páginas alineen al
+       cambiar de tamaño de pantalla. */
+    .jli-mini { min-width: 100px; padding: 8px 10px; min-height: 60px; gap: 4px; }
     .jli-val, .jli-cell-val { font-size: 18px !important; }
     .jli-mini-multi { min-width: 200px; }
     .jli-multi { column-gap: 12px; }
@@ -518,11 +520,6 @@
         </div>
       </div>
     </div>
-    <!-- Card Asignación: % desvío regional vs capitalización mundial -->
-    <div class="jli-mini" data-go="diversif" title="Editar asignación · el número es el desvío regional vs capitalización mundial">
-      <div class="jli-label">Asignación · desvío</div>
-      <div class="jli-val serif" id="jm-asignacion">—</div>
-    </div>
     <div class="jli-mini" data-go="ter">
       <div class="jli-label">Costo medio</div>
       <div class="jli-val serif" id="jm-ter">0.00%</div>
@@ -576,49 +573,6 @@
         }
         document.getElementById('jm-ter').textContent = weightedTER.toFixed(2) + '%';
       }
-
-      // Desvío regional vs capitalización mundial
-      const asignEl = document.getElementById('jm-asignacion');
-      let world = null;
-      try { world = JSON.parse(localStorage.getItem('jli_world_breakdown') || 'null'); } catch (e) {}
-      if (asignEl && sel.length > 0 && world && world.regions && typeof computeRegionalMix === 'function') {
-        // Reusar amounts persistidos para reflejar lo que el usuario ya editó
-        let amounts = {};
-        try { amounts = JSON.parse(localStorage.getItem('etf_amounts_v1') || '{}') || {}; } catch (e) {}
-        // Si no hay amounts manuales, repartir parejo según target
-        let targetTotal = 0;
-        try {
-          const obj = JSON.parse(localStorage.getItem('jli_objetivos') || 'null');
-          targetTotal = (obj && obj.largoPlazoUSD) || 0;
-        } catch (e) {}
-        const filledAmounts = {};
-        const evenSplit = sel.length > 0 ? Math.round(targetTotal / sel.length) : 0;
-        sel.forEach(t => { filledAmounts[t] = (amounts[t] != null ? amounts[t] : evenSplit); });
-        // computeRegionalMix toma { ticker: pesoNormalizado }; convertimos amounts → pesos
-        const totalUSD = Object.values(filledAmounts).reduce((s, v) => s + (Number(v) || 0), 0);
-        const mix = { us:0, eu:0, cn:0, jp:0, em:0, other:0 };
-        if (totalUSD > 0) {
-          const REGION_WEIGHTS_FALLBACK = { us:60, eu:15, cn:8, jp:5, em:8, other:4 };
-          const GLOBAL_BD = (typeof GLOBAL_BREAKDOWN !== 'undefined') ? GLOBAL_BREAKDOWN : {};
-          Object.entries(filledAmounts).forEach(([tk, a]) => {
-            const etf = (typeof ETF_DB !== 'undefined') ? ETF_DB[tk] : null;
-            if (!etf || !a) return;
-            const w = a / totalUSD * 100;
-            if (etf.region === 'world') {
-              const br = GLOBAL_BD[tk] || REGION_WEIGHTS_FALLBACK;
-              Object.keys(mix).forEach(r => { mix[r] += (br[r] || 0) * w / 100; });
-            } else {
-              mix[etf.region] = (mix[etf.region] || 0) + w;
-            }
-          });
-        }
-        const REGS = ['us','eu','cn','jp','em','other'];
-        const sumAbsDelta = REGS.reduce((s, r) => s + Math.abs((mix[r] || 0) - (world.regions[r] || 0)), 0);
-        const deviation = sumAbsDelta / 2;
-        asignEl.textContent = (deviation < 0.05 ? '0' : deviation.toFixed(deviation < 10 ? 1 : 0)) + '%';
-      } else if (asignEl) {
-        asignEl.textContent = '—';
-      }
     } catch (e) {}
 
     // Wire flecha "Volver" del header → navega a política
@@ -663,7 +617,6 @@
         if (dest === 'objetivos') { try { window.parent.location.hash = '#objetivos'; } catch (e) {} return; }
         if (dest === 'politica')  { try { window.parent.location.hash = '#politica';  } catch (e) {} return; }
         if (dest === 'fondos')    { window.location.href = 'etfs.html#fondos';   return; }
-        if (dest === 'diversif')  { window.location.href = 'etfs.html#diversif'; return; }
         if (dest === 'ter')       { window.location.href = 'etfs.html#ter';      return; }
       });
     });
