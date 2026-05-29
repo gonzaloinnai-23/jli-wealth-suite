@@ -441,10 +441,11 @@
     white-space: nowrap;
   }
   .cartera-navbar .navbar-tab:hover { color: var(--text); }
+  /* Active: solo color + border-bottom (sin cambio de font-weight para evitar
+     que el ancho del tab cambie y el navbar reflowee al hacer click). */
   .cartera-navbar .navbar-tab.active {
     color: var(--text);
     border-bottom-color: var(--text);
-    font-weight: 600;
   }
   @media (max-width: 600px) {
     .cartera-navbar { gap: 14px; }
