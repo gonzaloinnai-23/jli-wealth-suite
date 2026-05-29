@@ -327,38 +327,6 @@
 <body>
 <div class="wrap">
 
-  <!-- Mensaje estratégico + CTA al siguiente paso. La flecha ← (Volver a Objetivos)
-       se inyecta vía JS al inicio cuando hay un snapshot en localStorage. -->
-  <div class="invest-message">
-    <button type="button" id="mapa-btn" class="back-arrow-inline" title="Volver al mapa de objetivos" aria-label="Volver al mapa de objetivos" hidden>
-      <span aria-hidden="true">←</span>
-    </button>
-    <div class="msg-text">
-      Definir el marco es <em>quitar los sesgos y quitar los grupieres financieros</em>
-    </div>
-    <button type="button" class="cta-next" onclick="goToCarteraFromPolitica()">CARTERA OBJETIVO →</button>
-    <script>
-      // En la primera visita de la sesión a cartera vía política, limpiar selección + montos
-      // para arrancar el flujo del demo en estado vacío. En visitas posteriores, no toca nada.
-      function goToCarteraFromPolitica() {
-        try {
-          if (!sessionStorage.getItem('jli_cartera_visited')) {
-            const hasPrev = (() => {
-              try { return !!(localStorage.getItem('etf_selection_v1') || localStorage.getItem('etf_amounts_v1')); }
-              catch (e) { return false; }
-            })();
-            const proceed = !hasPrev || window.confirm('Vas a empezar la cartera objetivo desde cero. Se borrará la selección y los montos de ETFs guardados. ¿Continuar?');
-            if (!proceed) return;
-            try { localStorage.removeItem('etf_selection_v1'); } catch (e) {}
-            try { localStorage.removeItem('etf_amounts_v1'); } catch (e) {}
-            sessionStorage.setItem('jli_cartera_visited', '1');
-          }
-        } catch (e) {}
-        try { window.parent.location.hash = '#cartera'; } catch (e) {}
-      }
-    </script>
-  </div>
-
   <section class="card">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:6px">
       <div>
