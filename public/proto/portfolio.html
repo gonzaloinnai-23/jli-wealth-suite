@@ -265,9 +265,32 @@ dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-ove
 dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)processFile(f);});
 function handleFileSelect(e){const f=e.target.files[0];if(f)processFile(f);}
-function processFile(file){const r=new FileReader();r.onload=e=>{const text=e.target.result;const fl=text.split('\n')[0];const sep=fl.includes('\t')?'\t':',';const rows=text.trim().split('\n').map(r=>r.split(sep).map(c=>c.trim().replace(/^"|"$/g,'')));if(rows.length<2)return;csvHeaders=rows[0];parsedCSV=rows.slice(1).map(r=>{const o={};csvHeaders.forEach((h,i)=>o[h]=r[i]||'');return o;});showCSVPreview(file,rows);};r.readAsText(file);}
+let rawCsvText = ''; // se guarda para sincronizar a Supabase
+function processFile(file){const r=new FileReader();r.onload=e=>{const text=e.target.result;rawCsvText=text;const fl=text.split('\n')[0];const sep=fl.includes('\t')?'\t':',';const rows=text.trim().split('\n').map(r=>r.split(sep).map(c=>c.trim().replace(/^"|"$/g,'')));if(rows.length<2)return;csvHeaders=rows[0];parsedCSV=rows.slice(1).map(r=>{const o={};csvHeaders.forEach((h,i)=>o[h]=r[i]||'');return o;});showCSVPreview(file,rows);};r.readAsText(file);}
 function showCSVPreview(file,rows){document.getElementById('csv-file-name').textContent=file.name;document.getElementById('csv-file-meta').textContent=`${(file.size/1024).toFixed(1)} KB · ${rows.length-1} filas · ${rows[0].length} columnas`;const fields=[{key:'name',label:'Nombre activo',guesses:['asset.name','name','nombre','activo']},{key:'type',label:'Tipo',guesses:['asset.type','type','tipo']},{key:'account',label:'Custodio',guesses:['account.name','custodio','broker','account']},{key:'value',label:'Valor USD',guesses:['value','valor','mktvalue']},{key:'principal',label:'Principal',guesses:['principal','cost','costo']},{key:'returns',label:'Retorno período',guesses:['returns.period','returns','retorno','pnl']},{key:'qty',label:'Cantidad',guesses:['qty','quantity','cantidad']}];const headers=rows[0];document.getElementById('field-map').innerHTML=fields.map(f=>{const m=headers.find(h=>f.guesses.some(g=>h.toLowerCase().includes(g)))||'';return`<div class="field-row"><label>${f.label}</label><select id="map-${f.key}">${headers.map(h=>`<option ${h===m?'selected':''} value="${h}">${h}</option>`).join('')}<option value="">— no mapear —</option></select></div>`;}).join('');const preview=rows.slice(0,9);document.getElementById('csv-preview-table').innerHTML=`<thead><tr>${preview[0].map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${preview.slice(1).map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;document.getElementById('csv-preview-area').style.display='block';}
-function applyCSV(){if(!parsedCSV)return;const gm=key=>document.getElementById('map-'+key)?.value||'';const mapped=parsedCSV.map(row=>({name:row[gm('name')]||'Sin nombre',type:(row[gm('type')]||'OTHER').toUpperCase(),account:row[gm('account')]||'Desconocido',value:parseFloat(row[gm('value')])||0,principal:parseFloat(row[gm('principal')])||0,returns:parseFloat(row[gm('returns')])||0,qty:parseFloat(row[gm('qty')])||0,symbol:row['asset.symbol']||row['symbol']||''})).filter(d=>!isNaN(d.value));DATA=mapped;document.getElementById('upload-success').style.display='flex';document.getElementById('upload-success-msg').textContent=`${mapped.length} posiciones cargadas correctamente.`;document.getElementById('data-source-label').textContent='Datos: archivo cargado';renderAll();renderTER();setTimeout(()=>showView('overview',document.querySelector('.nav button')),1200);}
+function applyCSV(){if(!parsedCSV)return;const gm=key=>document.getElementById('map-'+key)?.value||'';const mapped=parsedCSV.map(row=>({name:row[gm('name')]||'Sin nombre',type:(row[gm('type')]||'OTHER').toUpperCase(),account:row[gm('account')]||'Desconocido',value:parseFloat(row[gm('value')])||0,principal:parseFloat(row[gm('principal')])||0,returns:parseFloat(row[gm('returns')])||0,qty:parseFloat(row[gm('qty')])||0,symbol:row['asset.symbol']||row['symbol']||''})).filter(d=>!isNaN(d.value));DATA=mapped;
+  // Persistir en localStorage + sync silencioso a Supabase (vía shell padre)
+  try { localStorage.setItem('jli_cartera_positions', JSON.stringify(mapped)); } catch(e){}
+  try { if (rawCsvText) localStorage.setItem('jli_cartera_csv', rawCsvText); } catch(e){}
+  try {
+    const sync = window.parent && window.parent.jliSync;
+    if (sync && typeof sync.pushCartera === 'function') {
+      sync.pushCartera({ csvText: rawCsvText, positions: mapped });
+    }
+  } catch(e){}
+  document.getElementById('upload-success').style.display='flex';document.getElementById('upload-success-msg').textContent=`${mapped.length} posiciones cargadas correctamente.`;document.getElementById('data-source-label').textContent='Datos: archivo cargado';renderAll();renderTER();setTimeout(()=>showView('overview',document.querySelector('.nav button')),1200);}
+// Init: si hay snapshot en localStorage (cargado por el shell desde Supabase), usarlo.
+try {
+  const cached = localStorage.getItem('jli_cartera_positions');
+  if (cached && DATA.length === 0) {
+    const parsed = JSON.parse(cached);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      DATA = parsed;
+      const lbl = document.getElementById('data-source-label');
+      if (lbl) lbl.textContent = 'Datos: cartera guardada';
+    }
+  }
+} catch (e) {}
 // Init: si no hay datos arrancamos en la vista "Cargar CSV"
 if (DATA.length === 0) {
   document.getElementById('data-source-label').textContent = 'Sin datos · cargá un CSV';

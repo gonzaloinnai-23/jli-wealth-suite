@@ -586,17 +586,23 @@ function WealthPlanningWorkflow() {
   // Al llegar al paso 6 (onboarding completo) persistir snapshot y enfocar el gantt
   useEffect(() => {
     if (currentStep !== 6) return;
+    const snapshot = {
+      cortoPlazoUSD: Math.round(assetTotals.mm),
+      medianoPlazoUSD: Math.round(assetTotals.fi),
+      largoPlazoUSD: Math.round(assetTotals.rv),
+      totalUSD: Math.round(assetGrandTotal),
+      objetivosTotalUSD: Math.round(objectivesOnlyTotal),
+      intergenUSD: Math.round(intergenAmount),
+      capitalDisponibleUSD: Math.round(intergenInvestable),
+      completedAt: new Date().toISOString(),
+    };
+    try { localStorage.setItem('jli_objetivos', JSON.stringify(snapshot)); } catch (e) {}
+    // Sync silencioso a Supabase si el shell padre lo expone (window.parent.jliSync).
     try {
-      localStorage.setItem('jli_objetivos', JSON.stringify({
-        cortoPlazoUSD: Math.round(assetTotals.mm),
-        medianoPlazoUSD: Math.round(assetTotals.fi),
-        largoPlazoUSD: Math.round(assetTotals.rv),
-        totalUSD: Math.round(assetGrandTotal),
-        objetivosTotalUSD: Math.round(objectivesOnlyTotal),
-        intergenUSD: Math.round(intergenAmount),
-        capitalDisponibleUSD: Math.round(intergenInvestable),
-        completedAt: new Date().toISOString(),
-      }));
+      const sync = window.parent && window.parent.jliSync;
+      if (sync && typeof sync.pushObjetivos === 'function') {
+        sync.pushObjetivos(snapshot);
+      }
     } catch (e) {}
     // Sin auto-scroll al gantt — el usuario controla manualmente la navegación.
   }, [currentStep, assetTotals.mm, assetTotals.fi, assetTotals.rv, assetGrandTotal, objectivesOnlyTotal, intergenAmount, intergenInvestable]);

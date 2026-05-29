@@ -425,8 +425,35 @@
 </head>
 <body>
 
-<!-- Login removido para la demo pública; auth se autoresuelve en el init -->
+<!-- ============ LOGIN OVERLAY ============
+  Visible cuando NO hay sesión Supabase. Si supabase-config.js está vacío,
+  el init activa el modo demo (auto-auth) y el overlay queda oculto. -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="login-mark"></div>
+      <div class="login-name">JLI Wealth Suite</div>
+    </div>
+    <div class="login-title" id="login-title">Iniciar sesión</div>
+    <div class="login-sub" id="login-sub">Ingresá tu email y contraseña para acceder.</div>
 
+    <form id="login-form" autocomplete="on" onsubmit="event.preventDefault(); doLogin();">
+      <div class="login-field">
+        <label for="login-email">Email</label>
+        <input id="login-email" type="email" autocomplete="email" required />
+      </div>
+      <div class="login-field">
+        <label for="login-pass">Contraseña</label>
+        <input id="login-pass" type="password" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="login-btn" id="login-btn">Entrar</button>
+      <div class="login-error" id="login-error" aria-live="polite"></div>
+      <div class="login-hint">
+        <a id="login-toggle" href="#" onclick="event.preventDefault(); toggleAuthMode();">¿No tenés cuenta? Crear una</a>
+      </div>
+    </form>
+  </div>
+</div>
 
 <!-- ============ APP SHELL ============ -->
 <div id="app">
@@ -570,46 +597,106 @@
 
     <div class="modal-actions">
       <button class="btn-ghost" onclick="closeProfile()">Cerrar</button>
+      <button class="btn-ghost" onclick="closeProfile(); doLogout();" style="color:var(--error,#D85A30)">Cerrar sesión</button>
       <button class="btn-primary" onclick="saveProfile()">Guardar</button>
       <span class="saved-flash" id="saved-flash">guardado ✓</span>
     </div>
   </div>
 </div>
 
+<!-- Supabase: SDK + config + cliente + helpers -->
+<script src="/proto/lib/supabase-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/proto/lib/supabase-client.js"></script>
+<script src="/proto/lib/auth.js"></script>
+<script src="/proto/lib/sync.js"></script>
+
 <script>
-  // ============ AUTH ============
-  const USERS = { jli: 'portfolio2026', admin: 'JLI@2026!' };
+  // ============ AUTH (Supabase + fallback demo) ============
+  // Compatibilidad con páginas iframe que leen sessionStorage('jli_auth').
   const AUTH_KEY = 'jli_auth';
   const USER_KEY = 'jli_user';
-
-  function doLogin() {
-    const u = document.getElementById('login-user').value.trim().toLowerCase();
-    const p = document.getElementById('login-pass').value;
-    const err = document.getElementById('login-error');
-    if (USERS[u] && USERS[u] === p) {
-      sessionStorage.setItem(AUTH_KEY, '1');
-      sessionStorage.setItem(USER_KEY, u);
-      err.textContent = '';
-      enterApp();
-    } else {
-      err.textContent = 'Usuario o contraseña incorrectos.';
-      document.getElementById('login-pass').value = '';
-    }
+  // 'login' = pidiendo loguearse · 'signup' = creando cuenta
+  let authMode = 'login';
+  function toggleAuthMode() {
+    authMode = authMode === 'login' ? 'signup' : 'login';
+    document.getElementById('login-title').textContent =
+      authMode === 'login' ? 'Iniciar sesión' : 'Crear cuenta';
+    document.getElementById('login-sub').textContent =
+      authMode === 'login'
+        ? 'Ingresá tu email y contraseña para acceder.'
+        : 'Email y una contraseña de al menos 6 caracteres.';
+    document.getElementById('login-btn').textContent =
+      authMode === 'login' ? 'Entrar' : 'Crear cuenta';
+    document.getElementById('login-toggle').textContent =
+      authMode === 'login' ? '¿No tenés cuenta? Crear una' : '¿Ya tenés cuenta? Iniciar sesión';
+    document.getElementById('login-error').textContent = '';
+    const passInput = document.getElementById('login-pass');
+    passInput.setAttribute('autocomplete', authMode === 'login' ? 'current-password' : 'new-password');
   }
 
-  function doLogout() {
+  async function doLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const pass  = document.getElementById('login-pass').value;
+    const err   = document.getElementById('login-error');
+    const btn   = document.getElementById('login-btn');
+    if (!email || !pass) { err.textContent = 'Email y contraseña son obligatorios.'; return; }
+    err.textContent = '';
+    btn.disabled = true;
+    btn.textContent = authMode === 'login' ? 'Entrando…' : 'Creando…';
+
+    // Modo demo (sin Supabase): cualquier credencial pasa, datos sólo en localStorage
+    if (!window.jliAuth || !window.jliAuth.isConfigured()) {
+      sessionStorage.setItem(AUTH_KEY, '1');
+      sessionStorage.setItem(USER_KEY, email);
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
+      enterApp();
+      return;
+    }
+
+    const fn = authMode === 'login' ? window.jliAuth.signIn : window.jliAuth.signUp;
+    const res = await fn(email, pass);
+    btn.disabled = false;
+    btn.textContent = authMode === 'login' ? 'Entrar' : 'Crear cuenta';
+    if (!res.ok) { err.textContent = res.error || 'Error de autenticación.'; return; }
+
+    if (authMode === 'signup') {
+      // Si confirm email está ON en Supabase, signUp no devuelve sesión.
+      const s = await window.jliAuth.getSession();
+      if (!s) {
+        err.textContent = '';
+        document.getElementById('login-title').textContent = 'Revisá tu email';
+        document.getElementById('login-sub').textContent  = 'Te mandamos un link de confirmación. Después volvé y entrá.';
+        return;
+      }
+    }
+    await postLoginHydrateAndEnter(email);
+  }
+
+  async function postLoginHydrateAndEnter(emailHint) {
+    sessionStorage.setItem(AUTH_KEY, '1');
+    sessionStorage.setItem(USER_KEY, emailHint || (await window.jliAuth.getUser())?.email || 'usuario');
+    // Hidrata localStorage con datos del usuario en Supabase
+    try { if (window.jliSync) await window.jliSync.hydrateLocalStorageFromSupabase(); } catch (e) {}
+    enterApp();
+  }
+
+  async function doLogout() {
+    if (window.jliAuth) await window.jliAuth.signOut();
     sessionStorage.removeItem(AUTH_KEY);
     sessionStorage.removeItem(USER_KEY);
     document.body.classList.remove('authed');
-    document.getElementById('login-user').value = '';
+    document.getElementById('login-email').value = '';
     document.getElementById('login-pass').value = '';
-    document.getElementById('login-user').focus();
+    document.getElementById('login-error').textContent = '';
+    setTimeout(() => document.getElementById('login-email').focus(), 50);
   }
 
   function enterApp() {
     document.body.classList.add('authed');
-    document.getElementById('profile-user-display').value =
-      sessionStorage.getItem(USER_KEY) || '—';
+    const display = document.getElementById('profile-user-display');
+    if (display) display.value = sessionStorage.getItem(USER_KEY) || '—';
     activateTabFromHash();
   }
 
@@ -792,14 +879,32 @@
   }
 
   // ============ INIT ============
-  window.addEventListener('DOMContentLoaded', () => {
-    // Demo pública: auto-auth para que las páginas iframe (portfolio.html, etfs.html, etc.)
-    // que chequean sessionStorage 'jli_auth' lo encuentren seteado.
-    sessionStorage.setItem(AUTH_KEY, '1');
-    sessionStorage.setItem(USER_KEY, 'demo');
+  window.addEventListener('DOMContentLoaded', async () => {
     refreshExternalUI();
     refreshVolPill();
-    enterApp();
+
+    // Modo demo (sin Supabase): auto-auth como antes
+    if (!window.jliAuth || !window.jliAuth.isConfigured()) {
+      sessionStorage.setItem(AUTH_KEY, '1');
+      sessionStorage.setItem(USER_KEY, 'demo');
+      enterApp();
+    } else {
+      // Modo Supabase: chequear sesión; si hay, hidratar y entrar; si no, overlay.
+      const session = await window.jliAuth.getSession();
+      if (session) {
+        await postLoginHydrateAndEnter(session.user?.email);
+      } else {
+        document.body.classList.remove('authed');
+        setTimeout(() => {
+          const el = document.getElementById('login-email');
+          if (el) el.focus();
+        }, 80);
+      }
+      // Si la sesión se invalida en otra tab, deslogear acá
+      window.jliAuth.onAuthStateChange(({ event }) => {
+        if (event === 'SIGNED_OUT') doLogout();
+      });
+    }
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeProfile();
     });
