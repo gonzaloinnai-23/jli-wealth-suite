@@ -3058,48 +3058,71 @@ function renderTer() {
   const fmtUSD = n => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
   const fmtPct = n => n.toFixed(2) + '%';
 
-  // === Chart SVG: oportunidad perdida por TER, año a año (0 → 30) ===
-  // Eje Y: % del valor potencial (capital + rendimiento sin TER) perdido en costes.
-  // Eje X: años. La reinversión hace que el coste sea exponencial — pequeño en el año 1,
-  // pero significativo a 30 años incluso con TER bajos.
+  // === Chart SVG: crecimiento por interés compuesto, cartera (sin TER) vs (con TER) ===
+  // Eje Y: valor de la cartera en USD a lo largo del tiempo.
+  // Eje X: años (0 → 30). Dos curvas: gross (sin TER, dashed verde) y net (con TER, sólida).
+  // El área entre ambas = coste acumulado por TER (oportunidad perdida).
   const chartYears = 30;
-  const points = [];
-  for (let y = 0; y <= chartYears; y++) points.push({ y, pct: pctOf(y) });
-  const yMax = Math.max(pct30y * 1.05, 0.5); // mínimo 0.5% para que se vea algo
-  const chartW = 640, chartH = 180, padL = 44, padR = 12, padT = 14, padB = 28;
+  const grossPoints = [];
+  const netPoints = [];
+  for (let y = 0; y <= chartYears; y++) {
+    grossPoints.push({ y, val: grossAt(y) });
+    netPoints.push({ y, val: netAt(y) });
+  }
+  const grossMax = grossAt(chartYears);
+  const yMax = Math.max(grossMax * 1.05, total * 1.5, 1);
+  const chartW = 640, chartH = 220, padL = 60, padR = 14, padT = 16, padB = 28;
   const innerW = chartW - padL - padR;
   const innerH = chartH - padT - padB;
   const xAt = y => padL + (y / chartYears) * innerW;
-  const yAt = p => padT + innerH - (p / yMax) * innerH;
-  const linePath = points.map((pt, i) => (i === 0 ? 'M' : 'L') + xAt(pt.y).toFixed(1) + ' ' + yAt(pt.pct).toFixed(1)).join(' ');
-  const areaPath = linePath + ` L ${xAt(chartYears).toFixed(1)} ${yAt(0).toFixed(1)} L ${xAt(0).toFixed(1)} ${yAt(0).toFixed(1)} Z`;
-  // Marcadores en años 1, 10, 30
-  const markers = [
-    { y: 1,  pct: pct1y,  label: '1 año' },
-    { y: 10, pct: pct10y, label: '10 años' },
-    { y: 30, pct: pct30y, label: '30 años' },
-  ];
-  // Grid horizontal cada ~25% del rango
+  const yAt = v => padT + innerH - (Math.max(0, v) / yMax) * innerH;
+  const grossPath = grossPoints.map((p, i) => (i === 0 ? 'M' : 'L') + xAt(p.y).toFixed(1) + ' ' + yAt(p.val).toFixed(1)).join(' ');
+  const netPath   = netPoints.map((p, i) => (i === 0 ? 'M' : 'L') + xAt(p.y).toFixed(1) + ' ' + yAt(p.val).toFixed(1)).join(' ');
+  // Área entre las dos curvas (= coste acumulado por TER)
+  const reverseNet = [...netPoints].reverse();
+  const costAreaPath = grossPoints.map((p, i) => (i === 0 ? 'M' : 'L') + xAt(p.y).toFixed(1) + ' ' + yAt(p.val).toFixed(1)).join(' ')
+    + ' ' + reverseNet.map(p => 'L' + xAt(p.y).toFixed(1) + ' ' + yAt(p.val).toFixed(1)).join(' ')
+    + ' Z';
+  // Grid horizontal cada ~25% del rango, con label USD
   const gridLines = [0, 0.25, 0.5, 0.75, 1].map(f => ({
-    pct: f * yMax,
+    val: f * yMax,
     yPos: yAt(f * yMax),
   }));
+  // Marcadores en años 1, 10, 30 (valor neto en USD; coste como secundario)
+  const markers = [
+    { y: 1,  gross: grossAt(1),  net: netAt(1),  cost: cost1y,  label: '1 año'   },
+    { y: 10, gross: grossAt(10), net: netAt(10), cost: cost10y, label: '10 años' },
+    { y: 30, gross: grossAt(30), net: netAt(30), cost: cost30y, label: '30 años' },
+  ];
+  const COLOR_GROSS = '#1D9E75';
+  const COLOR_NET   = 'var(--accent)';
+  const COLOR_COST  = '#D85A30';
   const chartHTML = `
-    <svg viewBox="0 0 ${chartW} ${chartH}" preserveAspectRatio="none" style="width:100%;max-width:${chartW}px;height:${chartH}px;display:block;margin:8px 0 12px" aria-label="Erosión del capital en costes (interés compuesto)">
-      <!-- Grid -->
-      ${gridLines.map(g => `<line x1="${padL}" x2="${chartW-padR}" y1="${g.yPos.toFixed(1)}" y2="${g.yPos.toFixed(1)}" stroke="${'rgba(139,156,179,0.18)'}" stroke-width="1"/>`).join('')}
-      ${gridLines.map(g => `<text x="${padL-6}" y="${(g.yPos+3).toFixed(1)}" fill="var(--text-dim)" font-size="9" font-family="Geist,sans-serif" text-anchor="end">${g.pct.toFixed(1)}%</text>`).join('')}
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--text-dim);margin:4px 0 4px">
+      <span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:18px;border-top:2px dashed ${COLOR_GROSS}"></span>Cartera sin TER (potencial)</span>
+      <span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:18px;border-top:2px solid #4fc3f7"></span>Cartera con TER (real)</span>
+      <span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:8px;background:rgba(216,90,48,0.30);border:1px solid ${COLOR_COST}"></span>Coste acumulado</span>
+    </div>
+    <svg viewBox="0 0 ${chartW} ${chartH}" preserveAspectRatio="none" style="width:100%;max-width:${chartW}px;height:${chartH}px;display:block;margin:6px 0 12px" aria-label="Crecimiento de la cartera con interés compuesto: sin TER vs con TER">
+      <!-- Grid horizontal -->
+      ${gridLines.map(g => `<line x1="${padL}" x2="${chartW-padR}" y1="${g.yPos.toFixed(1)}" y2="${g.yPos.toFixed(1)}" stroke="rgba(139,156,179,0.18)" stroke-width="1"/>`).join('')}
+      ${gridLines.map(g => `<text x="${padL-6}" y="${(g.yPos+3).toFixed(1)}" fill="var(--text-dim)" font-size="9" font-family="Geist,sans-serif" text-anchor="end">${fmtUSDshort(g.val)}</text>`).join('')}
       <!-- Eje X labels -->
       ${[0,5,10,15,20,25,30].map(y => `<text x="${xAt(y).toFixed(1)}" y="${(chartH-8).toFixed(1)}" fill="var(--text-dim)" font-size="9" font-family="Geist,sans-serif" text-anchor="middle">${y}a</text>`).join('')}
-      <!-- Curva de erosión -->
-      <path d="${areaPath}" fill="rgba(216,90,48,0.18)"/>
-      <path d="${linePath}" stroke="#D85A30" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
-      <!-- Marcadores 1y / 10y / 30y -->
+      <!-- Área = coste acumulado (gap entre las dos curvas) -->
+      <path d="${costAreaPath}" fill="rgba(216,90,48,0.22)"/>
+      <!-- Curva neta (con TER) -->
+      <path d="${netPath}" stroke="${COLOR_NET}" stroke-width="2.2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+      <!-- Curva bruta (sin TER, dashed) -->
+      <path d="${grossPath}" stroke="${COLOR_GROSS}" stroke-width="2" stroke-dasharray="6,4" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+      <!-- Marcadores en 1, 10, 30 años -->
       ${markers.map(m => `
-        <line x1="${xAt(m.y).toFixed(1)}" x2="${xAt(m.y).toFixed(1)}" y1="${yAt(m.pct).toFixed(1)}" y2="${(chartH-padB).toFixed(1)}" stroke="rgba(216,90,48,0.35)" stroke-width="1" stroke-dasharray="3,3"/>
-        <circle cx="${xAt(m.y).toFixed(1)}" cy="${yAt(m.pct).toFixed(1)}" r="4" fill="#D85A30" stroke="var(--bg)" stroke-width="1.5"/>
-        <text x="${xAt(m.y).toFixed(1)}" y="${(yAt(m.pct)-9).toFixed(1)}" fill="var(--text)" font-size="11" font-weight="600" font-family="Geist,sans-serif" text-anchor="middle">${m.pct.toFixed(1)}%</text>
-        <text x="${xAt(m.y).toFixed(1)}" y="${(yAt(m.pct)-22).toFixed(1)}" fill="var(--text-dim)" font-size="9" font-family="Geist,sans-serif" text-anchor="middle">${m.label}</text>
+        <line x1="${xAt(m.y).toFixed(1)}" x2="${xAt(m.y).toFixed(1)}" y1="${padT}" y2="${(chartH-padB).toFixed(1)}" stroke="rgba(139,156,179,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+        <circle cx="${xAt(m.y).toFixed(1)}" cy="${yAt(m.gross).toFixed(1)}" r="3.5" fill="${COLOR_GROSS}" stroke="var(--bg)" stroke-width="1.5"/>
+        <circle cx="${xAt(m.y).toFixed(1)}" cy="${yAt(m.net).toFixed(1)}" r="4" fill="#4fc3f7" stroke="var(--bg)" stroke-width="1.5"/>
+        <text x="${xAt(m.y).toFixed(1)}" y="${(yAt(m.net)+16).toFixed(1)}" fill="var(--text)" font-size="10" font-weight="600" font-family="Geist,sans-serif" text-anchor="middle">${fmtUSDshort(m.net)}</text>
+        <text x="${xAt(m.y).toFixed(1)}" y="${(yAt(m.net)+28).toFixed(1)}" fill="${COLOR_COST}" font-size="9" font-family="Geist,sans-serif" text-anchor="middle">−${fmtUSDshort(m.cost)}</text>
+        <text x="${xAt(m.y).toFixed(1)}" y="${(padT-4).toFixed(1)}" fill="var(--text-dim)" font-size="9" font-family="Geist,sans-serif" text-anchor="middle">${m.label}</text>
       `).join('')}
     </svg>`;
 
@@ -3163,8 +3186,8 @@ function renderTer() {
       </div>
     </div>
 
-    <!-- Chart de erosión por interés compuesto + reinversión -->
-    <div style="margin:18px 0 6px;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);font-weight:600">% del valor potencial perdido en costes (compuesto, con reinversión)</div>
+    <!-- Chart de interés compuesto: cartera con y sin TER -->
+    <div style="margin:18px 0 4px;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);font-weight:600">Crecimiento por interés compuesto (cartera vs sin costes)</div>
     ${chartHTML}
 
     <div style="margin:14px 0 4px;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);font-weight:600">Contribución por ETF</div>
