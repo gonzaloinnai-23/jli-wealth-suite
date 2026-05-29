@@ -93,6 +93,119 @@
   .field-row label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;}
   .field-row select{font-size:12px;padding:5px 8px;}
   .upload-success{background:#d4f0e5;border:0.5px solid #1D9E75;border-radius:var(--radius);padding:12px 16px;font-size:13px;color:#0F6E56;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+
+  /* ============ PANEL "CARTERA ACTUAL" =============
+     Mismo lenguaje visual que el sticky-selection de Armado de Cartera:
+     una card-columna por tipo de activo (ETF/FUND/STOCK/CASH/OTHER),
+     barra de %, monto, chips por posición. */
+  .cartera-actual-panel {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+  }
+  .ca-header {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 10px; margin-bottom: 10px;
+  }
+  .ca-title {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-weight: 600;
+  }
+  .ca-title strong { color: var(--text); }
+  .ca-rows {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+  }
+  .ca-group-card {
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface2);
+    padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .ca-group-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 6px;
+  }
+  .ca-group-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .ca-group-count {
+    font-size: 10px;
+    color: var(--text3);
+  }
+  .ca-group-amt {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 18px;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .ca-group-pct {
+    font-size: 11px;
+    color: var(--text2);
+    font-variant-numeric: tabular-nums;
+    margin-left: 4px;
+  }
+  .ca-group-bar {
+    height: 6px;
+    background: rgba(0,0,0,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .ca-group-bar > span { display: block; height: 100%; }
+  .ca-tickers {
+    display: flex; flex-direction: column; gap: 3px;
+    margin-top: 4px;
+    border-top: 0.5px solid var(--border);
+    padding-top: 6px;
+  }
+  .ca-tick {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.02);
+  }
+  .ca-tick:hover { background: rgba(0,0,0,0.04); }
+  .ca-tick-name {
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ca-tick-amt {
+    color: var(--text2);
+    font-variant-numeric: tabular-nums;
+    font-size: 10px;
+  }
+  .ca-tick-pct {
+    color: var(--text2);
+    font-variant-numeric: tabular-nums;
+    font-size: 10px;
+    min-width: 38px;
+    text-align: right;
+  }
+  .ca-empty {
+    color: var(--text3);
+    font-size: 12px;
+    text-align: center;
+    padding: 12px;
+  }
 </style>
 </head>
 <body>
@@ -116,6 +229,9 @@
 </nav>
 <main class="main">
 <section id="view-overview" class="view active">
+  <!-- Panel "Cartera actual" — mismo lenguaje visual que el sticky-selection
+       de Armado de Cartera. Se rellena vía renderCarteraActual(). -->
+  <div class="cartera-actual-panel" id="cartera-actual-panel"></div>
   <div class="metric-grid" id="overview-metrics"></div>
   <div class="grid2">
     <div class="card"><div class="section-label" style="margin-top:0">Distribución por tipo de activo</div><div class="legend" id="type-legend"></div><div class="chart-wrap" style="height:220px"><canvas id="typeChart"></canvas></div></div>
@@ -217,7 +333,70 @@ const CUST_COLORS={'Galicia Securities':'#378ADD','JP.Morgan':'#1D9E75','Pershin
 const SP5_KW=['spy5','csspx','spyl','fidelity s&p','s&p 500'];
 const SP5_OV=['jpm us select','america equity','janus balanced','neuberger','eqqq','nasdaq-100','janus global tech'];
 function showView(id,btn){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');if(btn)btn.classList.add('active');}
-function renderAll(){const a=DATA.filter(d=>d.value>0);const t=a.reduce((s,d)=>s+d.value,0);renderOverview(a,t);renderSP500(a,t);renderOverlap(a,t);renderPositions();populateCustodioFilter(a);}
+function renderAll(){const a=DATA.filter(d=>d.value>0);const t=a.reduce((s,d)=>s+d.value,0);renderCarteraActual(a,t);renderOverview(a,t);renderSP500(a,t);renderOverlap(a,t);renderPositions();populateCustodioFilter(a);}
+
+// Panel resumen "Cartera actual" — agrupado por tipo (ETF/FUND/STOCK/CASH/OTHER).
+// Cada grupo: nombre + cantidad, monto + %, barra, lista de posiciones con su %.
+function renderCarteraActual(a, t) {
+  const host = document.getElementById('cartera-actual-panel');
+  if (!host) return;
+  if (!a || a.length === 0 || t <= 0) {
+    host.innerHTML = '<div class="ca-empty">Sin posiciones cargadas. Subí un CSV para empezar.</div>';
+    return;
+  }
+  // Colores por tipo (mismos del .badge-*)
+  const COLOR = { ETF: '#185FA5', FUND: '#0F6E56', STOCK: '#854F0B', CASH: '#5F5E5A', OTHER: '#A32D2D' };
+  const NAME  = { ETF: 'ETF', FUND: 'Fondos', STOCK: 'Acciones', CASH: 'Efectivo', OTHER: 'Otros' };
+  const ORDER = ['ETF','FUND','STOCK','CASH','OTHER'];
+  // Agrupar
+  const groups = {};
+  a.forEach(d => {
+    const k = (d.type && NAME[d.type]) ? d.type : 'OTHER';
+    if (!groups[k]) groups[k] = [];
+    groups[k].push(d);
+  });
+  const present = ORDER.filter(k => groups[k] && groups[k].length > 0);
+  const fmtUSD  = n => '$' + Math.round(n).toLocaleString('en-US');
+  const fmtUSDshort = n => n >= 1e6 ? '$'+(n/1e6).toFixed(1)+'M' : n >= 1e3 ? '$'+(n/1e3).toFixed(0)+'K' : '$'+Math.round(n);
+  const totalPositions = a.length;
+  const cards = present.map(k => {
+    const list = [...groups[k]].sort((x,y) => y.value - x.value);
+    const groupValue = list.reduce((s,d) => s + d.value, 0);
+    const groupPct = (groupValue / t) * 100;
+    const color = COLOR[k] || COLOR.OTHER;
+    const ticks = list.map(d => {
+      const pct = (d.value / t) * 100;
+      const label = d.symbol ? `<strong>${d.symbol}</strong> · ${d.name}` : d.name;
+      return `
+        <div class="ca-tick" title="${d.name} · ${d.account}">
+          <span class="ca-tick-name">${label}</span>
+          <span class="ca-tick-amt">${fmtUSDshort(d.value)}</span>
+          <span class="ca-tick-pct">${pct.toFixed(1)}%</span>
+        </div>`;
+    }).join('');
+    return `
+      <div class="ca-group-card">
+        <div class="ca-group-head">
+          <div>
+            <div class="ca-group-name">${NAME[k]}</div>
+            <div class="ca-group-count">${list.length} posición${list.length>1?'es':''}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="ca-group-amt">${fmtUSDshort(groupValue)}</div>
+            <div class="ca-group-pct">${groupPct.toFixed(1)}% de la cartera</div>
+          </div>
+        </div>
+        <div class="ca-group-bar"><span style="width:${Math.min(100, groupPct).toFixed(1)}%;background:${color}"></span></div>
+        <div class="ca-tickers">${ticks}</div>
+      </div>`;
+  }).join('');
+  host.innerHTML = `
+    <div class="ca-header">
+      <div class="ca-title">Cartera actual · <strong>${totalPositions}</strong> posición${totalPositions>1?'es':''} · <strong>${present.length}</strong> tipo${present.length>1?'s':''} · <strong>${fmtUSD(t)}</strong></div>
+    </div>
+    <div class="ca-rows">${cards}</div>
+  `;
+}
 function renderOverview(a,t){
   const tp=a.reduce((s,d)=>s+(d.principal||0),0);const tr=t-tp;const rp=tp>0?((tr/tp)*100).toFixed(1):0;
   const cs=new Set(a.map(d=>d.account));
