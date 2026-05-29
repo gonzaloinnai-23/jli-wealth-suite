@@ -76,7 +76,23 @@
     if (!window.sb) return;
     const [obj, cart] = await Promise.all([ns.pullObjetivos(), ns.pullCartera()]);
     try {
-      if (obj) localStorage.setItem('jli_objetivos', JSON.stringify(obj));
+      if (obj) {
+        // No piso un snapshot local que ya tiene wizardState con un snapshot
+        // remoto más viejo (de antes que existiera ese campo). Cubre el caso
+        // de usuarios que completaron el wizard antes de que el cliente lo
+        // empezara a guardar y ahora completan el wizard en la versión nueva.
+        let localCurr = null;
+        try { localCurr = JSON.parse(localStorage.getItem('jli_objetivos') || 'null'); } catch (e) {}
+        const localHasWizard  = !!(localCurr && localCurr.wizardState);
+        const remoteHasWizard = !!(obj && obj.wizardState);
+        if (!localHasWizard || remoteHasWizard) {
+          localStorage.setItem('jli_objetivos', JSON.stringify(obj));
+        }
+        // Si local es más rico que remoto, lo subimos para alinear Supabase.
+        if (localHasWizard && !remoteHasWizard) {
+          try { ns.pushObjetivos(localCurr); } catch (e) {}
+        }
+      }
       if (cart) {
         if (cart.csv_text) localStorage.setItem('jli_cartera_csv', cart.csv_text);
         if (cart.positions) localStorage.setItem('jli_cartera_positions', JSON.stringify(cart.positions));
