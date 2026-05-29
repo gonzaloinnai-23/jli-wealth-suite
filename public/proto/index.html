@@ -346,6 +346,32 @@
   .tab-pane.active { display: flex; flex-direction: column; }
   .iframe-host { flex: 1; width: 100%; border: none; background: var(--bg); min-height: 600px; }
 
+  /* ============ CAPITALLY EMBED ============ */
+  .capitally-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-3);
+  }
+  .capitally-bar .cap-hint { flex: 1; }
+  .capitally-bar a, .capitally-bar button {
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--text-2);
+    text-decoration: none;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+  }
+  .capitally-bar a:hover, .capitally-bar button:hover {
+    color: var(--text); border-color: var(--text-2);
+  }
+  #capitally-iframe { background: #fff; }
+
   .placeholder {
     flex: 1;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -512,9 +538,20 @@
     </section>
 
     <section class="tab-pane" data-pane="capitally">
-      <div class="placeholder">
-        <h1>Tu cuenta en <em>Capitally</em>.</h1>
-        <p>Capitally se abre en una pestaña externa. Podés configurar tu URL personal en <strong>Perfil</strong>.</p>
+      <!-- Barra fina con link a "abrir externo" + edit URL. Siempre visible. -->
+      <div class="capitally-bar">
+        <span class="cap-hint">Capitally embebido — si tu sesión no aparece, abrilo externo y volvé.</span>
+        <a id="capitally-open-ext" href="#" target="_blank" rel="noopener">Abrir externo ↗</a>
+        <button onclick="openProfile()">Editar URL</button>
+      </div>
+      <!-- Iframe principal (se carga lazy al activar el tab) -->
+      <iframe id="capitally-iframe" class="iframe-host" title="Capitally"
+              referrerpolicy="no-referrer-when-downgrade"
+              allow="clipboard-read; clipboard-write"></iframe>
+      <!-- Fallback si Capitally bloquea el embed (X-Frame-Options / CSP frame-ancestors) -->
+      <div id="capitally-fallback" class="placeholder" hidden>
+        <h1>No pudimos embeber <em>Capitally</em>.</h1>
+        <p>El servicio bloquea cargas en iframe por seguridad. Abrilo en una pestaña nueva:</p>
         <div class="actions">
           <a id="capitally-link" class="btn-primary" href="#" target="_blank" rel="noopener">Abrir Capitally ↗</a>
           <button class="btn-ghost" onclick="openProfile()">Editar URL</button>
@@ -726,8 +763,40 @@
       const f = pane.querySelector('iframe.iframe-host');
       if (f && !f.src && f.dataset.src) f.src = f.dataset.src;
     }
+    // Capitally tiene su propio loader (con fallback si bloquea el embed)
+    if (name === 'capitally') tryLoadCapitally();
     if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
     refreshInvertirCard(name);
+  }
+
+  // Intenta embeber Capitally; si el load no resuelve cross-origin en ~4.5s
+  // o el contentDocument es accesible (página de error same-origin), muestra
+  // el fallback con botón a abrir en pestaña nueva.
+  function tryLoadCapitally() {
+    const url = getCapitallyUrl();
+    const ifr = document.getElementById('capitally-iframe');
+    const fb  = document.getElementById('capitally-fallback');
+    if (!ifr || !fb || !url) return;
+    // Si ya cargamos esta URL antes y el iframe está visible, no recargamos.
+    if (ifr.dataset.loadedUrl === url && fb.hidden) return;
+    ifr.dataset.loadedUrl = url;
+    ifr.hidden = false;
+    fb.hidden = true;
+    let resolved = false;
+    const fail = () => { if (resolved) return; resolved = true; ifr.hidden = true; fb.hidden = false; };
+    const ok   = () => { if (resolved) return; resolved = true; ifr.hidden = false; fb.hidden = true; };
+    const t = setTimeout(fail, 4500);
+    ifr.onload = () => {
+      clearTimeout(t);
+      try {
+        // Acceso al contentDocument: si funciona = same-origin (= error page
+        // del browser por XFO bloqueado, o about:blank). Si lanza
+        // SecurityError = cross-origin load = se cargó OK.
+        const d = ifr.contentDocument;
+        if (d) fail(); else ok();
+      } catch (e) { ok(); }
+    };
+    ifr.src = url;
   }
 
   // Card "A invertir en largo plazo" entre las pestañas — visible sólo en cartera
@@ -838,9 +907,20 @@
   }
   function refreshExternalUI() {
     const cap = getCapitallyUrl();
-    document.getElementById('capitally-link').href = cap;
-    document.getElementById('capitally-url-display').textContent = cap;
-    document.getElementById('capitally-url-input').value = cap;
+    ['capitally-link', 'capitally-open-ext'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.href = cap;
+    });
+    const disp = document.getElementById('capitally-url-display');
+    if (disp) disp.textContent = cap;
+    const inp = document.getElementById('capitally-url-input');
+    if (inp) inp.value = cap;
+    // Si el iframe ya estaba cargado con otra URL, forzar recarga al cambiar
+    const ifr = document.getElementById('capitally-iframe');
+    if (ifr && ifr.dataset.loadedUrl && ifr.dataset.loadedUrl !== cap) {
+      delete ifr.dataset.loadedUrl;
+      if (document.querySelector('.tab-pane[data-pane="capitally"].active')) tryLoadCapitally();
+    }
   }
 
   // Pill de Volatilidad — lee la última señal guardada por /proto/volatilidad.html
