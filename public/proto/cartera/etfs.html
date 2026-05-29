@@ -73,8 +73,6 @@
   @media (max-width: 768px) {
     .sticky-content { grid-template-columns: 1fr; gap: 10px; }
     .sticky-stats { gap: 6px; }
-    /* En mobile ocultamos la card "Capitalización mundial" — se accede vía drawer */
-    #stat-map { display: none !important; }
     .container { padding: 14px 12px; }
     .mini-stat { min-width: 100px; padding: 8px 10px; min-height: 60px; gap: 4px; }
     .mini-stat-value, .mini-stat-cell .cell-val { font-size: 18px !important; }
@@ -99,6 +97,30 @@
   .mini-stat.clickable.active { background: var(--text) !important; color: var(--bg) !important; border-color: var(--text) !important; }
   .mini-stat.clickable.active .mini-stat-label { color: rgba(250,250,247,0.6) !important; }
   .mini-stat.clickable.active .mini-stat-value { color: var(--bg) !important; }
+
+  /* Subheader-nav: navega entre las dos sub-vistas de Cartera objetivo
+     (Capitalización mundial y Armado de Cartera). Se ubica debajo del sticky-header
+     y NO es sticky — desaparece al hacer scroll para dejar el sticky-header (Costo
+     medio) y el panel de Selección actual visibles. */
+  .cartera-subnav {
+    background: var(--bg-2, #fafaf7);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 0;
+  }
+  .cartera-subnav-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .cartera-subnav-tab { text-decoration: none; color: inherit; }
+  @media (max-width: 768px) {
+    .cartera-subnav { padding: 6px 0; }
+    .cartera-subnav-inner { padding: 0 12px; gap: 6px; }
+  }
   /* Estilo unificado: idéntico a las cards de Política de inversión */
   .mini-stat {
     background: #ffffff !important;
@@ -1722,31 +1744,37 @@
       <button type="button" class="nav-back-arrow" id="stat-lp" data-action="goto-politica" title="Volver a Política de inversión" aria-label="Volver a Política de inversión">
         <span aria-hidden="true">←</span>
       </button>
-      <div class="mini-stat clickable mini-stat-map active" id="stat-map" data-action="goto-map" title="Ver capitalización bursátil">
-        <div class="mini-stat-label">Capitalización mundial</div>
-        <div class="mini-stat-value">$128T</div>
-      </div>
-      <!-- Card combinada Fondos: muestra fondos / empresas / diversif y va a la vista Fondos -->
-      <div class="mini-stat clickable active mini-stat-asignacion" id="stat-fondos" data-view="fondos" title="Ver selección de fondos">
-        <div class="mini-stat-label">Armado de Cartera <a class="info-link" onclick="event.stopPropagation();openDiversModal()" title="¿Cómo se calcula la diversificación?">ⓘ</a></div>
-        <div class="mini-stat-multi">
-          <div class="mini-stat-cell">
-            <span class="cell-val" id="val-funds">0</span>
-            <span class="cell-lbl">fondos</span>
-          </div>
-          <div class="mini-stat-cell">
-            <span class="cell-val" id="val-companies">0</span>
-            <span class="cell-lbl">empresas</span>
-          </div>
-          <div class="mini-stat-cell">
-            <span class="cell-val score" id="val-score">0.0</span>
-            <span class="cell-lbl">diversif</span>
-          </div>
-        </div>
-      </div>
+      <div style="flex:1"></div>
       <div class="mini-stat clickable" id="stat-ter" data-view="ter">
         <div class="mini-stat-label">Costo medio</div>
         <div class="mini-stat-value" id="val-ter">0.00%</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Subheader: nav entre Capitalización mundial y Armado de Cartera (vista principal) -->
+<div class="cartera-subnav">
+  <div class="cartera-subnav-inner">
+    <a class="mini-stat clickable cartera-subnav-tab" id="snav-map" href="index.html" title="Ver capitalización bursátil">
+      <div class="mini-stat-label">Capitalización mundial</div>
+      <div class="mini-stat-value">$128T</div>
+    </a>
+    <div class="mini-stat clickable cartera-subnav-tab active mini-stat-asignacion" id="stat-fondos" data-view="fondos" title="Armado de Cartera">
+      <div class="mini-stat-label">Armado de Cartera <a class="info-link" onclick="event.stopPropagation();openDiversModal()" title="¿Cómo se calcula la diversificación?">ⓘ</a></div>
+      <div class="mini-stat-multi">
+        <div class="mini-stat-cell">
+          <span class="cell-val" id="val-funds">0</span>
+          <span class="cell-lbl">fondos</span>
+        </div>
+        <div class="mini-stat-cell">
+          <span class="cell-val" id="val-companies">0</span>
+          <span class="cell-lbl">empresas</span>
+        </div>
+        <div class="mini-stat-cell">
+          <span class="cell-val score" id="val-score">0.0</span>
+          <span class="cell-lbl">diversif</span>
+        </div>
       </div>
     </div>
   </div>

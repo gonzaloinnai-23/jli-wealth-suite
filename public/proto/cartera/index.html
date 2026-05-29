@@ -400,6 +400,29 @@
   .jli-val { font-family: 'Instrument Serif', Georgia, serif; font-size: 22px; font-weight: 400; line-height: 1; letter-spacing: -0.02em; color: var(--text); font-variant-numeric: tabular-nums; }
   .jli-val.serif { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; letter-spacing: -0.02em; }
 
+  /* Subheader-nav: navega entre las dos sub-vistas de Cartera objetivo
+     (Capitalización mundial y Armado de Cartera). Ubicado debajo del sticky-header,
+     no-sticky — desaparece al hacer scroll. Idéntica regla en cartera/etfs.html. */
+  .cartera-subnav {
+    background: rgba(255,255,255,0.45);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 0;
+  }
+  .cartera-subnav-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .cartera-subnav-tab { text-decoration: none; color: inherit; }
+  @media (max-width: 768px) {
+    .cartera-subnav { padding: 6px 0; }
+    .cartera-subnav-inner { padding: 0 12px; gap: 6px; }
+  }
+
   /* Card combinada Fondos: 3 sub-valores en una grid */
   .jli-mini-multi { min-width: 220px; }
   .jli-multi {
@@ -498,12 +521,22 @@
     <button type="button" class="nav-back-arrow" id="jm-lp" data-go="politica" title="Volver a Política de inversión" aria-label="Volver a Política de inversión">
       <span aria-hidden="true">←</span>
     </button>
-    <div class="jli-mini active" id="jm-map" data-go="mapa" title="Capitalización bursátil">
+    <div style="flex:1"></div>
+    <div class="jli-mini" data-go="ter">
+      <div class="jli-label">Costo medio</div>
+      <div class="jli-val serif" id="jm-ter">0.00%</div>
+    </div>
+  </div>
+</div>
+
+<!-- Subheader: nav entre Capitalización mundial (activa acá) y Armado de Cartera -->
+<div class="cartera-subnav">
+  <div class="cartera-subnav-inner">
+    <div class="jli-mini cartera-subnav-tab active" id="jm-map" data-go="mapa" title="Capitalización bursátil">
       <div class="jli-label">Capitalización mundial</div>
       <div class="jli-val serif">$128T</div>
     </div>
-    <!-- Card combinada Fondos: 3 sub-valores -->
-    <div class="jli-mini jli-mini-multi" data-go="fondos" title="Ver selección de fondos">
+    <div class="jli-mini cartera-subnav-tab jli-mini-multi" data-go="fondos" title="Ver selección de fondos">
       <div class="jli-label">Armado de Cartera</div>
       <div class="jli-multi">
         <div class="jli-cell">
@@ -519,10 +552,6 @@
           <span class="jli-cell-lbl">diversif</span>
         </div>
       </div>
-    </div>
-    <div class="jli-mini" data-go="ter">
-      <div class="jli-label">Costo medio</div>
-      <div class="jli-val serif" id="jm-ter">0.00%</div>
     </div>
   </div>
 </div>
