@@ -149,13 +149,11 @@
   /* Empujar el grupo de la derecha (Cartera actual / Volatilidad / Capitally) al borde derecho */
   .tab-right-start { margin-left: auto; }
 
-  /* Card "Largo plazo" entre Cartera objetivo y Cartera actual.
+  /* Card "Largo plazo" inmediatamente a la derecha de "Cartera objetivo".
      Color marrón claro (#c9a55a) — coincide con el de la donut/largo plazo.
-     Click → vuelve a la pestaña Objetivos.
-     margin-left + margin-right: auto = centrada horizontalmente entre los dos grupos de tabs. */
+     Click → vuelve a la pestaña Objetivos. */
   .nav-invertir-card {
-    margin-left: auto;
-    margin-right: auto;
+    margin-left: 10px;
     display: flex; align-items: center; gap: 10px;
     background: #c9a55a;
     border: 1px solid #c9a55a;
@@ -183,8 +181,6 @@
     font-family: 'Instrument Serif', Georgia, serif;
     font-size: 18px; line-height: 1; font-variant-numeric: tabular-nums;
   }
-  /* Cuando la card está visible, el grupo derecho ya no necesita margin-left: auto */
-  .nav-invertir-card:not([hidden]) ~ .tab-right-start { margin-left: 0; }
 
   /* Hamburger button — sólo visible en mobile */
   .hamburger-btn {
