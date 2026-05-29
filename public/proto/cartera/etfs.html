@@ -3036,9 +3036,15 @@ function renderTer() {
   //   Capital sin TER después de N años:  P × (1 + R)^N
   //   Capital con TER después de N años:  P × ((1 + R)(1 - T))^N
   //   El TER se cobra sobre el AUM cada año (drag multiplicativo), no se resta a R.
-  //   Costo acumulado por TER (oportunidad perdida) = diff entre los dos.
+  //   Costo acumulado = diff entre los dos. T incluye TER del fondo + costo de
+  //   custodia del bróker (editable por el usuario), ambos como drag anual.
+  const CUSTODY_KEY = 'etf_custody_pct_v1';
+  const custodyPct = (() => {
+    try { return Math.max(0, Math.min(5, Number(localStorage.getItem(CUSTODY_KEY)) || 0)); }
+    catch (e) { return 0; }
+  })();
   const r = weightedReturn / 100;
-  const t = weightedTER / 100;
+  const t = (weightedTER + custodyPct) / 100;
   const grossAt = (years) => total * Math.pow(1 + r, years);
   const netAt   = (years) => total * Math.pow((1 + r) * (1 - t), years);
   const costAt  = (years) => grossAt(years) - netAt(years);
@@ -3046,6 +3052,8 @@ function renderTer() {
   const cost1y  = costAt(1);
   const cost10y = costAt(10);
   const cost30y = costAt(30);
+  const net10y  = netAt(10);
+  const net30y  = netAt(30);
   // % del valor potencial (sin TER) que se pierde en costes
   const pctOf = (years) => {
     const g = grossAt(years);
@@ -3160,6 +3168,14 @@ function renderTer() {
         <div class="ds-sub">media por monto invertido</div>
       </div>
       <div class="ds-cell">
+        <div class="ds-label">Custodia</div>
+        <div class="ds-value" style="display:inline-flex;align-items:baseline;gap:3px">
+          <input type="number" class="custody-input" min="0" max="5" step="0.01" value="${custodyPct.toFixed(2)}" aria-label="Costo de custodia anual en %" style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:3px 6px;font-family:'Instrument Serif',Georgia,serif;font-size:22px;font-variant-numeric:tabular-nums;text-align:right;width:80px" />
+          <span style="font-size:18px;color:var(--text-dim)">%</span>
+        </div>
+        <div class="ds-sub">anual del bróker · editable</div>
+      </div>
+      <div class="ds-cell">
         <div class="ds-label">Rendimiento esperado</div>
         <div class="ds-value">${fmtPct(weightedReturn)}</div>
         <div class="ds-sub">anual ponderado por región</div>
@@ -3184,6 +3200,16 @@ function renderTer() {
         <div class="ds-value">${fmtUSD(cost30y)}</div>
         <div class="ds-sub">${pct30y.toFixed(1)}% · jubilación</div>
       </div>
+      <div class="ds-cell ok">
+        <div class="ds-label">Patrimonio 10 años</div>
+        <div class="ds-value">${fmtUSD(net10y)}</div>
+        <div class="ds-sub">neto, descontados TER + custodia</div>
+      </div>
+      <div class="ds-cell ok">
+        <div class="ds-label">Patrimonio 30 años</div>
+        <div class="ds-value">${fmtUSD(net30y)}</div>
+        <div class="ds-sub">neto, descontados TER + custodia</div>
+      </div>
     </div>
 
     <!-- Chart de interés compuesto: cartera con y sin TER -->
@@ -3194,8 +3220,20 @@ function renderTer() {
     <div class="diversif-list">${rows}</div>
 
     <p style="margin-top:14px;font-size:11px;color:var(--text-dim);line-height:1.5">
-      Cálculo: el coste a N años es la diferencia entre lo que tu cartera valdría sin TER (<code>P × (1 + R)<sup>N</sup></code>) y lo que vale con TER (<code>P × ((1 + R)(1 − T))<sup>N</sup></code>), donde R es el rendimiento esperado ponderado por región y T el TER ponderado (cobrado sobre el patrimonio cada año). Asume reinversión completa de los rendimientos, sin aportes adicionales. Las tasas regionales son aproximaciones históricas largoplacistas (US ~10%, EU ~7%, JP ~5,5%, EM ~8%, world ~8%) y pueden no reflejar el futuro.
+      Cálculo: el coste a N años es la diferencia entre lo que tu cartera valdría sin costes (<code>P × (1 + R)<sup>N</sup></code>) y lo que vale con costes (<code>P × ((1 + R)(1 − T))<sup>N</sup></code>), donde R es el rendimiento esperado ponderado por región y T = TER del fondo + custodia del bróker, ambos cobrados sobre el patrimonio cada año. Asume reinversión completa de los rendimientos, sin aportes adicionales. Las tasas regionales son aproximaciones históricas largoplacistas (US ~10%, EU ~7%, JP ~5,5%, EM ~8%, world ~8%) y pueden no reflejar el futuro.
     </p>`;
+
+  // Hook del input de custodia: guarda y re-renderiza con la nueva tasa
+  const custodyInp = host.querySelector('.custody-input');
+  if (custodyInp) {
+    custodyInp.addEventListener('change', (e) => {
+      const v = Math.max(0, Math.min(5, Number(e.target.value) || 0));
+      try { localStorage.setItem(CUSTODY_KEY, String(v)); } catch (err) {}
+      renderTer();
+      // Actualizar también el TER visible del header (usa weightedTER simple, no incluye custodia)
+      updateUI();
+    });
+  }
 }
 
 // Reset rápido de la cartera: borra selección + amounts y vuelve a vista Fondos
