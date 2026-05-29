@@ -3541,8 +3541,12 @@ syncStickyTop();
 window.addEventListener('resize', syncStickyTop);
 window.addEventListener('load', syncStickyTop);
 
-// Header sticky stats actúan como navegación
-document.querySelectorAll('.mini-stat.clickable, .nav-back-arrow').forEach(s => {
+// Header sticky stats / navbar de texto actúan como navegación.
+// Incluyo .navbar-tab y .navbar-back (los reemplazos de las cards) además de
+// los selectores legacy por si quedan elementos viejos en el DOM.
+document.querySelectorAll('.navbar-tab, .navbar-back, .mini-stat.clickable, .nav-back-arrow').forEach(s => {
+  // Los <a href> dejan que el navegador maneje la navegación nativa
+  if (s.tagName === 'A' && s.getAttribute('href')) return;
   s.addEventListener('click', (e) => {
     if (e.target.closest('.info-link')) return; // ⓘ tiene su propio handler
     if (s.dataset.action === 'goto-objetivos') {

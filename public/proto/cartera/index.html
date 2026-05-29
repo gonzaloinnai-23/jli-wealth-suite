@@ -641,10 +641,12 @@
       wireResetBar();
     }
 
-    // Click handlers de las cards
-    document.querySelectorAll('.jli-mini').forEach(card => {
+    // Click handlers de los tabs del navbar (reemplaza el listener de .jli-mini
+    // que quedó sin uso al cambiar las cards por texto).
+    document.querySelectorAll('.navbar-tab, .navbar-back, .jli-mini').forEach(card => {
       card.addEventListener('click', () => {
         const dest = card.dataset.go;
+        if (!dest) return;
         if (dest === 'mapa') return; // ya estamos
         if (dest === 'objetivos') { try { window.parent.location.hash = '#objetivos'; } catch (e) {} return; }
         if (dest === 'politica')  { try { window.parent.location.hash = '#politica';  } catch (e) {} return; }
