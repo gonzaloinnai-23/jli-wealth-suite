@@ -643,8 +643,8 @@
     // Monto completo en USD con coma como separador de miles, sin decimales
     const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Math.round(n));
     valEl.textContent = amount > 0 ? fmt(amount) : '$0';
-    // Mostrar en pestañas del flujo (Política y Cartera objetivo) cuando hay un monto cargado
-    if ((activeName === 'politica' || activeName === 'cartera') && amount > 0) {
+    // Mostrar tan pronto como haya monto cargado, en cualquier pestaña.
+    if (amount > 0) {
       card.removeAttribute('hidden');
     } else {
       card.setAttribute('hidden', '');
