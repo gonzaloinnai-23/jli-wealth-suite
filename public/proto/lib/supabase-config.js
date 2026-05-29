@@ -12,6 +12,6 @@
 // Si los valores quedan vacíos, el sitio funciona en modo "demo sin auth"
 // (sólo localStorage, igual que antes de Supabase).
 window.SUPABASE_CONFIG = {
-  url:     '',  // ej. 'https://abcd1234.supabase.co'
+  url:     'https://xhgefwolqvxtqnzaeqjb.supabase.co/rest/v1/',  // ej. 'https://abcd1234.supabase.co'
   anonKey: '',  // ej. 'eyJhbGciOi...'
 };
