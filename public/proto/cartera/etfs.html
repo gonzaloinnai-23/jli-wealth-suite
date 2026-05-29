@@ -1274,26 +1274,56 @@
     margin-bottom: 16px;
   }
   .ter-layout > .ter-chart { min-width: 0; }
-  .ter-layout > .ter-summary {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+  .ter-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     margin: 0;
     padding: 12px;
     background: #faf7ed !important;
     border: 1px solid var(--border);
     border-radius: 12px;
   }
-  .ter-layout > .ter-summary .ds-cell { padding: 4px 2px; }
-  .ter-layout > .ter-summary .ds-cell .ds-value { font-size: 19px; }
-  .ter-layout > .ter-summary .ds-cell .ds-sub { font-size: 10px; line-height: 1.3; }
+  .ter-summary .ts-params {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ter-summary .ts-params .ds-cell { padding: 2px 2px; }
+  .ter-summary .ts-params .ds-cell .ds-value { font-size: 17px; }
+  .ter-summary .ts-params .ds-cell .ds-sub { font-size: 9px; }
+  .ter-summary .ts-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .ter-summary .ts-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  .ter-summary .ts-col-h {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+  }
+  .ter-summary .ts-col .ds-cell { padding: 4px 2px; }
+  .ter-summary .ts-col .ds-cell .ds-value { font-size: 18px; }
+  .ter-summary .ts-col .ds-cell .ds-sub { font-size: 10px; line-height: 1.3; }
   @media (max-width: 980px) {
     .ter-layout {
       grid-template-columns: 1fr;
     }
-    .ter-layout > .ter-summary {
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    }
+  }
+  @media (max-width: 520px) {
+    .ter-summary .ts-params { grid-template-columns: 1fr 1fr; }
   }
 
   .stack-bar {
@@ -3199,55 +3229,67 @@ function renderTer() {
         ${chartHTML}
       </div>
 
-      <!-- RIGHT: summary cards en grid 2 columnas -->
+      <!-- RIGHT: summary panel — params arriba, rendimiento vs costes abajo -->
       <div class="diversif-summary ter-summary">
-        <div class="ds-cell">
-          <div class="ds-label">TER ponderado</div>
-          <div class="ds-value">${fmtPct(weightedTER)}</div>
-          <div class="ds-sub">media por monto invertido</div>
-        </div>
-        <div class="ds-cell">
-          <div class="ds-label">Custodia</div>
-          <div class="ds-value" style="display:inline-flex;align-items:baseline;gap:3px">
-            <input type="number" class="custody-input" min="0" max="5" step="0.01" value="${custodyPct.toFixed(2)}" aria-label="Costo de custodia anual en %" style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:2px 5px;font-family:'Instrument Serif',Georgia,serif;font-size:18px;font-variant-numeric:tabular-nums;text-align:right;width:64px" />
-            <span style="font-size:14px;color:var(--text-dim)">%</span>
+        <!-- Parámetros: TER del fondo, Custodia editable, Capital invertido -->
+        <div class="ts-params">
+          <div class="ds-cell">
+            <div class="ds-label">TER</div>
+            <div class="ds-value">${fmtPct(weightedTER)}</div>
+            <div class="ds-sub">fondos</div>
           </div>
-          <div class="ds-sub">anual del bróker · editable</div>
+          <div class="ds-cell">
+            <div class="ds-label">Custodia</div>
+            <div class="ds-value" style="display:inline-flex;align-items:baseline;gap:2px">
+              <input type="number" class="custody-input" min="0" max="5" step="0.01" value="${custodyPct.toFixed(2)}" aria-label="Costo de custodia anual en %" style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:2px 4px;font-family:'Instrument Serif',Georgia,serif;font-size:16px;font-variant-numeric:tabular-nums;text-align:right;width:58px" />
+              <span style="font-size:13px;color:var(--text-dim)">%</span>
+            </div>
+            <div class="ds-sub">bróker · editable</div>
+          </div>
+          <div class="ds-cell">
+            <div class="ds-label">Capital</div>
+            <div class="ds-value">${fmtUSD(total)}</div>
+            <div class="ds-sub">invertido</div>
+          </div>
         </div>
-        <div class="ds-cell">
-          <div class="ds-label">Rendimiento esperado</div>
-          <div class="ds-value">${fmtPct(weightedReturn)}</div>
-          <div class="ds-sub">anual ponderado por región</div>
-        </div>
-        <div class="ds-cell">
-          <div class="ds-label">Capital invertido</div>
-          <div class="ds-value">${fmtUSD(total)}</div>
-          <div class="ds-sub">total asignado</div>
-        </div>
-        <div class="ds-cell warn">
-          <div class="ds-label">Coste 1 año</div>
-          <div class="ds-value">${fmtUSD(cost1y)}</div>
-          <div class="ds-sub">${pct1y.toFixed(2)}% del valor potencial</div>
-        </div>
-        <div class="ds-cell warn">
-          <div class="ds-label">Coste 10 años</div>
-          <div class="ds-value">${fmtUSD(cost10y)}</div>
-          <div class="ds-sub">${pct10y.toFixed(1)}% · oportunidad perdida</div>
-        </div>
-        <div class="ds-cell warn">
-          <div class="ds-label">Coste 30 años</div>
-          <div class="ds-value">${fmtUSD(cost30y)}</div>
-          <div class="ds-sub">${pct30y.toFixed(1)}% · jubilación</div>
-        </div>
-        <div class="ds-cell ok">
-          <div class="ds-label">Patrimonio 10 años</div>
-          <div class="ds-value">${fmtUSD(net10y)}</div>
-          <div class="ds-sub">neto, descontados TER + custodia</div>
-        </div>
-        <div class="ds-cell ok">
-          <div class="ds-label">Patrimonio 30 años</div>
-          <div class="ds-value">${fmtUSD(net30y)}</div>
-          <div class="ds-sub">neto, descontados TER + custodia</div>
+        <!-- Dos columnas: rendimiento + patrimonio (izq) vs costes (der) -->
+        <div class="ts-body">
+          <div class="ts-col">
+            <div class="ts-col-h">📈 Rendimiento</div>
+            <div class="ds-cell">
+              <div class="ds-label">Esperado</div>
+              <div class="ds-value">${fmtPct(weightedReturn)}</div>
+              <div class="ds-sub">anual · pond. por región</div>
+            </div>
+            <div class="ds-cell ok">
+              <div class="ds-label">Patrimonio 10 años</div>
+              <div class="ds-value">${fmtUSD(net10y)}</div>
+              <div class="ds-sub">neto · TER + custodia</div>
+            </div>
+            <div class="ds-cell ok">
+              <div class="ds-label">Patrimonio 30 años</div>
+              <div class="ds-value">${fmtUSD(net30y)}</div>
+              <div class="ds-sub">neto · TER + custodia</div>
+            </div>
+          </div>
+          <div class="ts-col">
+            <div class="ts-col-h">📉 Coste acumulado</div>
+            <div class="ds-cell warn">
+              <div class="ds-label">1 año</div>
+              <div class="ds-value">${fmtUSD(cost1y)}</div>
+              <div class="ds-sub">${pct1y.toFixed(2)}% del potencial</div>
+            </div>
+            <div class="ds-cell warn">
+              <div class="ds-label">10 años</div>
+              <div class="ds-value">${fmtUSD(cost10y)}</div>
+              <div class="ds-sub">${pct10y.toFixed(1)}% · op. perdida</div>
+            </div>
+            <div class="ds-cell warn">
+              <div class="ds-label">30 años</div>
+              <div class="ds-value">${fmtUSD(cost30y)}</div>
+              <div class="ds-sub">${pct30y.toFixed(1)}% · jubilación</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
