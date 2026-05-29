@@ -683,14 +683,27 @@
   }
 
   async function doLogout() {
-    if (window.jliAuth) await window.jliAuth.signOut();
+    // Cambio visual instantáneo — no esperamos a la red para volver al overlay.
+    document.body.classList.remove('authed');
     sessionStorage.removeItem(AUTH_KEY);
     sessionStorage.removeItem(USER_KEY);
-    document.body.classList.remove('authed');
-    document.getElementById('login-email').value = '';
-    document.getElementById('login-pass').value = '';
-    document.getElementById('login-error').textContent = '';
-    setTimeout(() => document.getElementById('login-email').focus(), 50);
+    const emailInp = document.getElementById('login-email');
+    const passInp  = document.getElementById('login-pass');
+    const errEl    = document.getElementById('login-error');
+    if (emailInp) emailInp.value = '';
+    if (passInp)  passInp.value  = '';
+    if (errEl)    errEl.textContent = '';
+    // Resetear los iframes para que recargen su contenido cuando el próximo
+    // usuario entre. Si los dejáramos cargados, mostrarían datos del anterior.
+    // removeAttribute('src') deja f.src vacío así activateTab lo vuelve a cargar.
+    document.querySelectorAll('iframe.iframe-host').forEach(f => {
+      try { f.removeAttribute('src'); } catch (e) {}
+    });
+    setTimeout(() => { try { emailInp && emailInp.focus(); } catch (e) {} }, 50);
+    // Cleanup async en background (Supabase signOut + limpieza de localStorage)
+    if (window.jliAuth) {
+      try { await window.jliAuth.signOut(); } catch (e) {}
+    }
   }
 
   function enterApp() {
