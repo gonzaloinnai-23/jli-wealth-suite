@@ -27,7 +27,9 @@
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: false,
+      // Necesario para procesar el hash del link de recuperación de contraseña
+      // (Supabase redirecciona con #access_token=...&type=recovery).
+      detectSessionInUrl: true,
     },
   });
   window.SB_READY = true;

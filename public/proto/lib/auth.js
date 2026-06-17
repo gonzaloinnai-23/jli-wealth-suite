@@ -42,6 +42,28 @@
     } catch (e) { return { ok: false, error: String(e) }; }
   };
 
+  // Envía mail con link de reseteo. El user vuelve al sitio con el hash que
+  // dispara el evento PASSWORD_RECOVERY → ahí se muestra el form de nueva clave.
+  ns.resetPassword = async function (email) {
+    if (!window.sb) return { ok: false, error: 'Supabase no configurado' };
+    try {
+      const redirectTo = window.location.origin + window.location.pathname;
+      const { error } = await window.sb.auth.resetPasswordForEmail(email, { redirectTo });
+      if (error) return { ok: false, error: error.message };
+      return { ok: true };
+    } catch (e) { return { ok: false, error: String(e) }; }
+  };
+
+  // Cambia la contraseña del user actual (asume sesión activa por recovery link).
+  ns.updatePassword = async function (newPassword) {
+    if (!window.sb) return { ok: false, error: 'Supabase no configurado' };
+    try {
+      const { error } = await window.sb.auth.updateUser({ password: newPassword });
+      if (error) return { ok: false, error: error.message };
+      return { ok: true };
+    } catch (e) { return { ok: false, error: String(e) }; }
+  };
+
   ns.signOut = async function () {
     if (!window.sb) return;
     try { await window.sb.auth.signOut(); } catch (e) { console.warn('[auth] signOut', e); }

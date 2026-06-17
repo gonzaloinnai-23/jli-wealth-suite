@@ -450,6 +450,8 @@
       <div class="login-error" id="login-error" aria-live="polite"></div>
       <div class="login-hint">
         <a id="login-toggle" href="#" onclick="event.preventDefault(); toggleAuthMode();">¿No tenés cuenta? Crear una</a>
+        <span id="login-forgot-sep" style="opacity:0.4;margin:0 6px">·</span>
+        <a id="login-forgot" href="#" onclick="event.preventDefault(); setAuthMode('recover');">¿Olvidaste tu contraseña?</a>
       </div>
     </form>
   </div>
@@ -616,23 +618,46 @@
   // Compatibilidad con páginas iframe que leen sessionStorage('jli_auth').
   const AUTH_KEY = 'jli_auth';
   const USER_KEY = 'jli_user';
-  // 'login' = pidiendo loguearse · 'signup' = creando cuenta
+  // Modos: 'login' · 'signup' · 'recover' (pedir mail de reset) ·
+  //         'newPassword' (set new pass tras click en link del mail)
   let authMode = 'login';
-  function toggleAuthMode() {
-    authMode = authMode === 'login' ? 'signup' : 'login';
-    document.getElementById('login-title').textContent =
-      authMode === 'login' ? 'Iniciar sesión' : 'Crear cuenta';
-    document.getElementById('login-sub').textContent =
-      authMode === 'login'
-        ? 'Ingresá tu email y contraseña para acceder.'
-        : 'Email y una contraseña de al menos 6 caracteres.';
-    document.getElementById('login-btn').textContent =
-      authMode === 'login' ? 'Entrar' : 'Crear cuenta';
-    document.getElementById('login-toggle').textContent =
-      authMode === 'login' ? '¿No tenés cuenta? Crear una' : '¿Ya tenés cuenta? Iniciar sesión';
+  function setAuthMode(mode) {
+    authMode = mode;
+    const T = {
+      login:       { title: 'Iniciar sesión',     sub: 'Ingresá tu email y contraseña para acceder.', btn: 'Entrar',         toggle: '¿No tenés cuenta? Crear una' },
+      signup:      { title: 'Crear cuenta',       sub: 'Email y una contraseña de al menos 6 caracteres.', btn: 'Crear cuenta',   toggle: '¿Ya tenés cuenta? Iniciar sesión' },
+      recover:     { title: 'Recuperar contraseña', sub: 'Ingresá tu email; te mandamos un link para resetear la contraseña.', btn: 'Enviar link', toggle: '← Volver a iniciar sesión' },
+      newPassword: { title: 'Nueva contraseña',   sub: 'Ingresá una contraseña nueva (al menos 6 caracteres).', btn: 'Cambiar contraseña', toggle: '' },
+    };
+    const t = T[mode] || T.login;
+    document.getElementById('login-title').textContent = t.title;
+    document.getElementById('login-sub').textContent   = t.sub;
+    document.getElementById('login-btn').textContent   = t.btn;
+    document.getElementById('login-toggle').textContent = t.toggle;
+    document.getElementById('login-toggle').style.display = t.toggle ? '' : 'none';
     document.getElementById('login-error').textContent = '';
+    // Mostrar/ocultar campos según el modo
+    const emailField = document.getElementById('login-email').closest('.login-field');
+    const passField  = document.getElementById('login-pass').closest('.login-field');
+    if (emailField) emailField.style.display = (mode === 'newPassword') ? 'none' : '';
+    if (passField)  passField.style.display  = (mode === 'recover') ? 'none' : '';
+    // Link "olvidaste contraseña" sólo en modo login
+    const forgot = document.getElementById('login-forgot');
+    const sep    = document.getElementById('login-forgot-sep');
+    if (forgot) forgot.style.display = (mode === 'login') ? '' : 'none';
+    if (sep)    sep.style.display    = (mode === 'login') ? '' : 'none';
+    // autocomplete del campo password
     const passInput = document.getElementById('login-pass');
-    passInput.setAttribute('autocomplete', authMode === 'login' ? 'current-password' : 'new-password');
+    if (passInput) {
+      passInput.setAttribute('autocomplete',
+        mode === 'login' ? 'current-password' :
+        (mode === 'signup' || mode === 'newPassword') ? 'new-password' : 'off');
+    }
+  }
+  function toggleAuthMode() {
+    if (authMode === 'login') setAuthMode('signup');
+    else if (authMode === 'signup') setAuthMode('login');
+    else if (authMode === 'recover') setAuthMode('login');
   }
 
   async function doLogin() {
@@ -640,6 +665,37 @@
     const pass  = document.getElementById('login-pass').value;
     const err   = document.getElementById('login-error');
     const btn   = document.getElementById('login-btn');
+
+    // ---- Modo: recuperar contraseña (sólo email) ----
+    if (authMode === 'recover') {
+      if (!email) { err.textContent = 'Email es obligatorio.'; return; }
+      err.textContent = '';
+      btn.disabled = true; btn.textContent = 'Enviando…';
+      const res = await window.jliAuth.resetPassword(email);
+      btn.disabled = false; btn.textContent = 'Enviar link';
+      if (!res.ok) { err.textContent = res.error || 'No se pudo enviar el link.'; return; }
+      document.getElementById('login-title').textContent = 'Revisá tu email';
+      document.getElementById('login-sub').textContent  = `Te mandamos un link de recuperación a ${email}. Cliquealo desde el mismo navegador y vas a poder ingresar una contraseña nueva acá.`;
+      return;
+    }
+
+    // ---- Modo: nueva contraseña (tras click en link del mail) ----
+    if (authMode === 'newPassword') {
+      if (!pass || pass.length < 6) { err.textContent = 'La contraseña tiene que ser de al menos 6 caracteres.'; return; }
+      err.textContent = '';
+      btn.disabled = true; btn.textContent = 'Cambiando…';
+      const res = await window.jliAuth.updatePassword(pass);
+      btn.disabled = false; btn.textContent = 'Cambiar contraseña';
+      if (!res.ok) { err.textContent = res.error || 'No se pudo cambiar la contraseña.'; return; }
+      // Tras updateUser ya hay sesión activa — entrar a la app directo.
+      const user = await window.jliAuth.getUser();
+      await postLoginHydrateAndEnter(user?.email || 'usuario');
+      // Reset visual del overlay para próximos logins
+      setAuthMode('login');
+      return;
+    }
+
+    // ---- Modo: login / signup ----
     if (!email || !pass) { err.textContent = 'Email y contraseña son obligatorios.'; return; }
     err.textContent = '';
     btn.disabled = true;
@@ -916,6 +972,13 @@
       // Si la sesión se invalida en otra tab, deslogear acá
       window.jliAuth.onAuthStateChange(({ event }) => {
         if (event === 'SIGNED_OUT') doLogout();
+        else if (event === 'PASSWORD_RECOVERY') {
+          // El user llegó al sitio desde el link del mail. Mostrar overlay
+          // con form para fijar nueva contraseña.
+          document.body.classList.remove('authed');
+          setAuthMode('newPassword');
+          setTimeout(() => { try { document.getElementById('login-pass').focus(); } catch(e){} }, 80);
+        }
       });
     }
     document.addEventListener('keydown', (e) => {
