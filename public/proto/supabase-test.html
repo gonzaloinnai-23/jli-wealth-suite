@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<!--
+  Página de test para diagnosticar fallas de Supabase aisladas del shell.
+  Abrí: https://jli-wealth-suite-git-claude-98ccd7-gonzaloinnai-6039s-projects.vercel.app/proto/supabase-test.html
+  Y pegame la salida.
+-->
+<html lang="es"><head><meta charset="UTF-8"><title>Supabase test</title>
+<style>
+body { font-family: ui-monospace, monospace; padding: 24px; max-width: 800px; margin: 0 auto; background: #0a0a0a; color: #e4e4e4; line-height: 1.6; font-size: 13px; }
+h1 { font-size: 18px; margin-bottom: 16px; color: #fff; }
+.row { margin: 8px 0; padding: 8px 12px; border-radius: 6px; background: #1a1a1a; }
+.ok { color: #1D9E75; } .err { color: #D85A30; } .info { color: #888; }
+pre { white-space: pre-wrap; word-break: break-all; margin-top: 4px; font-size: 11px; color: #aaa; }
+input, button { font-family: inherit; font-size: 13px; padding: 6px 10px; background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; }
+button { cursor: pointer; }
+button:hover { background: #333; }
+.field { margin: 12px 0; }
+.field label { display: block; font-size: 11px; color: #888; margin-bottom: 4px; }
+.field input { width: 100%; box-sizing: border-box; }
+</style></head><body>
+<h1>Supabase · diagnóstico</h1>
+<div id="out"></div>
+
+<div class="row">
+  <div class="field"><label>Email</label><input id="email" type="email" placeholder="tu@email.com"></div>
+  <div class="field"><label>Password</label><input id="pass" type="password" placeholder="••••••••"></div>
+  <button onclick="testLogin()">Probar login</button>
+</div>
+
+<script src="/proto/lib/supabase-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const out = document.getElementById('out');
+const log = (msg, cls='info') => {
+  const d = document.createElement('div');
+  d.className = 'row ' + cls;
+  d.innerHTML = msg;
+  out.appendChild(d);
+};
+
+(async function () {
+  log('<strong>1) Config cargada:</strong>');
+  log(`<pre>url     = ${JSON.stringify(window.SUPABASE_CONFIG?.url)}
+anonKey = ${(window.SUPABASE_CONFIG?.anonKey || '').slice(0, 30)}...</pre>`);
+
+  log('<strong>2) SDK cargado:</strong>');
+  log(`<pre>typeof window.supabase = ${typeof window.supabase}
+SDK version (si disponible) = ${window.supabase?.SupabaseClient?.version || 'desconocido'}</pre>`);
+
+  if (!window.SUPABASE_CONFIG?.url || !window.SUPABASE_CONFIG?.anonKey) {
+    log('Config vacía — no se puede testear.', 'err');
+    return;
+  }
+  if (!window.supabase || !window.supabase.createClient) {
+    log('SDK no cargó (CDN bloqueado?). Mirá la pestaña Network.', 'err');
+    return;
+  }
+
+  // Test 1: ping al endpoint /auth/v1/health
+  log('<strong>3) Probando GET ' + window.SUPABASE_CONFIG.url + '/auth/v1/health</strong>');
+  try {
+    const r = await fetch(window.SUPABASE_CONFIG.url + '/auth/v1/health', {
+      headers: { 'apikey': window.SUPABASE_CONFIG.anonKey }
+    });
+    const txt = await r.text();
+    log(`<pre>HTTP ${r.status} ${r.statusText}
+${txt}</pre>`, r.ok ? 'ok' : 'err');
+  } catch (e) {
+    log(`<pre>fetch falló: ${e.name} - ${e.message}
+${e.stack || ''}</pre>`, 'err');
+    log('Si esto dice "Failed to fetch", el problema es de red/CORS/proyecto pausado. Si es "TypeError", a veces es bloqueador de ads/extensión.', 'info');
+  }
+
+  // Test 2: createClient
+  log('<strong>4) Creando cliente Supabase…</strong>');
+  try {
+    window.sb = window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey);
+    log('Cliente creado OK.', 'ok');
+  } catch (e) {
+    log(`<pre>createClient falló: ${e.message}</pre>`, 'err');
+  }
+})();
+
+async function testLogin() {
+  if (!window.sb) { log('Cliente no creado.', 'err'); return; }
+  const email = document.getElementById('email').value;
+  const pass = document.getElementById('pass').value;
+  log(`<strong>5) Probando signInWithPassword para ${email}…</strong>`);
+  try {
+    const r = await window.sb.auth.signInWithPassword({ email, password: pass });
+    if (r.error) {
+      log(`<pre>Login falló: ${r.error.message}
+status: ${r.error.status}</pre>`, 'err');
+    } else {
+      log(`<pre>Login OK. User: ${r.data.user.email}
+Session token (primeros 40 chars): ${r.data.session.access_token.slice(0, 40)}...</pre>`, 'ok');
+    }
+  } catch (e) {
+    log(`<pre>Excepción en login: ${e.name} - ${e.message}</pre>`, 'err');
+  }
+}
+</script>
+</body></html>
