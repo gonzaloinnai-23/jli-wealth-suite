@@ -23,13 +23,14 @@
     return;
   }
   // Cliente único; el SDK ya maneja persistencia en localStorage.
+  // detectSessionInUrl: false → procesamos el hash de recovery manualmente en
+  // index.html (ver el bloque init). Algunos hashes del shell (#objetivos,
+  // #cartera, etc.) confundían al SDK cuando estaba en true.
   window.sb = SDK.createClient(cfg.url, cfg.anonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      // Necesario para procesar el hash del link de recuperación de contraseña
-      // (Supabase redirecciona con #access_token=...&type=recovery).
-      detectSessionInUrl: true,
+      detectSessionInUrl: false,
     },
   });
   window.SB_READY = true;

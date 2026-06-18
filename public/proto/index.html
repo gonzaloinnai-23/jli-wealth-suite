@@ -948,9 +948,36 @@
   }
 
   // ============ INIT ============
+  // Procesa manualmente el hash del link de recuperación de contraseña.
+  // Supabase redirige a /...#access_token=...&refresh_token=...&type=recovery
+  // Si lo detectamos, establecemos la sesión y abrimos el form "nueva contraseña".
+  // Devuelve true si era un link de recovery (para que el init no haga lo normal).
+  async function consumeRecoveryHashIfAny() {
+    if (!window.sb) return false;
+    const hash = window.location.hash || '';
+    if (!hash.includes('access_token=') || !hash.includes('type=recovery')) return false;
+    const params = new URLSearchParams(hash.slice(1));
+    const access_token  = params.get('access_token');
+    const refresh_token = params.get('refresh_token');
+    if (!access_token || !refresh_token) return false;
+    try {
+      await window.sb.auth.setSession({ access_token, refresh_token });
+    } catch (e) { console.warn('[auth] setSession recovery', e); }
+    // Limpiar el hash para no procesarlo de nuevo en futuras navegaciones.
+    try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) {}
+    document.body.classList.remove('authed');
+    setAuthMode('newPassword');
+    setTimeout(() => { try { document.getElementById('login-pass').focus(); } catch(e){} }, 80);
+    return true;
+  }
+
   window.addEventListener('DOMContentLoaded', async () => {
     refreshExternalUI();
     refreshVolPill();
+
+    // Si el user llegó desde un link de recuperación de contraseña, abrir
+    // el form de "nueva contraseña" en vez del flujo normal.
+    if (await consumeRecoveryHashIfAny()) return;
 
     // Modo demo (sin Supabase): auto-auth como antes
     if (!window.jliAuth || !window.jliAuth.isConfigured()) {
