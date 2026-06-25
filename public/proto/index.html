@@ -949,26 +949,37 @@
   }
 
   // ============ INIT ============
-  // Procesa manualmente el hash del link de recuperación de contraseña.
-  // Supabase redirige a /...#access_token=...&refresh_token=...&type=recovery
-  // Si lo detectamos, establecemos la sesión y abrimos el form "nueva contraseña".
-  // Devuelve true si era un link de recovery (para que el init no haga lo normal).
-  async function consumeRecoveryHashIfAny() {
+  // Procesa manualmente el hash de links de Supabase Auth (signup, recovery,
+  // magiclink, etc). Formato:
+  //   /...#access_token=...&refresh_token=...&type=<tipo>
+  // - type=recovery → abrimos el form "nueva contraseña" (el user resetea).
+  // - type=signup / magiclink / invite → establecemos sesión y entramos.
+  // Devuelve true si era un link de auth (para que el init no haga lo normal).
+  async function consumeAuthHashIfAny() {
     if (!window.sb) return false;
     const hash = window.location.hash || '';
-    if (!hash.includes('access_token=') || !hash.includes('type=recovery')) return false;
+    if (!hash.includes('access_token=')) return false;
     const params = new URLSearchParams(hash.slice(1));
     const access_token  = params.get('access_token');
     const refresh_token = params.get('refresh_token');
+    const type          = params.get('type') || '';
     if (!access_token || !refresh_token) return false;
     try {
       await window.sb.auth.setSession({ access_token, refresh_token });
-    } catch (e) { console.warn('[auth] setSession recovery', e); }
+    } catch (e) { console.warn('[auth] setSession from hash', e); }
     // Limpiar el hash para no procesarlo de nuevo en futuras navegaciones.
     try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) {}
-    document.body.classList.remove('authed');
-    setAuthMode('newPassword');
-    setTimeout(() => { try { document.getElementById('login-pass').focus(); } catch(e){} }, 80);
+    if (type === 'recovery') {
+      // Cambio de contraseña: mostrar form de nueva clave; la sesión ya está
+      // activa pero NO entramos a la app hasta que actualicen la password.
+      document.body.classList.remove('authed');
+      setAuthMode('newPassword');
+      setTimeout(() => { try { document.getElementById('login-pass').focus(); } catch(e){} }, 80);
+    } else {
+      // signup / magiclink / invite / etc: sesión activa, entrar a la app.
+      const user = await window.jliAuth.getUser();
+      await postLoginHydrateAndEnter(user?.email);
+    }
     return true;
   }
 
@@ -976,9 +987,10 @@
     refreshExternalUI();
     refreshVolPill();
 
-    // Si el user llegó desde un link de recuperación de contraseña, abrir
-    // el form de "nueva contraseña" en vez del flujo normal.
-    if (await consumeRecoveryHashIfAny()) return;
+    // Si el user llegó desde un link de Supabase Auth (signup confirm,
+    // password recovery, magic link, etc.), procesar la sesión a partir
+    // del hash y dirigir al flujo apropiado.
+    if (await consumeAuthHashIfAny()) return;
 
     // Modo demo (sin Supabase): auto-auth como antes
     if (!window.jliAuth || !window.jliAuth.isConfigured()) {
