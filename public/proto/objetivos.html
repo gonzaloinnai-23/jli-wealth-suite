@@ -16,7 +16,18 @@
 </script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<!-- Pin a 7.23.4 + forzamos JSX runtime "classic" porque versiones recientes
+     defaultean a "automatic" runtime que agrega un `import` al output JSX, y
+     el <script> inline NO es módulo: V8 lanza "Cannot use import statement
+     outside a module" y el render no llega a montar. -->
+<script src="https://unpkg.com/@babel/standalone@7.23.4/babel.min.js"></script>
+<script>
+  if (window.Babel && Babel.availablePresets && Babel.availablePresets.react) {
+    Babel.registerPreset('react-classic', {
+      presets: [[Babel.availablePresets.react, { runtime: 'classic' }]],
+    });
+  }
+</script>
 <style>
   html, body, #root { margin: 0; padding: 0; height: 100%; }
   body { background: #fafaf7; }
@@ -32,7 +43,7 @@
 <div id="boot">cargando objetivos…</div>
 <div id="root"></div>
 
-<script type="text/babel" data-presets="react">
+<script type="text/babel" data-presets="react-classic">
 const { useState, useEffect, useRef, useCallback } = React;
 
 /* ============================================================
@@ -230,6 +241,19 @@ function WealthPlanningWorkflow() {
     }
   } catch (e) { __snap = null; }
   var __ws = (__snap && __snap.wizardState) ? __snap.wizardState : {};
+  // Merge de defaults + lo guardado, sin usar ?? (Babel standalone solo con
+  // preset react no transforma nullish coalescing y rompe el render).
+  var __init = Object.assign({
+    monthlyExpense: 9000, monthlyIncome: 3000, psmValue: 500000,
+    eduPerYear: 30000, eduStartYear: 5, eduEndYear: 10,
+    yearsToRetirement: 15, retirementMultiplier: 25, intergenCapital: 5000000,
+    confirmedExpense: null, confirmedIncome: null, confirmedPsm: null,
+    confirmedEdu: null, confirmedRetirement: null, confirmedIntergen: null,
+    mnvStart: 1, mnvDuration: 2, psmStart: 1, psmDuration: 3,
+    eduStart: 5, eduDuration: 6, retStart: 15,
+    intergenStart: 11, intergenDuration: 1,
+    customObjectives: [], nameOverrides: {}, mixOverrides: {},
+  }, __ws);
 
   const [currentStep, setCurrentStep] = useState(__snap ? 6 : 0);
 
@@ -239,41 +263,41 @@ function WealthPlanningWorkflow() {
   const eduSteps = [5000, 10000, 15000, 20000, 30000, 40000, 50000, 60000, 75000, 90000, 110000, 130000, 150000];
   const intergenSteps = [500000, 1000000, 2000000, 3000000, 5000000, 7500000, 10000000, 15000000, 20000000, 30000000, 50000000, 75000000, 100000000];
 
-  const [monthlyExpense, setMonthlyExpense] = useState(__ws.monthlyExpense ?? 9000);
-  const [displayedExpense, setDisplayedExpense] = useState(__ws.monthlyExpense ?? 9000);
-  const [monthlyIncome, setMonthlyIncome] = useState(__ws.monthlyIncome ?? 3000);
-  const [displayedIncome, setDisplayedIncome] = useState(__ws.monthlyIncome ?? 3000);
-  const [psmValue, setPsmValue] = useState(__ws.psmValue ?? 500000);
-  const [displayedPsm, setDisplayedPsm] = useState(__ws.psmValue ?? 500000);
+  const [monthlyExpense, setMonthlyExpense] = useState(__init.monthlyExpense);
+  const [displayedExpense, setDisplayedExpense] = useState(__init.monthlyExpense);
+  const [monthlyIncome, setMonthlyIncome] = useState(__init.monthlyIncome);
+  const [displayedIncome, setDisplayedIncome] = useState(__init.monthlyIncome);
+  const [psmValue, setPsmValue] = useState(__init.psmValue);
+  const [displayedPsm, setDisplayedPsm] = useState(__init.psmValue);
   const [psmUserTouched, setPsmUserTouched] = useState(false);
-  const [eduPerYear, setEduPerYear] = useState(__ws.eduPerYear ?? 30000);
-  const [displayedEdu, setDisplayedEdu] = useState(__ws.eduPerYear ?? 30000);
-  const [eduStartYear, setEduStartYear] = useState(__ws.eduStartYear ?? 5);
-  const [eduEndYear, setEduEndYear] = useState(__ws.eduEndYear ?? 10);
-  const [yearsToRetirement, setYearsToRetirement] = useState(__ws.yearsToRetirement ?? 15);
-  const [retirementMultiplier, setRetirementMultiplier] = useState(__ws.retirementMultiplier ?? 25);
-  const [intergenCapital, setIntergenCapital] = useState(__ws.intergenCapital ?? 5000000);
-  const [displayedIntergen, setDisplayedIntergen] = useState(__ws.intergenCapital ?? 5000000);
+  const [eduPerYear, setEduPerYear] = useState(__init.eduPerYear);
+  const [displayedEdu, setDisplayedEdu] = useState(__init.eduPerYear);
+  const [eduStartYear, setEduStartYear] = useState(__init.eduStartYear);
+  const [eduEndYear, setEduEndYear] = useState(__init.eduEndYear);
+  const [yearsToRetirement, setYearsToRetirement] = useState(__init.yearsToRetirement);
+  const [retirementMultiplier, setRetirementMultiplier] = useState(__init.retirementMultiplier);
+  const [intergenCapital, setIntergenCapital] = useState(__init.intergenCapital);
+  const [displayedIntergen, setDisplayedIntergen] = useState(__init.intergenCapital);
 
-  const [confirmedExpense, setConfirmedExpense] = useState(__ws.confirmedExpense ?? null);
-  const [confirmedIncome, setConfirmedIncome] = useState(__ws.confirmedIncome ?? null);
-  const [confirmedPsm, setConfirmedPsm] = useState(__ws.confirmedPsm ?? null);
-  const [confirmedEdu, setConfirmedEdu] = useState(__ws.confirmedEdu ?? null);
-  const [confirmedRetirement, setConfirmedRetirement] = useState(__ws.confirmedRetirement ?? null);
-  const [confirmedIntergen, setConfirmedIntergen] = useState(__ws.confirmedIntergen ?? null);
+  const [confirmedExpense, setConfirmedExpense] = useState(__init.confirmedExpense);
+  const [confirmedIncome, setConfirmedIncome] = useState(__init.confirmedIncome);
+  const [confirmedPsm, setConfirmedPsm] = useState(__init.confirmedPsm);
+  const [confirmedEdu, setConfirmedEdu] = useState(__init.confirmedEdu);
+  const [confirmedRetirement, setConfirmedRetirement] = useState(__init.confirmedRetirement);
+  const [confirmedIntergen, setConfirmedIntergen] = useState(__init.confirmedIntergen);
 
-  const [mnvStart, setMnvStart] = useState(__ws.mnvStart ?? 1);
-  const [mnvDuration, setMnvDuration] = useState(__ws.mnvDuration ?? 2);
-  const [psmStart, setPsmStart] = useState(__ws.psmStart ?? 1);
-  const [psmDuration, setPsmDuration] = useState(__ws.psmDuration ?? 3);
-  const [eduStart, setEduStart] = useState(__ws.eduStart ?? 5);
-  const [eduDuration, setEduDuration] = useState(__ws.eduDuration ?? 6);
-  const [retStart, setRetStart] = useState(__ws.retStart ?? 15);
+  const [mnvStart, setMnvStart] = useState(__init.mnvStart);
+  const [mnvDuration, setMnvDuration] = useState(__init.mnvDuration);
+  const [psmStart, setPsmStart] = useState(__init.psmStart);
+  const [psmDuration, setPsmDuration] = useState(__init.psmDuration);
+  const [eduStart, setEduStart] = useState(__init.eduStart);
+  const [eduDuration, setEduDuration] = useState(__init.eduDuration);
+  const [retStart, setRetStart] = useState(__init.retStart);
   const [, setRetDuration] = useState(1);
-  const [intergenStart, setIntergenStart] = useState(__ws.intergenStart ?? 11);
-  const [intergenDuration, setIntergenDuration] = useState(__ws.intergenDuration ?? 1);
+  const [intergenStart, setIntergenStart] = useState(__init.intergenStart);
+  const [intergenDuration, setIntergenDuration] = useState(__init.intergenDuration);
 
-  const [customObjectives, setCustomObjectives] = useState(__ws.customObjectives ?? []);
+  const [customObjectives, setCustomObjectives] = useState(__init.customObjectives);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newObjName, setNewObjName] = useState("");
   const [newObjAmount, setNewObjAmount] = useState("");
@@ -284,7 +308,7 @@ function WealthPlanningWorkflow() {
   const [retCapitalOverride, setRetCapitalOverride] = useState(null);
   const [intergenOverride, setIntergenOverride] = useState(null);
   // Override de nombres por objetivo (para que las cards de mobile permitan renombrarlos)
-  const [nameOverrides, setNameOverrides] = useState(__ws.nameOverrides ?? {});
+  const [nameOverrides, setNameOverrides] = useState(__init.nameOverrides);
   // Card mobile actualmente en modo edición (id) — null = todas en modo lectura
   const [editingCardId, setEditingCardId] = useState(null);
 
@@ -546,7 +570,7 @@ function WealthPlanningWorkflow() {
     setAmountDraft("");
   };
 
-  const [mixOverrides, setMixOverrides] = useState(__ws.mixOverrides ?? {});
+  const [mixOverrides, setMixOverrides] = useState(__init.mixOverrides);
 
   const handleCreateCustom = () => {
     const trimmedName = newObjName.trim();
