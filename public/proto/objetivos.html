@@ -219,15 +219,17 @@ function WealthPlanningWorkflow() {
 
   // Si hay snapshot guardado (hidratado por el shell desde Supabase o local),
   // skip del wizard: cargamos el estado y arrancamos directo en el step 6.
-  const __snap = (() => {
-    try {
-      const raw = localStorage.getItem('jli_objetivos');
-      if (!raw) return null;
-      const p = JSON.parse(raw);
-      return (p && p.wizardState) ? p : null;
-    } catch (e) { return null; }
-  })();
-  const __ws = __snap?.wizardState || {};
+  // Importante: NO usar optional chaining acá. Algunas versiones de Babel
+  // standalone con el preset react SOLO no transforman ?. y rompen el render.
+  var __snap = null;
+  try {
+    var __raw = localStorage.getItem('jli_objetivos');
+    if (__raw) {
+      var __p = JSON.parse(__raw);
+      if (__p && __p.wizardState) __snap = __p;
+    }
+  } catch (e) { __snap = null; }
+  var __ws = (__snap && __snap.wizardState) ? __snap.wizardState : {};
 
   const [currentStep, setCurrentStep] = useState(__snap ? 6 : 0);
 
