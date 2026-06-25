@@ -12,6 +12,6 @@
 // Si los valores quedan vacíos, el sitio funciona en modo "demo sin auth"
 // (sólo localStorage, igual que antes de Supabase).
 window.SUPABASE_CONFIG = {
-  url:     'https://xhgefwolqvxtqnzaeqjb.supabase.co',  // base del proyecto, sin /rest/v1/
-  anonKey: 'sb_publishable_MFAWMWmFAO_jWLTEhEqc7A_5y_jsuhx',  // "anon public" / "publishable" key
+  url:     'https://skyftbbubkvqvdmilbds.supabase.co',  // wealth portal 2.0
+  anonKey: '',  // ← PEGÁ acá la "Publishable" o "anon public" key del nuevo proyecto
 };
